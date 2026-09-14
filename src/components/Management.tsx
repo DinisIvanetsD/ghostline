@@ -659,8 +659,7 @@ export function ImportRun({
     else {
       const match = matchRoute(points, trail.points);
       const existingRuns = data.runs.filter((run) => run.trailId === trail.id);
-      const replacingDemoRoute =
-        data.demo && existingRuns.every((run) => run.synthetic);
+      const replacingDemoRoute = existingRuns.every((run) => run.synthetic);
       if (!match.ok && !replacingDemoRoute)
         return setError(
           match.reason ?? "This run does not match the selected trail route.",
