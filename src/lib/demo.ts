@@ -5,7 +5,8 @@ type DemoTrail = "mundial" | "free-ride" | "secret-spot";
 function geometry(kind: DemoTrail): Point[] {
   const config = {
     mundial: {
-      start: { lat: 41.5742, lon: -8.4015, ele: 520 },
+      // Trailforks trailhead: 41.51818, -8.39571 (Santa Marta das Cortiças)
+      start: { lat: 41.51818, lon: -8.39571, ele: 493 },
       length: 0.011,
       width: 0.015,
       drop: 245,
@@ -14,7 +15,8 @@ function geometry(kind: DemoTrail): Point[] {
       drift: 9,
     },
     "free-ride": {
-      start: { lat: 41.558, lon: -8.419, ele: 430 },
+      // Trailforks trailhead: 41.51520, -8.39599 (Santa Marta das Cortiças)
+      start: { lat: 41.5152, lon: -8.39599, ele: 538 },
       length: 0.008,
       width: 0.012,
       drop: 150,
@@ -23,7 +25,8 @@ function geometry(kind: DemoTrail): Point[] {
       drift: 8,
     },
     "secret-spot": {
-      start: { lat: 41.602, lon: -8.372, ele: 470 },
+      // Trailforks trailhead: 41.54833, -8.37211 (Sameiro / Santa Marta network)
+      start: { lat: 41.54833, lon: -8.37211, ele: 511 },
       length: 0.009,
       width: 0.013,
       drop: 190,
@@ -110,7 +113,7 @@ export function createDemoData(): AppData {
     {
       id: "mundial",
       name: "Mundial da Santa Marta",
-      location: "Santa Marta, Braga",
+      location: "Santa Marta das Cortiças, Braga",
       difficulty: "Black",
       points: timedRun(
         "route",
@@ -127,7 +130,7 @@ export function createDemoData(): AppData {
     {
       id: "free-ride",
       name: "Free Ride",
-      location: "Santa Marta, Braga",
+      location: "Santa Marta das Cortiças, Braga",
       difficulty: "Red",
       points: timedRun(
         "route2",

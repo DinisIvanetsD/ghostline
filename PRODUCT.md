@@ -15,4 +15,4 @@ Delegated to implementation by explicit user request. Greenfield React and TypeS
 Dark, premium, minimal, technical. Motorsport telemetry for downhill MTB. Maps, ghost comparisons and sector deltas lead. Avoid generic fitness dashboard styling.
 
 ## Scope
-Local rider profiles, bike management, trail creation, GPX/FIT import, timestamped runs, interactive maps, telemetry, personal best, comparisons, editable sectors, theoretical best, history and progression. Synthetic demo data labeled. Future video/detection/AI do not block MVP.
+Local rider profiles, bike management, trail creation, GPX/FIT import, timestamped runs, interactive maps, telemetry, personal best, comparisons, editable sectors, theoretical best, history, progression and a local Video Lab for FIT/GPX sync, stop detection, sector jump points and edit-plan export. Synthetic demo data labeled. Full MP4 rendering, video event detection and AI feedback remain the next layer.

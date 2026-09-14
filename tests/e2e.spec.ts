@@ -133,6 +133,45 @@ test("history search, analyze, delete and PB recomputation work", async ({
   await expect(page.locator(".reference-time")).toContainText("2:59.00");
 });
 
+test("video lab keeps the sync workflow focused on a selected ride", async ({
+  page,
+}) => {
+  await open(page, "Video lab");
+  await expect(page.getByText("Line up the ride.")).toBeVisible();
+  await expect(page.getByLabel("Video trail")).toHaveValue("mundial");
+  await expect(page.getByLabel("Video run")).toContainText(
+    "Run 05 · Personal best",
+  );
+  await expect(page.getByText("Drop in your ride footage.")).toBeVisible();
+  await expect(page.getByText("AI-ready by design.")).toBeVisible();
+  await page.getByLabel("Video trail").selectOption("free-ride");
+  await expect(page.getByLabel("Video run")).toContainText("Run 09 · Valley sprint");
+  await expect(page.locator("body")).not.toContainText("NaN");
+  const viewport = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    viewport: window.innerWidth,
+  }));
+  expect(viewport.width).toBeLessThanOrEqual(viewport.viewport + 1);
+});
+
+test("video lab accepts a local DJI Mimo clip and exports its sync plan", async ({
+  page,
+}) => {
+  await open(page, "Video lab");
+  await page.getByLabel("Choose video file").first().setInputFiles({
+    name: "dji-mimo-run.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("ghostline-test-video"),
+  });
+  await expect(page.getByText("dji-mimo-run.mp4")).toBeVisible();
+  await expect(page.getByText("Make the clocks agree")).toBeVisible();
+  await page.getByLabel("GPS start offset").fill("4.5");
+  await expect(page.getByLabel("GPS start offset")).toHaveValue("4.5");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download edit plan" }).click();
+  await download;
+});
+
 test("garage supports add edit delete and protects referenced bikes", async ({
   page,
 }) => {

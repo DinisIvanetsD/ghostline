@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Bike,
   Check,
+  Clapperboard,
   ChevronDown,
   Download,
   Flag,
@@ -47,11 +48,20 @@ import {
   TrailManager,
   ImportRun,
 } from "./components/Management";
+import { VideoLab } from "./components/VideoLab";
 
-type Page = "analysis" | "history" | "trails" | "garage" | "profile" | "import";
+type Page =
+  | "analysis"
+  | "history"
+  | "trails"
+  | "garage"
+  | "profile"
+  | "import"
+  | "video";
 const nav = [
   { id: "analysis", label: "Run analysis", icon: Activity },
   { id: "history", label: "Run history", icon: History },
+  { id: "video", label: "Video lab", icon: Clapperboard },
   { id: "trails", label: "Trails", icon: Map },
   { id: "garage", label: "Bike garage", icon: Bike },
 ] as const;
@@ -180,6 +190,7 @@ export default function App() {
     garage: "Bike garage",
     profile: "Rider profile",
     import: "Import a run",
+    video: "Video lab",
   };
   return (
     <div className="app-shell">
@@ -857,6 +868,7 @@ export default function App() {
               />
             </>
           )}
+          {page === "video" && <VideoLab data={data} />}
           <footer className="app-footer">
             <span>
               GHOSTLINE<span className="accent">.</span>{" "}
@@ -864,7 +876,7 @@ export default function App() {
             </span>
             <span>
               {data.runs.some((r) => r.synthetic)
-                ? "Includes synthetic demo GPS · Braga, Portugal"
+                ? "Includes synthetic demo GPS · Santa Marta das Cortiças"
                 : "Local workspace"}{" "}
               <span className="footer-divider">/</span> RIDE → ANALYZE → SEND
               AGAIN
