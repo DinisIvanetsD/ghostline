@@ -4,3 +4,5 @@ playwright-report/
 test-results/
 *.local
 .impeccable/review/
+.agents/
+.codex/
