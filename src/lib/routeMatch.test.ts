@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../types";
-import { clipToFinish, matchRoute } from "./routeMatch";
+import { clipToFinish, clipToRouteFinish, matchRoute } from "./routeMatch";
 
 const route: Point[] = Array.from({ length: 20 }, (_, i) => ({
   lat: 38 + i * 0.001,
@@ -26,6 +26,23 @@ describe("matchRoute", () => {
   it("leaves a recording untouched when the gate is not nearby", () => {
     const points = [route[0], route[1]];
     expect(clipToFinish(points, { lat: 42, lon: 1 })).toEqual(points);
+  });
+  it("uses the route corridor when GPS drifts before the finish gate", () => {
+    const sparseRoute: Point[] = Array.from({ length: 3 }, (_, index) => ({
+      lat: 38 + index * 0.003,
+      lon: -9,
+      ele: 100,
+      time: index,
+    }));
+    const finish = sparseRoute.at(-1)!;
+    const drifted = [
+      ...sparseRoute.slice(0, -1),
+      { ...finish, lat: finish.lat + 0.0025, lon: finish.lon, time: 3 },
+      { lat: 38.03, lon: -8.9, ele: 100, time: 4 },
+    ];
+    const clipped = clipToRouteFinish(drifted, sparseRoute, finish);
+    expect(clipped).toHaveLength(3);
+    expect(clipped.at(-1)).toMatchObject({ lat: finish.lat, lon: finish.lon });
   });
   it("accepts the same route and sparse GPX", () => {
     expect(matchRoute(route, route).ok).toBe(true);

@@ -12,7 +12,7 @@ const distance = (
     ) * R
   );
 };
-const simplify = (points: Point[], max: number) =>
+const simplify = <T extends Pick<Point, "lat" | "lon">>(points: T[], max: number): T[] =>
   points.length <= max
     ? points
     : Array.from(
@@ -89,6 +89,48 @@ function nearest(
       };
   }
   return best;
+}
+
+/**
+ * Trim at the last point that is still on the physical route when GPS drift
+ * means no sample lands within the finish gate itself. This is deliberately
+ * conservative: the route endpoint must already be the configured gate and
+ * the candidate must be near the final 20% of the route corridor.
+ */
+export function clipToRouteFinish(
+  points: Point[],
+  routePoints: Array<Pick<Point, "lat" | "lon">>,
+  finishPoint?: Pick<Point, "lat" | "lon">,
+): Point[] {
+  const direct = clipToFinish(points, finishPoint);
+  if (
+    direct !== points ||
+    !finishPoint ||
+    routePoints.length < 2 ||
+    distance(routePoints.at(-1)!, finishPoint) > 250
+  )
+    return direct;
+  const route = simplify(routePoints, 800);
+  const distances = cumulative(route);
+  const routeLength = distances.at(-1)!;
+  if (!(routeLength > 0)) return points;
+  let bestIndex = -1;
+  let bestProgress = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    const hit = nearest(points[index], route, distances);
+    if (hit.distance <= 300 && hit.progress > bestProgress) {
+      bestProgress = hit.progress;
+      bestIndex = index;
+    }
+  }
+  if (bestIndex < 1 || bestProgress < routeLength * 0.8) return points;
+  const clipped = points.slice(0, bestIndex + 1);
+  clipped[clipped.length - 1] = {
+    ...clipped[clipped.length - 1],
+    lat: finishPoint.lat,
+    lon: finishPoint.lon,
+  };
+  return clipped;
 }
 /** Approximate compatibility guard, not race-grade map matching. Work is bounded for large files. */
 export function matchRoute(

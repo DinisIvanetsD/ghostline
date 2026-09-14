@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { parseGPX } from "../lib/gpx";
 import { analyze, formatTime } from "../lib/analysis";
-import { clipToFinish, matchRoute } from "../lib/routeMatch";
+import { clipToRouteFinish, matchRoute } from "../lib/routeMatch";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
 type Props = { data: AppData; onChange: (data: AppData) => boolean | void };
@@ -652,8 +652,12 @@ export function ImportRun({
     // Apply an explicit physical finish gate before matching and persisting.
     // This removes post-finish GPS capture for configured trails such as
     // Secret Spot Sameiro while preserving the original behavior elsewhere.
-    const importedPoints = clipToFinish(points, trail.finishPoint);
-    const physicalTrail = clipToFinish(trail.points, trail.finishPoint);
+    const physicalTrail = trail.finishPoint
+      ? clipToRouteFinish(trail.points, trail.points, trail.finishPoint)
+      : trail.points;
+    const importedPoints = trail.finishPoint
+      ? clipToRouteFinish(points, physicalTrail, trail.finishPoint)
+      : points;
     let targetTrail =
       physicalTrail.length === trail.points.length
         ? trail

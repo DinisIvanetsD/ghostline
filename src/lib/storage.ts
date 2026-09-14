@@ -4,7 +4,7 @@ import {
   SECRET_SPOT_FINISH,
   SECRET_SPOT_STARTS,
 } from "./demo";
-import { clipToFinish } from "./routeMatch";
+import { clipToRouteFinish } from "./routeMatch";
 import type { AppData, Bike, Point, Profile, Run, Trail } from "../types";
 const KEY = "ghostline.data.v1";
 let storageWarning = "";
@@ -289,14 +289,14 @@ export function loadData(): AppData {
       const finishPoint = SECRET_SPOT_FINISH;
       const physicalPoints = replaceSecretRoute
         ? canonicalSecret!.points
-        : clipToFinish(secret.points, finishPoint);
+        : clipToRouteFinish(secret.points, secret.points, finishPoint);
       const runs = data.runs.map((run) =>
         run.trailId === secret.id
           ? {
               ...run,
               points: replaceSecretRoute && run.synthetic
                 ? retime(run, canonicalSecret!.points)
-                : clipToFinish(run.points, finishPoint),
+                : clipToRouteFinish(run.points, secret.points, finishPoint),
             }
           : run,
       );

@@ -6,7 +6,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed, zero errors.
-- `npm test`: 8 files, 48 tests passed.
+- `npm test`: 8 files, 49 tests passed.
 - `npm run build`: passed (Vite production bundle).
 - `npm run test:e2e`: 15 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan, edit-plan and Secret Spot finish-gate flows.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
