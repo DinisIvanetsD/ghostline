@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-14T10:14:16+01:00",
+  "title": "Design System: Ghostline",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Matte Canvas",
+        "canonical": "#101311",
+        "tonalRamp": [
+          "#101311",
+          "#151a16",
+          "#1b211b",
+          "#222a21",
+          "#303a2e",
+          "#4b5848",
+          "#74806f",
+          "#c6cec2"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel Green-Black",
+        "canonical": "#181c19",
+        "tonalRamp": [
+          "#181c19",
+          "#1d221e",
+          "#232923",
+          "#2b322a",
+          "#3c4639",
+          "#5b6758",
+          "#879385",
+          "#d0d6cd"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Green-Black",
+        "canonical": "#212622",
+        "tonalRamp": [
+          "#212622",
+          "#272d28",
+          "#2e352f",
+          "#384139",
+          "#4b574b",
+          "#6a7668",
+          "#929d91",
+          "#d7ddd4"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Fine Border",
+        "canonical": "#313830",
+        "tonalRamp": [
+          "#161a17",
+          "#202620",
+          "#313830",
+          "#424b40",
+          "#596458",
+          "#727d72",
+          "#9ba59a",
+          "#d3d8d1"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Warm Off-White",
+        "canonical": "#f0f2e9",
+        "tonalRamp": [
+          "#20231f",
+          "#353934",
+          "#4c514a",
+          "#686e65",
+          "#878d84",
+          "#aab0a7",
+          "#d0d4cc",
+          "#f0f2e9"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Cool Muted",
+        "canonical": "#9ca698",
+        "tonalRamp": [
+          "#20251f",
+          "#30382f",
+          "#424d41",
+          "#596558",
+          "#707c6f",
+          "#879284",
+          "#9ca698",
+          "#d1d6cf"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Acid Yellow Current Run",
+        "canonical": "#d5f55a",
+        "tonalRamp": [
+          "#293010",
+          "#47551b",
+          "#667d26",
+          "#87a72f",
+          "#a9ce3a",
+          "#c1e64b",
+          "#d5f55a",
+          "#f1ffc1"
+        ]
+      },
+      "lost": {
+        "role": "tertiary",
+        "displayName": "Coral Time Lost",
+        "canonical": "#f19784",
+        "tonalRamp": [
+          "#3c1e1b",
+          "#68352d",
+          "#914a40",
+          "#b95f52",
+          "#d27061",
+          "#e48473",
+          "#f19784",
+          "#ffd0c8"
+        ]
+      },
+      "gained": {
+        "role": "tertiary",
+        "displayName": "Mint Time Gained",
+        "canonical": "#9edfc0",
+        "tonalRamp": [
+          "#193328",
+          "#2a5a46",
+          "#3f8064",
+          "#589b7a",
+          "#71b590",
+          "#87caa8",
+          "#9edfc0",
+          "#d0f5e1"
+        ]
+      },
+      "ghost": {
+        "role": "neutral",
+        "displayName": "Cool Pale Ghost",
+        "canonical": "#bec8bf",
+        "tonalRamp": [
+          "#252b26",
+          "#414a42",
+          "#5d685e",
+          "#78837a",
+          "#929e94",
+          "#a9b4ab",
+          "#bec8bf",
+          "#e4e9e4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Condensed Race Heading",
+        "purpose": "Page and empty-state headings."
+      },
+      "title": {
+        "displayName": "Condensed Panel Heading",
+        "purpose": "Panel and section headings."
+      },
+      "body": {
+        "displayName": "Barlow UI Copy",
+        "purpose": "Interface labels, controls, and explanatory text."
+      },
+      "measurement": {
+        "displayName": "Plex Mono Measurement",
+        "purpose": "Timings, deltas, sectors, and trace metadata."
+      },
+      "label": {
+        "displayName": "Instrument Label",
+        "purpose": "Compact tracked annotations and captions."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "background 0.15s",
+        "purpose": "Button and compact control state changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition: none; animation: none",
+        "purpose": "Honour prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "wide", "value": "1550px" },
+      { "name": "rail-compact", "value": "1200px" },
+      { "name": "stack", "value": "1000px" },
+      { "name": "mobile", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary telemetry action.",
+      "html": "<button class=\"ds-btn-primary\">IMPORT RUN</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid transparent; border-radius: 4px; background: var(--accent); color: var(--bg); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #e2ff81; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet outlined action beside a primary control.",
+      "html": "<button class=\"ds-btn-secondary\">VIEW DETAILS</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid #424b3e; border-radius: 4px; background: transparent; color: var(--text); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-secondary:hover { background: var(--raised); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+    },
+    {
+      "name": "Telemetry Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Contained instrument surface for analysis.",
+      "html": "<section class=\"ds-panel\"><h2>TELEMETRY</h2><p>Current run / ghost comparison</p></section>",
+      "css": ".ds-panel { padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); } .ds-panel h2 { margin: 0; font: 600 24px/1.2 'Barlow Condensed', sans-serif; } .ds-panel p { margin: 8px 0 0; color: var(--muted); font: 400 14px/1.5 Barlow, sans-serif; }"
+    },
+    {
+      "name": "Telemetry Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Dark field for run search.",
+      "html": "<label class=\"ds-field\">RUN SEARCH<input class=\"ds-input\" placeholder=\"Search runs\" /></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font: 600 10px/1.2 Barlow, sans-serif; letter-spacing: 0.12em; } .ds-input { min-height: 43px; padding: 10px 12px; border: 1px solid #414d39; border-radius: 4px; background: var(--bg); color: var(--text); font: 400 14px/1.5 Barlow, sans-serif; outline-offset: 4px; } .ds-input::placeholder { color: #9aa88e; } .ds-input:focus-visible { outline: 2px solid var(--accent); }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Rail or mobile navigation entry.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#analysis\">ANALYSIS</a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; min-height: 40px; padding: 13px 12px; border-radius: 5px; color: #a5afa1; font: 500 14px/1.2 Barlow, sans-serif; text-decoration: none; } .ds-nav-item:hover { background: #232922; } .ds-nav-item-active { background: #d5f55a12; color: var(--accent); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+    },
+    {
+      "name": "Current Ghost Trace",
+      "kind": "custom",
+      "refersTo": "telemetry-trace",
+      "description": "Signature current and ghost comparison cue.",
+      "html": "<div class=\"ds-trace\"><span class=\"ds-trace-current\"></span><span class=\"ds-trace-ghost\"></span><b>+00:12.4</b></div>",
+      "css": ".ds-trace { display: flex; align-items: center; gap: 8px; min-height: 24px; color: var(--accent); font: 400 11px/1.3 'IBM Plex Mono', monospace; } .ds-trace-current, .ds-trace-ghost { display: block; width: 48px; height: 2px; background: var(--accent); } .ds-trace-ghost { border-top: 2px dashed var(--ghost); background: none; } .ds-trace b { font-weight: 400; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Race Engineer Workstation",
+    "overview": "Ghostline is a compact downhill MTB telemetry workstation: matte green-black surfaces, fine instrument borders, condensed race-board headings, and measured data typography. Color is telemetry: acid yellow marks current state, pale green marks the ghost, and coral and mint report time lost and gained.",
+    "keyCharacteristics": [
+      "Matte dark green-black canvas",
+      "Condensed headings with mono measurements",
+      "Sparse semantic state color",
+      "Fine borders and compact controls"
+    ],
+    "rules": [
+      {
+        "name": "The Telemetry Color Rule",
+        "body": "Use semantic state colors sparingly and consistently.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measurement Rule",
+        "body": "Compared numbers use IBM Plex Mono; prose stays in Barlow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-by-Default Rule",
+        "body": "Use tonal surfaces or fine borders; do not add routine shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the race-engineer workstation metaphor.",
+      "Do keep the 4 / 8 / 12 / 16 / 24 / 32 / 48px rhythm.",
+      "Do maintain visible focus and 40px targets."
+    ],
+    "donts": [
+      "Don't introduce decorative gradients or routine shadows.",
+      "Don't use coral or mint as general brand accents.",
+      "Don't replace the condensed heading and mono measurement pairing."
+    ]
+  }
+}
