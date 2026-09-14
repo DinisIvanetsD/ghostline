@@ -99,8 +99,9 @@ export function VideoLab({ data }: Props) {
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoTime, setVideoTime] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoError, setVideoError] = useState("");
   const [offsetSeconds, setOffsetSeconds] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [previewRate, setPreviewRate] = useState(1);
   const [progress, setProgress] = useState(0);
   const [selectedSector, setSelectedSector] = useState<number | null>(null);
   const [stopAnalysis, setStopAnalysis] = useState<StopAnalysis | null>(null);
@@ -123,8 +124,8 @@ export function VideoLab({ data }: Props) {
   );
   const ghost = useMemo(() => (pb ? analyze(pb.points) : current), [pb, current]);
   const settings: VideoSyncSettings = useMemo(
-    () => ({ offsetSeconds, playbackRate }),
-    [offsetSeconds, playbackRate],
+    () => ({ offsetSeconds }),
+    [offsetSeconds],
   );
   const windows = useMemo(
     () => (run && trail ? sectorVideoWindows(run, trail, settings) : []),
@@ -159,8 +160,21 @@ export function VideoLab({ data }: Props) {
   }, [trailId]);
 
   useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
-  }, [playbackRate, videoUrl]);
+    setSelectedSector(null);
+    setProgress(0);
+    setStopAnalysis(null);
+    setTrim(null);
+  }, [run?.id]);
+
+  useEffect(() => {
+    // A trim window is stored in video coordinates. Changing alignment makes
+    // that window stale, so require a fresh ride-window apply.
+    setTrim(null);
+  }, [offsetSeconds]);
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = previewRate;
+  }, [previewRate, videoUrl]);
 
   const onVideoTime = () => {
     const video = videoRef.current;
@@ -182,6 +196,12 @@ export function VideoLab({ data }: Props) {
     setProgress(fractionAtTime(current, nextRunTime));
   };
 
+  const reportVideoError = () => {
+    setVideoPlaying(false);
+    setVideoDuration(0);
+    setVideoError("This clip could not be decoded in this browser. Try MP4 (H.264), MOV or WebM.");
+  };
+
   const selectVideo = (file: File | undefined) => {
     if (!file) return;
     if (previousUrl.current) URL.revokeObjectURL(previousUrl.current);
@@ -192,6 +212,7 @@ export function VideoLab({ data }: Props) {
     setVideoTime(0);
     setVideoDuration(0);
     setVideoPlaying(false);
+    setVideoError("");
     setTrim(null);
   };
 
@@ -323,15 +344,34 @@ export function VideoLab({ data }: Props) {
           <section className="video-stage-grid">
             <div className="video-player-panel panel">
               <div className="video-player-wrap">
-                <video ref={videoRef} src={videoUrl} controls onLoadedMetadata={(event) => setVideoDuration(event.currentTarget.duration)} onTimeUpdate={onVideoTime} onPlay={() => setVideoPlaying(true)} onPause={() => setVideoPlaying(false)} preload="metadata" />
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  onLoadedMetadata={(event) => {
+                    const duration = event.currentTarget.duration;
+                    if (Number.isFinite(duration) && duration > 0) {
+                      setVideoDuration(duration);
+                      setVideoError("");
+                    } else {
+                      reportVideoError();
+                    }
+                  }}
+                  onError={reportVideoError}
+                  onTimeUpdate={onVideoTime}
+                  onPlay={() => setVideoPlaying(true)}
+                  onPause={() => setVideoPlaying(false)}
+                  preload="metadata"
+                />
                 <span className="video-badge"><Camera size={13} /> {videoName}</span>
               </div>
+              {videoError && <p className="error-line video-error"><Camera size={14} /> {videoError}</p>}
               <div className="video-controls">
-                <button className="icon-button" aria-label={videoPlaying ? "Pause video" : "Play video"} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play(); else videoRef.current.pause(); }}>
+                <button className="icon-button" disabled={!videoDuration} aria-label={videoPlaying ? "Pause video" : "Play video"} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play().catch(reportVideoError); else videoRef.current.pause(); }}>
                   {videoPlaying ? <Pause size={16} /> : <Play size={16} />}
                 </button>
                 <span className="mono">{clock(videoTime)}</span>
-                <input aria-label="Video timeline" type="range" min="0" max={videoDuration || 0} step="0.01" value={Math.min(videoDuration || 0, videoTime)} onChange={(event) => seekVideo(Number(event.target.value))} />
+                <input aria-label="Video timeline" disabled={!videoDuration} type="range" min="0" max={videoDuration || 0} step="0.01" value={Math.min(videoDuration || 0, videoTime)} onChange={(event) => seekVideo(Number(event.target.value))} />
                 <span className="mono">{clock(videoDuration)}</span>
               </div>
               <div className="video-progress-line"><i style={{ width: `${progress * 100}%` }} /></div>
@@ -353,7 +393,7 @@ export function VideoLab({ data }: Props) {
             </div>
             <div className="sync-grid">
               <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" step="0.1" value={offsetSeconds} onChange={(event) => setOffsetSeconds(Number(event.target.value) || 0)} /></label>
-              <label className="field"><span>Playback rate</span><select aria-label="Video playback rate" value={playbackRate} onChange={(event) => setPlaybackRate(Number(event.target.value))}><option value="1">1× real time</option><option value="0.5">0.5× slow motion</option><option value="2">2× analysis</option></select></label>
+              <label className="field"><span>Preview speed</span><select aria-label="Video playback rate" value={previewRate} onChange={(event) => setPreviewRate(Number(event.target.value))}><option value="1">1× real time</option><option value="0.5">0.5× slow motion</option><option value="2">2× analysis</option></select></label>
               <button className="button secondary sync-action" onClick={setRunStartAtPlayhead}><Target size={15} /> Set run start at playhead</button>
             </div>
             <p className="sync-help">Scrub to the moment the bike leaves the start, then set it as the GPS start. Sector markers and telemetry follow this offset.</p>
@@ -371,7 +411,7 @@ export function VideoLab({ data }: Props) {
             <section className="panel export-panel">
               <div className="section-heading"><div><span className="eyebrow"><Download size={13} /> TAKE IT FURTHER</span><h2>Export an edit plan</h2></div></div>
               <p>Send a small JSON edit plan to your desktop editor or the future GHOSTLINE renderer. It includes sync, cuts, sector windows and deltas.</p>
-              <button className="button primary" onClick={exportPlan}><Download size={15} /> Download edit plan</button>
+              <button className="button primary" disabled={!videoDuration} onClick={exportPlan}><Download size={15} /> Download edit plan</button>
               <span className="muted export-note">Video stays local; no upload is required.</span>
             </section>
           </div>

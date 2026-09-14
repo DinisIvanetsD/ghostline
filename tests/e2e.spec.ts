@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { Encoder, Profile } from "@garmin/fitsdk";
+import { readFile } from "node:fs/promises";
 
 const gpx = (
   points: Array<{ lat: number; lon: number; ele?: number; time?: number }>,
@@ -17,6 +18,44 @@ async function blockTiles(page: Page) {
     "**/{tile.openstreetmap.org,basemaps.cartocdn.com}/**",
     (route) => route.abort(),
   );
+}
+
+async function playableWebm(page: Page) {
+  return page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 180;
+    const context = canvas.getContext("2d");
+    if (!context || !window.MediaRecorder) throw new Error("MediaRecorder is unavailable");
+    const stream = canvas.captureStream(30);
+    const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (event) => {
+      if (event.data.size) chunks.push(event.data);
+    };
+    const encoded = new Promise<string>((resolve, reject) => {
+      recorder.onerror = () => reject(new Error("Could not encode test video"));
+      recorder.onstop = async () => {
+        const bytes = new Uint8Array(await new Blob(chunks, { type: "video/webm" }).arrayBuffer());
+        let binary = "";
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        resolve(btoa(binary));
+      };
+    });
+    recorder.start();
+    const started = performance.now();
+    while (performance.now() - started < 1800) {
+      const hue = Math.round((performance.now() - started) / 8) % 360;
+      context.fillStyle = `hsl(${hue} 55% 24%)`;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = "#d4ff3f";
+      context.font = "bold 24px sans-serif";
+      context.fillText("GHOSTLINE", 24, 96);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    recorder.stop();
+    return encoded;
+  });
 }
 async function open(page: Page, label: string) {
   await page.getByRole("button", { name: label, exact: true }).click();
@@ -154,22 +193,51 @@ test("video lab keeps the sync workflow focused on a selected ride", async ({
   expect(viewport.width).toBeLessThanOrEqual(viewport.viewport + 1);
 });
 
-test("video lab accepts a local DJI Mimo clip and exports its sync plan", async ({
+test("video lab loads a playable DJI Mimo clip and exports its sync plan", async ({
   page,
 }) => {
   await open(page, "Video lab");
+  const video = await playableWebm(page);
   await page.getByLabel("Choose video file").first().setInputFiles({
-    name: "dji-mimo-run.mp4",
-    mimeType: "video/mp4",
-    buffer: Buffer.from("ghostline-test-video"),
+    name: "dji-mimo-run.webm",
+    mimeType: "video/webm",
+    buffer: Buffer.from(video, "base64"),
   });
-  await expect(page.getByText("dji-mimo-run.mp4")).toBeVisible();
+  await expect(page.getByText("dji-mimo-run.webm")).toBeVisible();
+  await expect.poll(() => page.locator("video").evaluate((element) => element.duration)).toBeGreaterThan(0);
   await expect(page.getByText("Make the clocks agree")).toBeVisible();
-  await page.getByLabel("GPS start offset").fill("4.5");
-  await expect(page.getByLabel("GPS start offset")).toHaveValue("4.5");
+  await expect(page.getByLabel("Video timeline")).toBeEnabled();
+  const sectorWindow = page.locator(".sector-video-row").first().locator("small");
+  const normalWindow = await sectorWindow.innerText();
+  await page.getByLabel("Video playback rate").selectOption("2");
+  await expect(sectorWindow).toHaveText(normalWindow);
+  await page.getByRole("button", { name: "Play video" }).click();
+  await expect.poll(() => page.locator("video").evaluate((element) => !element.paused)).toBe(true);
+  await page.getByLabel("GPS start offset").fill("0.4");
+  await expect(page.getByLabel("GPS start offset")).toHaveValue("0.4");
+  await page.getByRole("button", { name: "Scan GPS stops" }).click();
+  await page.getByRole("button", { name: "Apply ride window" }).click();
+  await expect(page.getByText(/Output window/)).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download edit plan" }).click();
-  await download;
+  const planDownload = await download;
+  const planPath = await planDownload.path();
+  expect(planPath).toBeTruthy();
+  const plan = JSON.parse(await readFile(planPath!, "utf8")) as { sync: { offsetSeconds: number }; trim: { start: number; end: number } };
+  expect(plan.sync.offsetSeconds).toBe(0.4);
+  expect(plan.trim.end).toBeGreaterThan(plan.trim.start);
+});
+
+test("video lab reports an unsupported local clip", async ({ page }) => {
+  await open(page, "Video lab");
+  await page.getByLabel("Choose video file").first().setInputFiles({
+    name: "broken-dji-export.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("not-a-video"),
+  });
+  await expect(page.getByText("broken-dji-export.mp4")).toBeVisible();
+  await expect(page.getByText(/could not be decoded/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download edit plan" })).toBeDisabled();
 });
 
 test("garage supports add edit delete and protects referenced bikes", async ({

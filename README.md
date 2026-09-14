@@ -48,7 +48,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Time, distance, average/top speed, elevation, ascent/descent analysis; speed/elevation graphs and synchronized inspection.
 - Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs.
 - Run history, search, clickable progression, and immediate recomputation after edits/deletions.
-- **Video lab** with local video preview, FIT/GPX-to-video offset and playback-rate sync, GPS stop detection, ride-window trimming, sector jump points, Ghost deltas, and a portable JSON edit plan.
+- **Video lab** with local video preview, FIT/GPX-to-video offset sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, Ghost deltas, and a portable JSON edit plan.
 - Responsive desktop/mobile interface, keyboard controls, self-hosted typography and reduced-motion support.
 - Versioned browser persistence, validated backups, quota errors and corrupt-storage recovery.
 

@@ -8,7 +8,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 - `npm run lint`: passed, zero errors.
 - `npm test`: 6 files, 37 tests passed.
 - `npm run build`: passed (Vite production bundle).
-- `npm run test:e2e`: 13 Playwright tests passed, including Video Lab upload/sync/edit-plan flows.
+- `npm run test:e2e`: 14 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan and edit-plan flows.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
 - Viewports: 1440px desktop and 390px mobile screenshots inspected. Browser tests additionally checked 360px analysis and 390px management. Document scroll width equals viewport width.
 - Video Lab screenshots inspected with and without a local clip; desktop and mobile scroll width stayed equal to the viewport and no page errors were recorded.
@@ -27,7 +27,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 | Functional maps/telemetry                | Loaded real map tiles, geographic trace, markers, zoom controls, slider, elevation toggle, replay and selected sector        | Pass                       |
 | Desktop/mobile polish                    | Two visual capture rounds; responsive charts; mobile overflow checks; independent review                                     | Pass                       |
 | Immediate demo                           | Eleven dense synthetic runs across Mundial da Santa Marta and Free Ride in Santa Marta das Cortiças plus Secret Spot Sameiro, two bikes, one demo rider; sample GPX download | Pass                       |
-| Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset/playback-rate sync, GPS stop scan, ride-window trimming, sector jump points and JSON edit-plan download | Pass within local workflow |
+| Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset sync with independent preview speed, GPS stop scan, ride-window trimming, sector jump points and JSON edit-plan download | Pass within local workflow |
 | No obvious broken screens/runtime errors | E2E covers analysis, history, garage, profile, trails, GPX/FIT import, demo route replacement, empty/corrupt state; capture records zero page errors | Pass within tested scope   |
 | Build/lint/types/tests                   | Commands listed above all passed                                                                                             | Pass                       |
 
