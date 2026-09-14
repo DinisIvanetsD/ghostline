@@ -35,14 +35,21 @@ const clone = (data: AppData): AppData => ({
   runs: [...data.runs],
 });
 const isFIT = (file: File) => /\.fit$/i.test(file.name);
+const hasFITSignature = (bytes: Uint8Array) =>
+  bytes.byteLength >= 12 &&
+  bytes[8] === 0x2e &&
+  bytes[9] === 0x46 &&
+  bytes[10] === 0x49 &&
+  bytes[11] === 0x54;
 const readTrackFile = async (file: File, requireTime: boolean) => {
-  if (isFIT(file)) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (isFIT(file) || hasFITSignature(bytes)) {
     // Keep the Garmin decoder out of the initial dashboard bundle. It is
     // loaded only when a rider chooses a FIT file.
     const { parseFIT } = await import("../lib/fit");
-    return parseFIT(await file.arrayBuffer());
+    return parseFIT(bytes);
   }
-  return parseGPX(await file.text(), requireTime);
+  return parseGPX(new TextDecoder().decode(bytes), requireTime);
 };
 const parseBoundaries = (raw: string) => {
   const values = raw.trim() ? raw.split(",").map((v) => Number(v.trim())) : [];
