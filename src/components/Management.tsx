@@ -98,6 +98,8 @@ export function Garage({ data, onChange }: Props) {
   const [draft, setDraft] = useState<Bike>(empty);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const linkedRuns = data.runs.filter((run) => data.bikes.some((bike) => bike.id === run.bikeId));
+  const coveredTrails = new Set(linkedRuns.map((run) => run.trailId)).size;
   const save = (e: FormEvent) => {
     e.preventDefault();
     if (!draft.name.trim()) return setError("Give this bike a name.");
@@ -143,10 +145,40 @@ export function Garage({ data, onChange }: Props) {
           Keep the machines behind every split. Travel is recorded in
           millimetres.
         </p>
-        <form className="form-grid" onSubmit={save}>
+        <div className="garage-overview" aria-label="Garage overview">
+          <div className="garage-stat">
+            <span>Machines</span>
+            <strong className="mono">{data.bikes.length}</strong>
+            <small>{data.bikes.length === 1 ? "Bike in the garage" : "Bikes in the garage"}</small>
+          </div>
+          <div className="garage-stat">
+            <span>Linked runs</span>
+            <strong className="mono">{linkedRuns.length}</strong>
+            <small>Runs ready for comparison</small>
+          </div>
+          <div className="garage-stat">
+            <span>Trails covered</span>
+            <strong className="mono">{coveredTrails}</strong>
+            <small>Across the current workspace</small>
+          </div>
+        </div>
+        <form className="garage-form" onSubmit={save}>
+          <div className="garage-form-heading">
+            <div>
+              <h3>{editing ? "Edit machine" : "Add a machine"}</h3>
+              <p className="muted">
+                {editing
+                  ? "Update the setup details used in your run history."
+                  : "Give every run a bike setup so your comparisons stay honest."}
+              </p>
+            </div>
+            {editing && <span className="garage-form-state">Editing</span>}
+          </div>
+          <div className="form-grid">
           <label className="field">
             Name
             <input
+              autoComplete="off"
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             />
@@ -154,6 +186,7 @@ export function Garage({ data, onChange }: Props) {
           <label className="field">
             Brand
             <input
+              autoComplete="organization"
               value={draft.brand}
               onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
             />
@@ -195,42 +228,72 @@ export function Garage({ data, onChange }: Props) {
                   setDraft(empty);
                 }}
               >
-                Cancel
+              Cancel
               </button>
             )}
+          </div>
           </div>
         </form>
         <ErrorLine message={error} />
         {data.bikes.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state garage-empty">
             <BikeIcon size={24} />
             <strong>No bikes in the garage</strong>
             <span>Add the bike you ride so runs stay comparable.</span>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Bike</th>
-                  <th>Type</th>
-                  <th>Travel</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {data.bikes.map((b) => (
-                  <tr key={b.id}>
-                    <td>
-                      <strong>{b.name}</strong>
-                      <small>{b.brand || "Brand not set"}</small>
-                    </td>
-                    <td>{b.type}</td>
-                    <td>{b.travel ? `${b.travel} mm` : "—"}</td>
-                    <td className="row-actions">
+          <div className="bike-grid">
+            {data.bikes.map((b, index) => {
+              const runs = data.runs.filter((run) => run.bikeId === b.id);
+              const trails = new Set(runs.map((run) => run.trailId)).size;
+              const latest = runs
+                .slice()
+                .sort((a, z) => z.date.localeCompare(a.date))[0];
+              const fastestByTrail = new Map<string, { id: string; duration: number }>();
+              runs.forEach((run) => {
+                const duration = analyze(run.points).duration;
+                const fastest = fastestByTrail.get(run.trailId);
+                if (!fastest || duration < fastest.duration)
+                  fastestByTrail.set(run.trailId, { id: run.id, duration });
+              });
+              const personalBests = runs.filter(
+                (run) => fastestByTrail.get(run.trailId)?.id === run.id,
+              ).length;
+              return (
+                <article className="bike-card" key={b.id}>
+                  <div className="bike-card-heading">
+                    <span className="bike-index mono">B{String(index + 1).padStart(2, "0")}</span>
+                    <div className="bike-identity">
+                      <h3>{b.name}</h3>
+                      <p>{b.brand || "Brand not set"}</p>
+                    </div>
+                    <span className="bike-type">{b.type}</span>
+                  </div>
+                  <div className="bike-specs">
+                    <div>
+                      <span>Travel</span>
+                      <strong className="mono">{b.travel ? `${b.travel} mm` : "—"}</strong>
+                    </div>
+                    <div>
+                      <span>Runs</span>
+                      <strong className="mono">{runs.length}</strong>
+                    </div>
+                    <div>
+                      <span>PB runs</span>
+                      <strong className="mono">{personalBests}</strong>
+                    </div>
+                  </div>
+                  <div className="bike-card-footer">
+                    <span className="muted">
+                      {runs.length
+                        ? `${trails} trail${trails === 1 ? "" : "s"} · last ${latest?.date ?? "—"}`
+                        : "No runs linked yet"}
+                    </span>
+                    <div className="row-actions">
                       <button
                         className="icon-button"
                         title={`Edit ${b.name}`}
+                        aria-label={`Edit ${b.name}`}
                         onClick={() => {
                           setEditing(b.id);
                           setDraft(b);
@@ -241,15 +304,16 @@ export function Garage({ data, onChange }: Props) {
                       <button
                         className="icon-button danger"
                         title={`Delete ${b.name}`}
+                        aria-label={`Delete ${b.name}`}
                         onClick={() => remove(b.id)}
                       >
                         <Trash2 size={15} />
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </Section>
