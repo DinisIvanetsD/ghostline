@@ -164,6 +164,10 @@ export default function App() {
     () => progressionInsights(runs, { trail, recentWindow: 5 }),
     [runs, trail],
   );
+  const historyRuns = useMemo(
+    () => runs.filter((item) => item.name.toLowerCase().includes(historyQuery.toLowerCase())),
+    [runs, historyQuery],
+  );
   const boundaries = trail ? [0, ...trail.boundaries, 1] : [0, 1];
   const deltas = splits.map((s, i) => s - ghostSplits[i]);
   const worst = deltas.length ? deltas.indexOf(Math.max(...deltas)) : 0;
@@ -733,13 +737,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {runs
-                        .filter((r) =>
-                          r.name
-                            .toLowerCase()
-                            .includes(historyQuery.toLowerCase()),
-                        )
-                        .map((r) => {
+                      {historyRuns.map((r) => {
                           const t = analyze(r.points);
                           const delta =
                             t.duration - (pb ? analyze(pb.points).duration : 0);
@@ -791,9 +789,7 @@ export default function App() {
                         })}
                     </tbody>
                   </table>
-                  {!runs.filter((r) =>
-                    r.name.toLowerCase().includes(historyQuery.toLowerCase()),
-                  ).length && (
+                  {!historyRuns.length && (
                     <p className="empty-state">
                       No runs found. Try another search or import a run.
                     </p>

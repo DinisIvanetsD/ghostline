@@ -11,6 +11,8 @@ export interface GpsQualityOptions {
   maxGapSeconds?: number;
   /** Gaps this long are considered a broken recording rather than a short GPS pause. */
   poorGapSeconds?: number;
+  /** Remove every remaining impossible leg when the source is an activity export. */
+  removeImpossible?: boolean;
 }
 
 export interface OutlierSegment {
@@ -121,9 +123,79 @@ export function cleanTrack(
     }
   }
 
+  // A noisy export can contain a short chain of impossible legs rather than
+  // one clean out-and-back spike. Keep the first and last GPS fixes, then
+  // remove the interior fix that eliminates the most impossible distance at
+  // each pass. This makes telemetry safe to display while retaining the raw
+  // points on the run for later inspection.
+  while (options.removeImpossible) {
+    const retained = points
+      .map((_, index) => index)
+      .filter((index) => !removed.has(index));
+    if (retained.length <= 2) break;
+    const legs = retained.slice(1).map((index, position) =>
+      segment(points[retained[position]], points[index], scale),
+    );
+    const badLeg = legs.findIndex(
+      (leg) =>
+        leg.durationSeconds > 0 &&
+        leg.durationSeconds <= maxGapSeconds &&
+        leg.speedKmh > maxSpeedKmh,
+    );
+    if (badLeg < 0) break;
+
+    const candidates = [retained[badLeg], retained[badLeg + 1]].filter(
+      (index) => index > 0 && index < points.length - 1 && !removed.has(index),
+    );
+    let bestIndex: number | undefined;
+    let bestGain = -Infinity;
+    for (const candidate of candidates) {
+      const position = retained.indexOf(candidate);
+      const before = [
+        position > 0 ? legs[position - 1] : undefined,
+        legs[position],
+      ].filter(Boolean) as ReturnType<typeof segment>[];
+      const beforeBad = before.filter(
+        (leg) => leg.durationSeconds > 0 && leg.durationSeconds <= maxGapSeconds && leg.speedKmh > maxSpeedKmh,
+      ).length;
+      const bridge = segment(
+        points[retained[position - 1]],
+        points[retained[position + 1]],
+        scale,
+      );
+      const bridgeBad =
+        bridge.durationSeconds > 0 &&
+        bridge.durationSeconds <= maxGapSeconds &&
+        bridge.speedKmh > maxSpeedKmh;
+      const gain = beforeBad - (bridgeBad ? 1 : 0);
+      if (gain > bestGain) {
+        bestGain = gain;
+        bestIndex = candidate;
+      }
+    }
+
+    // At the edge, remove the second-to-last/second fix. In the middle, a
+    // zero-gain tie still removes a clearly impossible fix and allows the
+    // next pass to evaluate the new bridge.
+    const fallback = badLeg === 0 ? retained[1] : retained[badLeg];
+    const indexToRemove = bestIndex ?? fallback;
+    if (indexToRemove === undefined || indexToRemove <= 0 || indexToRemove >= points.length - 1)
+      break;
+    removed.add(indexToRemove);
+    for (const outlier of segments) {
+      if (
+        outlier.startIndex === indexToRemove - 1 ||
+        outlier.endIndex === indexToRemove ||
+        outlier.startIndex === indexToRemove
+      ) outlier.recoverable = true;
+    }
+  }
+
   const cleaned = points.filter((_, index) => !removed.has(index));
   const cleanedSegments = cleaned.slice(1).map((point, index) => segment(cleaned[index], point, scale));
-  const maxObservedSpeedKmh = cleanedSegments.reduce((max, item) => Math.max(max, item.speedKmh), 0);
+  const maxObservedSpeedKmh = cleanedSegments
+    .filter((item) => item.durationSeconds > 0 && item.durationSeconds <= maxGapSeconds)
+    .reduce((max, item) => Math.max(max, item.speedKmh), 0);
   const unrecoverable = segments.some((segment) => !segment.recoverable && (segment.reason === "impossible-speed" || segment.reason === "invalid-time"));
   const severeGap = segments.some((segment) => segment.reason === "temporal-gap" && segment.durationSeconds > poorGapSeconds);
   const confidence: GpsConfidence = unrecoverable || severeGap ? "poor" : segments.length || removed.size ? "review" : "good";

@@ -6,12 +6,12 @@ Verified 15 September 2026 on Windows, Node 24, system Chrome.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed, zero errors.
-- `npm test`: 10 files, 60 tests passed.
+- `npm test`: 10 files, 61 tests passed.
 - `npm run build`: passed (Vite production bundle).
 - `npm run test:e2e`: 16 Playwright tests passed, including playable/invalid Video Lab media, two-point sync persistence, stop scan, edit-plan and Secret Spot finish-gate flows.
 - Production preview offline smoke: generated service worker precached the full build shell; after the local server was stopped, a reload still rendered the analysis workspace.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
-- Viewports: 1440px desktop and 390px mobile screenshots inspected. Browser tests additionally checked 360px analysis and 390px management. Document scroll width equals viewport width.
+- Viewports: 1440px desktop and 390px (iPhone 14) mobile screenshots inspected. Browser tests additionally checked 360px analysis and 390px management. History tables become touch-friendly cards on mobile, and document scroll width equals viewport width.
 - Video Lab screenshots inspected with and without a local clip; desktop and mobile scroll width stayed equal to the viewport and no page errors were recorded.
 
 ## Definition of Done audit
@@ -31,7 +31,7 @@ Verified 15 September 2026 on Windows, Node 24, system Chrome.
 | Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset or two-point drift sync with independent preview speed, GPS stop scan, ride-window trimming, sector jump points, riding signals, per-run settings and WebM overlay/edit-plan export | Pass within local workflow |
 | Secret Spot finish                        | Rider-defined physical finish gate at 41.5628056, -8.3732222; GPX/FIT imports and existing saved runs are clipped at the marked endpoint, with two accepted uphill starts | Pass |
 | No obvious broken screens/runtime errors | E2E covers analysis, history, garage, profile, trails, GPX/FIT import, demo route replacement, empty/corrupt state; capture records zero page errors | Pass within tested scope   |
-| Build/lint/types/tests                   | Commands listed above all passed; GPS quality, progression insight and video-project persistence have focused unit coverage | Pass                       |
+| Build/lint/types/tests                   | Commands listed above all passed; GPS quality (including chained DJI Mimo teleports), progression insight and video-project persistence have focused unit coverage | Pass                       |
 
 ## Independent review and corrections
 

@@ -21,6 +21,8 @@
 }
 body {
   margin: 0;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-x: none;
 }
 button,
 input,
@@ -1748,7 +1750,7 @@ td small {
     inset: 0 0 auto;
     width: 100%;
     height: auto;
-    padding: 14px 16px 0;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 0;
     border-right: 0;
     border-bottom: 1px solid var(--border);
     display: block;
@@ -1781,7 +1783,7 @@ td small {
     flex: 1;
     border-radius: 3px 3px 0 0;
     margin: 0;
-    min-height: 40px;
+    min-height: 44px;
   }
   .nav-item > span:not(.nav-dot) {
     min-width: 0;
@@ -1818,8 +1820,9 @@ td small {
     margin: 0;
   }
   .topbar {
-    height: 60px;
-    padding: 0 18px;
+    height: calc(60px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 18px 0;
+    min-height: calc(60px + env(safe-area-inset-top));
   }
   .breadcrumb {
     font-size: 11px;
@@ -1827,7 +1830,7 @@ td small {
   }
   .topbar .button {
     font-size: 11px;
-    min-height: 34px;
+    min-height: 40px;
     padding: 8px 11px;
   }
   main {
@@ -1876,6 +1879,18 @@ td small {
   }
   .trail-toolbar .button svg {
     display: none;
+  }
+  .map-button {
+    min-height: 42px;
+  }
+  .map-bottom .icon-button {
+    width: 42px;
+    min-height: 42px;
+  }
+  .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
   }
   .comparison-toolbar {
     gap: 12px;
@@ -2010,6 +2025,7 @@ td small {
     display: block;
     margin-top: 15px;
     padding-top: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
   .app-footer > span {
     display: block;
@@ -2055,6 +2071,110 @@ td small {
   }
   .history-panel .section-heading input {
     max-width: none;
+  }
+  .history-panel .table-wrap {
+    overflow: visible;
+  }
+  .history-panel table,
+  .history-panel tbody {
+    display: block;
+    width: 100%;
+    white-space: normal;
+  }
+  .history-panel thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .history-panel tbody {
+    display: grid;
+    gap: 10px;
+  }
+  .history-panel tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "run run delta"
+      "date bike time"
+      "actions actions actions";
+    gap: 13px 10px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: #141914;
+  }
+  .history-panel tbody td {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    padding: 0;
+    border: 0;
+  }
+  .history-panel tbody td:first-child {
+    grid-area: run;
+  }
+  .history-panel tbody td:nth-child(2) {
+    grid-area: date;
+  }
+  .history-panel tbody td:nth-child(3) {
+    grid-area: bike;
+  }
+  .history-panel tbody td:nth-child(4) {
+    grid-area: time;
+  }
+  .history-panel tbody td:nth-child(5) {
+    grid-area: delta;
+    justify-content: flex-end;
+    font-size: 12px;
+  }
+  .history-panel tbody td:nth-child(2),
+  .history-panel tbody td:nth-child(3),
+  .history-panel tbody td:nth-child(4) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-panel tbody td:nth-child(2)::before {
+    content: "DATE";
+  }
+  .history-panel tbody td:nth-child(3)::before {
+    content: "BIKE";
+  }
+  .history-panel tbody td:nth-child(4)::before {
+    content: "TIME";
+  }
+  .history-panel tbody td:nth-child(2)::before,
+  .history-panel tbody td:nth-child(3)::before,
+  .history-panel tbody td:nth-child(4)::before {
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .history-panel tbody td:last-child {
+    grid-area: actions;
+    align-items: center;
+    gap: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--border);
+  }
+  .history-panel tbody td:last-child .text-button {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #424b3e;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .history-panel tbody td:last-child .delete-button {
+    margin-left: 0;
   }
   .progression .section-heading {
     display: block;

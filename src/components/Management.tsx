@@ -760,7 +760,14 @@ export function ImportRun({
         throw new Error(
           "This file has no usable timestamps. Choose a timestamped GPX or FIT ride export.",
         );
-      const quality = cleanTrack(parsed);
+      // Clip a configured physical finish before quality cleanup. DJI Mimo
+      // captures often keep recording after the line; removing that tail
+      // first prevents its final jump from pulling valid finish points out of
+      // the cleaned route.
+      const capturedPoints = trail?.finishPoint
+        ? clipToRouteFinish(parsed, trail.points, trail.finishPoint)
+        : parsed;
+      const quality = cleanTrack(capturedPoints, { removeImpossible: true });
       if (quality.points.length < 2)
         throw new Error("This track has too few usable points after GPS cleanup.");
       setFile(picked);

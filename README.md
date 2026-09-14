@@ -46,7 +46,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Geographic route compatibility checks, including direction, sparse routes and closed loops.
 - Interactive Leaflet map with zoom, pan, start/finish/sector markers, selected sector highlighting, and current/Ghost markers.
 - Time, distance, average/top speed, elevation, ascent/descent analysis; speed/elevation graphs and synchronized inspection.
-- GPS quality cleanup for isolated spikes and trailing impossible fixes, with review notices and defensive telemetry on stored runs.
+- GPS quality cleanup for isolated spikes, chained DJI Mimo teleports and trailing impossible fixes, with review notices and defensive telemetry on stored runs.
 - Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs. Sector gates follow the physical trail route and are interpolated onto each run's GPS trace.
 - Run history, search, clickable progression, recent average/consistency snapshot, and immediate recomputation after edits/deletions.
 - **Bike garage** with linked-run coverage, PB counts, per-bike suspension/tyre/wheel setup, service date and notes.

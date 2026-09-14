@@ -37,7 +37,12 @@ export function analyze(points: Point[]): Telemetry {
   // Analyze the cleaned trace so one stray GPS fix cannot inflate distance,
   // speed, sectors or Ghost comparisons. The raw points remain available on
   // the run for future review/export.
-  const usablePoints = cleanTrack(points).points;
+  const usablePoints = cleanTrack(points, {
+    // Activity exports use epoch timestamps. Enable the conservative fallback
+    // for those files so an unresolved GPS teleport cannot inflate telemetry;
+    // relative-time fixtures and hand-authored routes keep their raw semantics.
+    removeImpossible: points.some((point) => Math.abs(point.time) > 1e11),
+  }).points;
   if (usablePoints.length < 2)
     throw new Error("Track has too few usable points after GPS cleanup");
   const scale =

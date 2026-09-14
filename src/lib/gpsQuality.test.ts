@@ -46,4 +46,24 @@ describe("cleanTrack", () => {
     expect(result.outlierSegments[0]?.recoverable).toBe(false);
     expect(result.confidence).toBe("poor");
   });
+
+  it("can remove a chained DJI-style teleport from an epoch-timestamp export", () => {
+    const result = cleanTrack(
+      [
+        point(41.5, 1_700_000_000_000),
+        point(42.5, 1_700_000_001_000),
+        point(42.5001, 1_700_000_002_000),
+        point(41.5001, 1_700_000_003_000),
+        point(41.5002, 1_700_000_004_000),
+      ],
+      { removeImpossible: true },
+    );
+    expect(result.points.map((item) => item.time)).toEqual([
+      1_700_000_000_000,
+      1_700_000_003_000,
+      1_700_000_004_000,
+    ]);
+    expect(result.maxObservedSpeedKmh).toBeLessThan(160);
+    expect(result.confidence).toBe("review");
+  });
 });
