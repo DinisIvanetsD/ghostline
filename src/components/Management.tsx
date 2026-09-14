@@ -28,11 +28,22 @@ const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 const clone = (data: AppData): AppData => ({
   ...data,
+  demo: false,
   profile: { ...data.profile },
   bikes: [...data.bikes],
   trails: [...data.trails],
   runs: [...data.runs],
 });
+const isFIT = (file: File) => /\.fit$/i.test(file.name);
+const readTrackFile = async (file: File, requireTime: boolean) => {
+  if (isFIT(file)) {
+    // Keep the Garmin decoder out of the initial dashboard bundle. It is
+    // loaded only when a rider chooses a FIT file.
+    const { parseFIT } = await import("../lib/fit");
+    return parseFIT(await file.arrayBuffer());
+  }
+  return parseGPX(await file.text(), requireTime);
+};
 const parseBoundaries = (raw: string) => {
   const values = raw.trim() ? raw.split(",").map((v) => Number(v.trim())) : [];
   if (
@@ -105,7 +116,11 @@ export function Garage({ data, onChange }: Props) {
         "This bike is referenced by saved runs. Remove those runs first.",
       );
     if (!window.confirm("Delete this bike?")) return;
-    onChange({ ...data, bikes: data.bikes.filter((b) => b.id !== id) });
+    onChange({
+      ...data,
+      demo: false,
+      bikes: data.bikes.filter((b) => b.id !== id),
+    });
   };
   return (
     <div className="management-stack">
@@ -381,25 +396,33 @@ export function TrailManager({
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024)
-      return setError("GPX files must be 10 MB or smaller.");
+      return setError("GPX and FIT files must be 10 MB or smaller.");
     try {
-      const points = await parseGPX(await file.text(), false);
+      const points = await readTrackFile(file, false);
       if (!points?.length) throw new Error("No route points found.");
       const trail: Trail = {
         id: uid("trail"),
-        name: file.name.replace(/\.gpx$/i, ""),
+        name: file.name.replace(/\.(?:gpx|fit)$/i, ""),
         location: "",
         difficulty: "Black",
         points,
         boundaries: [0.25, 0.5, 0.75],
         sectorNames: ["Sector 01", "Sector 02", "Sector 03", "Sector 04"],
       };
-      if (onChange({ ...data, trails: [...data.trails, trail] }) === false)
+      if (
+        onChange({
+          ...data,
+          demo: false,
+          trails: [...data.trails, trail],
+        }) === false
+      )
         return;
       open(trail);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not read that GPX route.",
+        err instanceof Error
+          ? err.message
+          : "Could not read that GPX or FIT route.",
       );
     }
     e.target.value = "";
@@ -416,6 +439,7 @@ export function TrailManager({
     if (!window.confirm("Delete this trail?")) return;
     onChange({
       ...data,
+      demo: false,
       trails: data.trails.filter((t) => t.id !== id),
       runs: data.runs.filter((r) => r.trailId !== id),
     });
@@ -432,8 +456,8 @@ export function TrailManager({
       }
     >
       <p className="muted">
-        Build a route from a GPX file, then tune sector splits to match your
-        local timing.
+        Build a route from a GPX or FIT file, then tune sector splits to match
+        your local timing.
       </p>
       <div className="trail-list">
         {data.trails.map((t) => (
@@ -544,13 +568,13 @@ export function TrailManager({
           onClick={() => inputRef.current?.click()}
         >
           <Upload size={16} />
-          Import GPX route
+          Import GPX / FIT route
         </button>
         <input
           ref={inputRef}
           hidden
           type="file"
-          accept=".gpx,application/gpx+xml"
+          accept=".gpx,.fit,application/gpx+xml,application/octet-stream"
           onChange={importRoute}
         />
         <ErrorLine message={error} />
@@ -584,25 +608,27 @@ export function ImportRun({
     setPoints(null);
     setError("");
     if (picked.size > 10 * 1024 * 1024) {
-      setError("GPX files must be 10 MB or smaller.");
+      setError("GPX and FIT files must be 10 MB or smaller.");
       e.target.value = "";
       return;
     }
     setLoading(true);
     try {
-      const parsed = await parseGPX(await picked.text(), true);
+      const parsed = await readTrackFile(picked, true);
       if (!parsed?.length || parsed.some((p: Point) => !p.time))
         throw new Error(
-          "This GPX has no usable timestamps. Choose a timestamped ride export.",
+          "This file has no usable timestamps. Choose a timestamped GPX or FIT ride export.",
         );
       setFile(picked);
       setPoints(parsed);
-      setName(picked.name.replace(/\.gpx$/i, ""));
+      setName(picked.name.replace(/\.(?:gpx|fit)$/i, ""));
       const firstTime = parsed[0]?.time;
       if (firstTime) setDate(new Date(firstTime).toISOString().slice(0, 10));
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not read this GPX run.",
+        err instanceof Error
+          ? err.message
+          : "Could not read this GPX or FIT run.",
       );
     } finally {
       setLoading(false);
@@ -611,10 +637,11 @@ export function ImportRun({
   };
   const save = (e: FormEvent) => {
     e.preventDefault();
-    if (!points || !file) return setError("Choose a GPX run first.");
+    if (!points || !file) return setError("Choose a GPX or FIT run first.");
     if (!trail) return setError("Choose a trail.");
     if (!bikeId) return setError("Choose the bike used for this run.");
     let targetTrail = trail;
+    let savedRuns = data.runs;
     if (!trail.points.length)
       targetTrail = {
         ...trail,
@@ -624,17 +651,28 @@ export function ImportRun({
       };
     else {
       const match = matchRoute(points, trail.points);
-      if (!match.ok)
+      const existingRuns = data.runs.filter((run) => run.trailId === trail.id);
+      const replacingDemoRoute =
+        data.demo && existingRuns.every((run) => run.synthetic);
+      if (!match.ok && !replacingDemoRoute)
         return setError(
           match.reason ?? "This run does not match the selected trail route.",
         );
+      if (!match.ok && replacingDemoRoute) {
+        targetTrail = { ...trail, points };
+        // A first real file becomes the source of truth for this demo trail;
+        // leave other demo trails available while removing stale sample runs.
+        savedRuns = data.runs.filter(
+          (run) => !(run.trailId === trail.id && run.synthetic),
+        );
+      }
     }
     const runId = uid("run");
     const next = {
       ...data,
       trails: data.trails.map((t) => (t.id === trail.id ? targetTrail : t)),
       runs: [
-        ...data.runs,
+        ...savedRuns,
         {
           id: runId,
           trailId,
@@ -645,6 +683,7 @@ export function ImportRun({
           notes: "",
         },
       ],
+      demo: false,
     };
     if (onChange(next) === false) return;
     onImported(trailId, runId);
@@ -668,8 +707,8 @@ export function ImportRun({
   return (
     <Section title="Import run">
       <p className="muted">
-        Drop in a timestamped GPX export up to 10 MB. GHOSTLINE checks its route
-        against the selected trail before saving.
+        Drop in a timestamped GPX or FIT export up to 10 MB. GHOSTLINE checks
+        its route against the selected trail before saving.
       </p>
       <button
         className="button secondary"
@@ -677,13 +716,13 @@ export function ImportRun({
         onClick={() => inputRef.current?.click()}
       >
         <FileUp size={16} />
-        {loading ? "Reading GPX…" : "Choose GPX file"}
+        {loading ? "Reading activity…" : "Choose GPX or FIT file"}
       </button>
       <input
         ref={inputRef}
         hidden
         type="file"
-        accept=".gpx,application/gpx+xml"
+        accept=".gpx,.fit,application/gpx+xml,application/octet-stream"
         onChange={choose}
       />
       {file && points && (

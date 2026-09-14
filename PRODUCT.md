@@ -6,7 +6,7 @@ Core loop: RIDE → ANALYZE → FIND TIME → SEND AGAIN.
 Riders compare repeat runs on the same trail against their own Personal Best, identify sector losses, and combine fastest sectors into a Theoretical Best.
 
 ## Platform
-Responsive web application, desktop analysis and mobile trail-side review.
+web
 
 ## Stack
 Delegated to implementation by explicit user request. Greenfield React and TypeScript with Vite. Local-first persistence is an implementation assumption for an immediately usable MVP without external credentials. Cloud accounts remain future work.
@@ -15,4 +15,4 @@ Delegated to implementation by explicit user request. Greenfield React and TypeS
 Dark, premium, minimal, technical. Motorsport telemetry for downhill MTB. Maps, ghost comparisons and sector deltas lead. Avoid generic fitness dashboard styling.
 
 ## Scope
-Local rider profiles, bike management, trail creation/GPX import, timestamped GPX runs, interactive maps, telemetry, personal best, comparisons, editable sectors, theoretical best, history and progression. Synthetic demo data labeled. Future video/detection/AI do not block MVP.
+Local rider profiles, bike management, trail creation, GPX/FIT import, timestamped runs, interactive maps, telemetry, personal best, comparisons, editable sectors, theoretical best, history and progression. Synthetic demo data labeled. Future video/detection/AI do not block MVP.

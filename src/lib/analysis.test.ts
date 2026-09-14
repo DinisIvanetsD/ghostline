@@ -126,10 +126,10 @@ describe("analysis", () => {
   });
 });
 
-it("demo has nine dense realistic runs and a theoretical best assembled from different runs", async () => {
+it("demo has eleven dense realistic runs across Braga trails and a theoretical best assembled from different runs", async () => {
   const { createDemoData } = await import("./demo");
   const data = createDemoData();
-  expect(data.runs).toHaveLength(9);
+  expect(data.runs).toHaveLength(11);
   const same = data.runs.filter((r) => r.trailId === data.trails[0].id);
   expect(same).toHaveLength(7);
   for (const run of data.runs) {

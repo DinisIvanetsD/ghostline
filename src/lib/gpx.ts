@@ -78,8 +78,11 @@ export function parseGPX(text: string, requireTime = false): Point[] {
       const time = Date.parse(timeText.trim());
       if (!Number.isFinite(time))
         throw new Error(`Invalid GPX point ${index + 1}: invalid timestamp`);
-      if (previousTime !== undefined && time <= previousTime)
+      if (previousTime !== undefined && time < previousTime)
         throw new Error("Invalid GPX: timestamps must be strictly increasing");
+      // Some head units emit two track points in the same FIT/GPX second.
+      // Keep the first sample so the analysis engine receives a valid clock.
+      if (previousTime !== undefined && time === previousTime) return;
       previousTime = time;
       hadTime = true;
       points.push({ lat, lon, ele, time });

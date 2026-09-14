@@ -167,6 +167,40 @@ export function loadData(): AppData {
       return createDemoData();
     }
     const data = validateData(JSON.parse(raw));
+    // Replace the untouched Sintra demo on first load after the Braga content
+    // upgrade. The shape check keeps edited or imported local workspaces safe.
+    if (
+      data.demo &&
+      data.profile.home === "Sintra, Portugal" &&
+      data.bikes.length === 2 &&
+      data.trails.length === 2 &&
+      data.runs.length === 9 &&
+      data.trails.every((trail) =>
+        ["pedra-branca", "fojo"].includes(trail.id),
+      )
+    ) {
+      const upgraded = createDemoData();
+      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      storageWarning = "";
+      return upgraded;
+    }
+    // Keep an existing Braga demo aligned with the named local spots after a
+    // content-only update. The exact shape check avoids touching rider data.
+    if (
+      data.demo &&
+      data.profile.home === "Braga, Portugal" &&
+      data.bikes.length === 2 &&
+      data.trails.length === 3 &&
+      data.runs.length === 11 &&
+      data.trails.every((trail) =>
+        ["Mundial", "Free Ride", "Secret Spot"].includes(trail.name),
+      )
+    ) {
+      const upgraded = createDemoData();
+      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      storageWarning = "";
+      return upgraded;
+    }
     storageWarning = "";
     return data;
   } catch (e) {

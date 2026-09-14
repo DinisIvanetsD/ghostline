@@ -167,7 +167,11 @@ export default function App() {
         `Delete ${r.name}? Personal and sector bests will be recalculated.`,
       )
     )
-      update({ ...data, runs: data.runs.filter((x) => x.id !== r.id) });
+      update({
+        ...data,
+        demo: false,
+        runs: data.runs.filter((x) => x.id !== r.id),
+      });
   };
   const names: Record<Page, string> = {
     analysis: "Run analysis",
@@ -211,7 +215,9 @@ export default function App() {
           <div className="ride-loop">
             <Mountain size={31} />
             <p>
-              One trail.
+              {data.trails.length === 1
+                ? "One trail."
+                : `${data.trails.length} trails.`}
               <br />A faster you.
             </p>
             <span>RIDE. REVIEW. REPEAT.</span>
@@ -858,7 +864,7 @@ export default function App() {
             </span>
             <span>
               {data.runs.some((r) => r.synthetic)
-                ? "Includes synthetic demo GPS · Sintra, Portugal"
+                ? "Includes synthetic demo GPS · Braga, Portugal"
                 : "Local workspace"}{" "}
               <span className="footer-divider">/</span> RIDE → ANALYZE → SEND
               AGAIN

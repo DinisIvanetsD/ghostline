@@ -54,6 +54,13 @@ describe("GPX parser", () => {
       ),
     ).toThrow(/increasing/);
   });
+  it("coalesces duplicate second-resolution timestamps", () => {
+    const points = parseGPX(
+      '<gpx><trk><trkseg><trkpt lat="38" lon="-9"><time>2026-01-01T00:00:00Z</time></trkpt><trkpt lat="38.0005" lon="-9.0005"><time>2026-01-01T00:00:00Z</time></trkpt><trkpt lat="38.001" lon="-9.001"><time>2026-01-01T00:00:01Z</time></trkpt></trkseg></trk></gpx>',
+    );
+    expect(points).toHaveLength(2);
+    expect(points[1].time - points[0].time).toBe(1000);
+  });
   it("enforces the point limit", () => {
     const body = Array.from(
       { length: 25_001 },

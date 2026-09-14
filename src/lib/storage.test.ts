@@ -21,6 +21,44 @@ describe("storage validation", () => {
     expect(readStorageWarning()).toMatch(/could not be loaded/);
     expect(localStorage.getItem("ghostline.data.v1")).toContain("version");
   });
+  it("upgrades the original Sintra demo to the Braga demo", () => {
+    const legacy = createDemoData();
+    legacy.profile.home = "Sintra, Portugal";
+    legacy.trails = legacy.trails.slice(0, 2);
+    legacy.trails[0].id = "pedra-branca";
+    legacy.trails[1].id = "fojo";
+    legacy.runs = legacy.runs
+      .filter((run) => run.trailId !== "secret-spot")
+      .map((run) => ({
+        ...run,
+        trailId: run.trailId === "mundial" ? "pedra-branca" : "fojo",
+      }));
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(legacy));
+    const upgraded = loadData();
+    expect(upgraded.profile.home).toBe("Braga, Portugal");
+    expect(upgraded.trails.map((trail) => trail.id)).toEqual([
+      "mundial",
+      "free-ride",
+      "secret-spot",
+    ]);
+    expect(localStorage.getItem("ghostline.data.v1")).toContain("Mundial");
+  });
+  it("refreshes named Braga demo spots without touching custom data", () => {
+    const previous = createDemoData();
+    previous.trails[0].name = "Mundial";
+    previous.trails[0].location = "Braga, Portugal";
+    previous.trails[1].name = "Free Ride";
+    previous.trails[1].location = "Braga, Portugal";
+    previous.trails[2].name = "Secret Spot";
+    previous.trails[2].location = "Braga, Portugal";
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+    const upgraded = loadData();
+    expect(upgraded.trails.map((trail) => trail.name)).toEqual([
+      "Mundial da Santa Marta",
+      "Free Ride",
+      "Secret Spot Sameiro",
+    ]);
+  });
   it("validates backups and rejects duplicate IDs", () => {
     const data = createDemoData();
     expect(parseBackup(JSON.stringify(data))).toEqual(data);

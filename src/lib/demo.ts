@@ -1,24 +1,50 @@
 import type { AppData, Bike, Point, Run, Trail } from "../types";
 
-function geometry(kind: "primary" | "secondary"): Point[] {
-  const start =
-    kind === "primary"
-      ? { lat: 38.7872, lon: -9.3905, ele: 430 }
-      : { lat: 38.792, lon: -9.378, ele: 350 };
+type DemoTrail = "mundial" | "free-ride" | "secret-spot";
+
+function geometry(kind: DemoTrail): Point[] {
+  const config = {
+    mundial: {
+      start: { lat: 41.5742, lon: -8.4015, ele: 520 },
+      length: 0.011,
+      width: 0.015,
+      drop: 245,
+      wiggle: 0.00045,
+      bends: 6,
+      drift: 9,
+    },
+    "free-ride": {
+      start: { lat: 41.558, lon: -8.419, ele: 430 },
+      length: 0.008,
+      width: 0.012,
+      drop: 150,
+      wiggle: 0.00035,
+      bends: 5,
+      drift: 8,
+    },
+    "secret-spot": {
+      start: { lat: 41.602, lon: -8.372, ele: 470 },
+      length: 0.009,
+      width: 0.013,
+      drop: 190,
+      wiggle: 0.0004,
+      bends: 7,
+      drift: 6,
+    },
+  }[kind];
   return Array.from({ length: 181 }, (_, i) => {
     const t = i / 180;
-    const wiggle =
-      Math.sin(t * Math.PI * 6) * (kind === "primary" ? 0.0012 : 0.0008);
+    const wiggle = Math.sin(t * Math.PI * config.bends) * config.wiggle;
     return {
-      lat: start.lat - t * (kind === "primary" ? 0.009 : 0.007) + wiggle,
+      lat: config.start.lat - t * config.length + wiggle,
       lon:
-        start.lon +
-        t * (kind === "primary" ? 0.012 : 0.01) +
-        Math.sin(t * Math.PI * 9) * 0.0006,
+        config.start.lon +
+        t * config.width +
+        Math.sin(t * Math.PI * (config.bends + 3)) * 0.0007,
       ele:
-        start.ele -
-        t * (kind === "primary" ? 180 : 105) +
-        Math.sin(t * Math.PI * 5) * 4,
+        config.start.ele -
+        t * config.drop +
+        Math.sin(t * Math.PI * 5) * config.drift,
       time: 0,
     };
   });
@@ -55,14 +81,15 @@ function timedRun(
     name,
     date,
     points: points.map((p, i) => ({ ...p, time: times[i] })),
-    notes: "Synthetic Sintra downhill session",
+    notes: "Synthetic Braga downhill session",
     synthetic: true,
   };
 }
 
 export function createDemoData(): AppData {
-  const primary = geometry("primary"),
-    secondary = geometry("secondary");
+  const mundial = geometry("mundial"),
+    freeRide = geometry("free-ride"),
+    secretSpot = geometry("secret-spot");
   const bikes: Bike[] = [
     {
       id: "bike-enduro",
@@ -81,121 +108,156 @@ export function createDemoData(): AppData {
   ];
   const trails: Trail[] = [
     {
-      id: "pedra-branca",
-      name: "Pedra Branca",
-      location: "Sintra, Portugal",
+      id: "mundial",
+      name: "Mundial da Santa Marta",
+      location: "Santa Marta, Braga",
       difficulty: "Black",
       points: timedRun(
         "route",
-        "pedra-branca",
+        "mundial",
         "",
         "2026-09-01",
         "",
-        [45, 45, 45, 45],
-        primary,
+        [58, 54, 56, 52],
+        mundial,
       ).points,
       boundaries: [0.25, 0.5, 0.75],
-      sectorNames: ["Start", "Pines", "Rock Garden", "Finish"],
+      sectorNames: ["Start Gate", "Pines", "Rock Garden", "Finish"],
     },
     {
-      id: "fojo",
-      name: "Fojo",
-      location: "Sintra, Portugal",
-      difficulty: "Blue",
+      id: "free-ride",
+      name: "Free Ride",
+      location: "Santa Marta, Braga",
+      difficulty: "Red",
       points: timedRun(
         "route2",
-        "fojo",
+        "free-ride",
         "",
         "2026-09-01",
         "",
-        [40, 40, 40],
-        secondary,
+        [48, 44, 46],
+        freeRide,
       ).points,
       boundaries: [0.33, 0.66],
-      sectorNames: ["Upper Woods", "Valley", "Finish"],
+      sectorNames: ["Drop In", "Jumps", "Finish"],
+    },
+    {
+      id: "secret-spot",
+      name: "Secret Spot Sameiro",
+      location: "Sameiro, Braga",
+      difficulty: "Black",
+      points: timedRun(
+        "route3",
+        "secret-spot",
+        "",
+        "2026-09-01",
+        "",
+        [52, 49, 50, 47],
+        secretSpot,
+      ).points,
+      boundaries: [0.25, 0.5, 0.75],
+      sectorNames: ["Top Woods", "Technical", "Flow", "Finish"],
     },
   ];
   const runs: Run[] = [
     timedRun(
       "run-01",
-      "pedra-branca",
+      "mundial",
       "bike-enduro",
       "2026-09-01",
       "Run 01 · Warm up",
       [47, 46, 45, 45],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-02",
-      "pedra-branca",
+      "mundial",
       "bike-trail",
       "2026-09-03",
       "Run 02 · Loose lines",
       [46, 45, 47, 44],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-03",
-      "pedra-branca",
+      "mundial",
       "bike-enduro",
       "2026-09-06",
       "Run 03 · Full send",
       [44, 47, 44, 44],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-04",
-      "pedra-branca",
+      "mundial",
       "bike-trail",
       "2026-09-09",
       "Run 04 · Clean exit",
       [48, 44, 46, 45],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-05",
-      "pedra-branca",
+      "mundial",
       "bike-enduro",
       "2026-09-11",
       "Run 05 · Personal best",
       [45, 44, 45, 44],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-06",
-      "pedra-branca",
+      "mundial",
       "bike-enduro",
       "2026-09-12",
       "Run 06 · Fast roots",
       [43, 48, 46, 43],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-07",
-      "pedra-branca",
+      "mundial",
       "bike-trail",
       "2026-09-13",
       "Run 07 · Full send",
       [46, 43, 47, 46],
-      primary,
+      mundial,
     ),
     timedRun(
       "run-08",
-      "fojo",
+      "free-ride",
       "bike-trail",
       "2026-09-05",
       "Run 08 · Easy flow",
       [42, 41, 40],
-      secondary,
+      freeRide,
     ),
     timedRun(
       "run-09",
-      "fojo",
+      "free-ride",
       "bike-enduro",
       "2026-09-13",
       "Run 09 · Valley sprint",
       [39, 40, 39],
-      secondary,
+      freeRide,
+    ),
+    timedRun(
+      "run-10",
+      "secret-spot",
+      "bike-enduro",
+      "2026-09-08",
+      "Run 10 · Technical lines",
+      [53, 48, 51, 46],
+      secretSpot,
+    ),
+    timedRun(
+      "run-11",
+      "secret-spot",
+      "bike-trail",
+      "2026-09-13",
+      "Run 11 · Clean finish",
+      [50, 50, 48, 45],
+      secretSpot,
     ),
   ];
   return {
@@ -203,7 +265,7 @@ export function createDemoData(): AppData {
     profile: {
       name: "Alex Morgan",
       email: "alex.morgan@example.com",
-      home: "Sintra, Portugal",
+      home: "Braga, Portugal",
     },
     bikes,
     trails,

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { Encoder, Profile } from "@garmin/fitsdk";
 
 const gpx = (
   points: Array<{ lat: number; lon: number; ele?: number; time?: number }>,
@@ -31,6 +32,30 @@ function faster(
   }));
 }
 
+function fit(points: Array<{ lat: number; lon: number; ele: number; time: number }>) {
+  const encoder = new Encoder();
+  const write = (messageNumber: number, message: object) =>
+    encoder.onMesg(
+      messageNumber,
+      message as unknown as Parameters<Encoder["onMesg"]>[1],
+    );
+  write(Profile.MesgNum.FILE_ID, {
+    manufacturer: "development",
+    product: 1,
+    timeCreated: new Date(points[0].time),
+    type: "activity",
+  });
+  for (const point of points) {
+    write(Profile.MesgNum.RECORD, {
+      timestamp: new Date(point.time),
+      positionLat: Math.round((point.lat / 180) * 2 ** 31),
+      positionLong: Math.round((point.lon / 180) * 2 ** 31),
+      altitude: point.ele,
+    });
+  }
+  return Buffer.from(encoder.close());
+}
+
 test.beforeEach(async ({ page }) => {
   await blockTiles(page);
   await page.goto("/");
@@ -43,7 +68,7 @@ test("demo analysis has seven primary runs, stable PB, sector selection, referen
 }) => {
   await expect(page.getByText("DEMO SESSION")).toBeVisible();
   await expect(page.locator('select[aria-label="Selected trail"]')).toHaveValue(
-    "pedra-branca",
+    "mundial",
   );
   await expect(page.getByRole("button", { name: /S4/ })).toBeVisible();
   await expect(page.getByLabel("Current run")).toContainText(
@@ -69,12 +94,12 @@ test("demo analysis has seven primary runs, stable PB, sector selection, referen
   await expect(slider).toHaveValue("800");
 
   const trail = page.locator('select[aria-label="Selected trail"]');
-  await trail.selectOption("fojo");
+  await trail.selectOption("free-ride");
   await expect(page.getByLabel("Current run")).toContainText(
     "Run 08 · Easy flow",
   );
   await expect(page.locator("body")).not.toContainText("NaN");
-  await trail.selectOption("pedra-branca");
+  await trail.selectOption("mundial");
   await expect(page.getByLabel("Current run")).toContainText(
     "Run 05 · Personal best",
   );
@@ -163,7 +188,7 @@ test("manual trail, timestamped route imports, PB change, sector edit and compar
   await page.getByLabel("Location").fill("Test valley");
   await page.getByRole("button", { name: "Save trail" }).click();
   await expect(page.getByText("Manual test trail")).toBeVisible();
-  await page.getByRole("button", { name: "Import GPX route" }).click();
+  await page.getByRole("button", { name: "Import GPX / FIT route" }).click();
   await page
     .locator('input[type="file"]')
     .nth(0)
@@ -180,14 +205,12 @@ test("manual trail, timestamped route imports, PB change, sector edit and compar
     .filter({ hasText: /^Trail/ })
     .locator("select")
     .selectOption({ label: "Manual test trail" });
-  await page.getByRole("button", { name: "Choose GPX file" }).click();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "slow.gpx",
-      mimeType: "application/gpx+xml",
-      buffer: Buffer.from(slow),
-    });
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "slow.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(slow),
+  });
   await page.getByRole("button", { name: "Save run" }).click();
   await expect(page.getByText("Against the Ghost")).toBeVisible();
   await page.getByRole("button", { name: "Import run" }).click();
@@ -196,14 +219,12 @@ test("manual trail, timestamped route imports, PB change, sector edit and compar
     .filter({ hasText: /^Trail/ })
     .locator("select")
     .selectOption({ label: "Manual test trail" });
-  await page.getByRole("button", { name: "Choose GPX file" }).click();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "fast.gpx",
-      mimeType: "application/gpx+xml",
-      buffer: Buffer.from(fast),
-    });
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "fast.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(fast),
+  });
   await page.getByRole("button", { name: "Save run" }).click();
   await expect(page.locator(".pb-badge").first()).toBeVisible();
   await expect(page.getByLabel("Current run").locator("option")).toHaveCount(2);
@@ -218,22 +239,59 @@ test("manual trail, timestamped route imports, PB change, sector edit and compar
   await page.getByLabel("Sector names").fill("Start, Middle, Finish");
   await page.getByRole("button", { name: "Save trail" }).click();
   await expect(page.getByText("Manual test trail")).toBeVisible();
-  await page.locator(".trail-row").filter({hasText:"Manual test trail"}).getByRole("button",{name:"Select analysis"}).click();
+  await page
+    .locator(".trail-row")
+    .filter({ hasText: "Manual test trail" })
+    .getByRole("button", { name: "Select analysis" })
+    .click();
   await expect(page.locator(".sector-row")).toHaveCount(3);
+});
+
+test("FIT activity imports through the run workflow", async ({ page }) => {
+  const data = await demo(page);
+  await open(page, "Import run");
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "mundial-run.fit",
+    mimeType: "application/octet-stream",
+    buffer: fit(data.runs[0].points),
+  });
+  await expect(page.getByText(/points ·/)).toBeVisible();
+  await page.getByRole("button", { name: "Save run" }).click();
+  await expect(page.getByText("Against the Ghost")).toBeVisible();
+});
+
+test("first real ride can replace a demo trail route", async ({ page }) => {
+  const data = await demo(page);
+  const shifted = data.runs[0].points.map((point) => ({
+    ...point,
+    lat: point.lat + 0.02,
+    lon: point.lon + 0.02,
+  }));
+  await open(page, "Import run");
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "secret-spot-sameiro.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(gpx(shifted)),
+  });
+  await page.getByRole("button", { name: "Save run" }).click();
+  await expect(page.getByText("Against the Ghost")).toBeVisible();
+  await expect(page.getByLabel("Current run")).toContainText(
+    "secret-spot-sameiro",
+  );
 });
 
 test("invalid GPX gives a useful error and mobile management screens do not overflow", async ({
   page,
 }) => {
   await page.getByRole("button", { name: "Import run", exact: true }).click();
-  await page.getByRole("button", { name: "Choose GPX file" }).click();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "bad.gpx",
-      mimeType: "application/gpx+xml",
-      buffer: Buffer.from("<gpx/>"),
-    });
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "bad.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from("<gpx/>"),
+  });
   await expect(page.getByRole("alert")).toContainText("track points");
   await page.setViewportSize({ width: 390, height: 844 });
   for (const label of ["Bike garage", "Trails", "Import run"]) {
@@ -259,13 +317,11 @@ test("backup restore updates profile draft and keeps restored data after saving"
   };
   await page.getByRole("button", { name: /Alex Morgan/ }).click();
   page.once("dialog", (dialog) => dialog.accept());
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(data)),
-    });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(data)),
+  });
   await expect(page.getByLabel("Rider name")).toHaveValue("Restored rider");
   await page.getByRole("button", { name: "Save profile" }).click();
   await expect
@@ -318,15 +374,34 @@ test("mobile analysis, replay, empty state and corrupt storage recover without r
   expect(errors).toEqual([]);
 });
 
-test('sector inspection pauses replay and progression resizes after an empty trail',async({page})=>{
- await page.getByRole('button',{name:'Replay run · 4×'}).click();
- await page.getByRole('button',{name:/S2 Pines/}).click();
- await expect(page.getByRole('button',{name:'Replay run · 4×'})).toBeVisible();
- await expect(page.locator('input[type="range"]')).toHaveValue('375');
- const data=await demo(page);data.trails.push({...data.trails[0],id:'empty',name:'Empty trail'});
- await page.evaluate(value=>localStorage.setItem('ghostline.data.v1',JSON.stringify(value)),data);await page.reload();
- await page.setViewportSize({width:390,height:844});await page.getByLabel('Selected trail').selectOption('empty');await open(page,'Run history');
- await expect(page.getByText('Import a run to start your progression.')).toBeVisible();
- await page.getByLabel('Selected trail').selectOption('pedra-branca');
- await expect.poll(()=>page.locator('.progression svg').evaluate(e=>Number(e.getAttribute('viewBox')!.split(' ')[2]))).toBeLessThan(390);
+test("sector inspection pauses replay and progression resizes after an empty trail", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Replay run · 4×" }).click();
+  await page.getByRole("button", { name: /S2 Pines/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Replay run · 4×" }),
+  ).toBeVisible();
+  await expect(page.locator('input[type="range"]')).toHaveValue("375");
+  const data = await demo(page);
+  data.trails.push({ ...data.trails[0], id: "empty", name: "Empty trail" });
+  await page.evaluate(
+    (value) => localStorage.setItem("ghostline.data.v1", JSON.stringify(value)),
+    data,
+  );
+  await page.reload();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByLabel("Selected trail").selectOption("empty");
+  await open(page, "Run history");
+  await expect(
+    page.getByText("Import a run to start your progression."),
+  ).toBeVisible();
+  await page.getByLabel("Selected trail").selectOption("mundial");
+  await expect
+    .poll(() =>
+      page
+        .locator(".progression svg")
+        .evaluate((e) => Number(e.getAttribute("viewBox")!.split(" ")[2])),
+    )
+    .toBeLessThan(390);
 });
