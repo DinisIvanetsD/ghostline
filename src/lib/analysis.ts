@@ -1,4 +1,5 @@
 import type { Point, Run, Sample, Telemetry, Trail } from "../types";
+import { cleanTrack } from "./gpsQuality";
 
 const EARTH_RADIUS = 6_371_000;
 const finite = (value: number, label: string) => {
@@ -33,23 +34,29 @@ export function analyze(points: Point[]): Telemetry {
     if (points[i].time <= points[i - 1].time)
       throw new Error("Point timestamps must be strictly increasing");
   // GPX timestamps are epoch milliseconds; ordinary relative timestamps are seconds.
+  // Analyze the cleaned trace so one stray GPS fix cannot inflate distance,
+  // speed, sectors or Ghost comparisons. The raw points remain available on
+  // the run for future review/export.
+  const usablePoints = cleanTrack(points).points;
+  if (usablePoints.length < 2)
+    throw new Error("Track has too few usable points after GPS cleanup");
   const scale =
-    points.map((p) => Math.abs(p.time)).reduce((a, b) => Math.max(a, b), 0) >
+    usablePoints.map((p) => Math.abs(p.time)).reduce((a, b) => Math.max(a, b), 0) >
     1e11
       ? 1000
       : 1;
-  const start = points[0].time / scale;
-  const duration = points[points.length - 1].time / scale - start;
+  const start = usablePoints[0].time / scale;
+  const duration = usablePoints[usablePoints.length - 1].time / scale - start;
   if (!(duration > 0))
     throw new Error("Track duration must be greater than zero");
   let distance = 0,
     ascent = 0,
     descent = 0;
-  const samples: Sample[] = points.map((p, i) => {
+  const samples: Sample[] = usablePoints.map((p, i) => {
     if (i) {
-      const d = distanceBetween(points[i - 1], p);
+      const d = distanceBetween(usablePoints[i - 1], p);
       distance += d;
-      const de = p.ele - points[i - 1].ele;
+      const de = p.ele - usablePoints[i - 1].ele;
       if (de > 0) ascent += de;
       else descent -= de;
     }

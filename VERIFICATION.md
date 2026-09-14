@@ -1,14 +1,15 @@
 # Verification record
 
-Verified 14 September 2026 on Windows, Node 24, system Chrome.
+Verified 15 September 2026 on Windows, Node 24, system Chrome.
 
 ## Automated checks
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed, zero errors.
-- `npm test`: 8 files, 49 tests passed.
+- `npm test`: 10 files, 60 tests passed.
 - `npm run build`: passed (Vite production bundle).
-- `npm run test:e2e`: 15 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan, edit-plan and Secret Spot finish-gate flows.
+- `npm run test:e2e`: 16 Playwright tests passed, including playable/invalid Video Lab media, two-point sync persistence, stop scan, edit-plan and Secret Spot finish-gate flows.
+- Production preview offline smoke: generated service worker precached the full build shell; after the local server was stopped, a reload still rendered the analysis workspace.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
 - Viewports: 1440px desktop and 390px mobile screenshots inspected. Browser tests additionally checked 360px analysis and 390px management. Document scroll width equals viewport width.
 - Video Lab screenshots inspected with and without a local clip; desktop and mobile scroll width stayed equal to the viewport and no page errors were recorded.
@@ -27,10 +28,10 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 | Functional maps/telemetry                | Loaded real map tiles, geographic trace, markers, zoom controls, slider, elevation toggle, replay and selected sector        | Pass                       |
 | Desktop/mobile polish                    | Two visual capture rounds; responsive charts; mobile overflow checks; independent review                                     | Pass                       |
 | Immediate demo                           | Eleven dense synthetic runs across Mundial da Santa Marta and Free Ride in Santa Marta das Cortiças plus Secret Spot Sameiro, two bikes, one demo rider; sample GPX download | Pass                       |
-| Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset sync with independent preview speed, GPS stop scan, ride-window trimming, sector jump points, riding signals, per-run settings and WebM overlay/edit-plan export | Pass within local workflow |
+| Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset or two-point drift sync with independent preview speed, GPS stop scan, ride-window trimming, sector jump points, riding signals, per-run settings and WebM overlay/edit-plan export | Pass within local workflow |
 | Secret Spot finish                        | Rider-defined physical finish gate at 41.5628056, -8.3732222; GPX/FIT imports and existing saved runs are clipped at the marked endpoint, with two accepted uphill starts | Pass |
 | No obvious broken screens/runtime errors | E2E covers analysis, history, garage, profile, trails, GPX/FIT import, demo route replacement, empty/corrupt state; capture records zero page errors | Pass within tested scope   |
-| Build/lint/types/tests                   | Commands listed above all passed                                                                                             | Pass                       |
+| Build/lint/types/tests                   | Commands listed above all passed; GPS quality, progression insight and video-project persistence have focused unit coverage | Pass                       |
 
 ## Independent review and corrections
 
@@ -40,4 +41,4 @@ The original browser-test subagent stopped at its usage limit. The root complete
 
 ## Boundaries of this verification
 
-This verifies a local-first MVP, not deployed cloud infrastructure. There is no authenticated remote account service. GPS matching/timing is approximate and does not establish race timing precision. The Video Lab produces a browser-native WebM overlay plus sync/cut metadata; browser-side MP4 rendering and an actual camera-vision model are not included yet. Basemap outages, long-term device storage capacity, every GPS exporter and every browser/device have not been exhaustively tested. See README for operating limits and roadmap.
+This verifies a local-first MVP, not deployed cloud infrastructure. There is no authenticated remote account service. GPS matching/timing is approximate and does not establish race timing precision; unrecoverable GPS gaps are surfaced for review. The Video Lab produces a browser-native WebM overlay plus sync/cut metadata; browser-side MP4 rendering and an actual camera-vision model are not included yet. The PWA caches the application shell for offline analysis, while basemap tiles still require network access. Long-term device storage capacity, every GPS exporter and every browser/device have not been exhaustively tested. See README for operating limits and roadmap.

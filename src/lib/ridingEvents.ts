@@ -1,4 +1,5 @@
 import type { Point } from "../types";
+import { cleanTrack } from "./gpsQuality";
 
 export type RidingEventType = "braking" | "acceleration" | "jump" | "pause";
 
@@ -97,7 +98,7 @@ function validate(points: Point[]): void {
 export function detectRidingEvents(points: Point[], options: RidingEventOptions = {}): RidingEvent[] {
   validate(points);
   const config = { ...defaults, ...options };
-  const values = measurements(points);
+  const values = measurements(cleanTrack(points).points);
   const events: RidingEvent[] = [];
   const addRuns = (type: RidingEventType, matches: (index: number) => boolean) => {
     let start = -1;

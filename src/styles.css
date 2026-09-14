@@ -307,6 +307,9 @@ p {
   border-radius: 50%;
   background: var(--gained);
 }
+.device-state.offline i {
+  background: var(--accent);
+}
 .button {
   display: inline-flex;
   align-items: center;
@@ -1009,6 +1012,12 @@ select option {
   font-size: 10px;
   color: #9ba794;
 }
+.analysis-footer .gps-quality-flag {
+  color: var(--accent);
+}
+.analysis-footer .gps-quality-flag.poor {
+  color: var(--lost);
+}
 .app-footer {
   padding: 25px 0 22px;
   margin-top: 24px;
@@ -1155,6 +1164,46 @@ select option {
 }
 .garage-form .form-grid {
   margin-bottom: 15px;
+}
+.garage-notes {
+  grid-column: 1 / -1;
+}
+.garage-notes textarea {
+  min-height: 58px;
+  resize: vertical;
+}
+.bike-setup-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.bike-setup-summary > span:last-child {
+  overflow: hidden;
+  color: #bcc7b9;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bike-setup-label {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.bike-service {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.bike-service strong {
+  color: var(--text);
+  font-size: 11px;
 }
 .bike-grid {
   display: grid;
@@ -1400,6 +1449,30 @@ td small {
   padding: 24px 0;
   border-bottom: 1px solid var(--border);
 }
+.import-quality-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border: 1px solid #4b613d;
+  border-radius: 5px;
+  background: #151b15;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.import-quality-note svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+  margin-top: 1px;
+}
+.import-quality-note.poor {
+  border-color: rgba(241, 151, 132, 0.55);
+}
+.import-quality-note.poor svg {
+  color: var(--lost);
+}
 .data-panel {
   margin-top: 24px;
 }
@@ -1410,6 +1483,41 @@ td small {
 }
 .progression {
   margin: 24px 0;
+}
+.progression-snapshot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 24px 0 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #141914;
+}
+.progression-snapshot-item {
+  display: flex;
+  min-height: 93px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 14px 17px;
+  border-right: 1px solid var(--border);
+}
+.progression-snapshot-item:last-child {
+  border-right: 0;
+}
+.progression-snapshot-item > span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.progression-snapshot-item strong {
+  font-size: 23px;
+  line-height: 1;
+}
+.progression-snapshot-item small {
+  color: #879584;
+  font-size: 11px;
+  line-height: 1.25;
 }
 .progression svg {
   width: 100%;
@@ -1621,6 +1729,16 @@ td small {
   }
 }
 @media (max-width: 700px) {
+  .progression-snapshot-item {
+    min-height: 82px;
+    padding: 12px 10px;
+  }
+  .progression-snapshot-item strong {
+    font-size: 19px;
+  }
+  .progression-snapshot-item small {
+    font-size: 9px;
+  }
   .app-shell {
     display: block;
   }
@@ -2249,6 +2367,39 @@ td small {
   font-size: 11px;
   margin-top: 13px;
 }
+.sync-anchors {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.sync-anchors > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.sync-anchors strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.sync-anchors .muted {
+  font-size: 11px;
+}
+.sync-anchor-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.sync-anchor-actions .button {
+  min-height: 36px;
+  font-size: 11px;
+}
 .video-tools-grid {
   align-items: stretch;
   gap: 20px;
@@ -2563,6 +2714,9 @@ td small {
     grid-template-columns: 1fr;
     gap: 15px;
   }
+  .garage-notes {
+    grid-column: auto;
+  }
   .garage-form .form-actions {
     align-items: stretch;
     flex-direction: column;
@@ -2642,6 +2796,13 @@ td small {
   }
   .sync-action {
     justify-self: start;
+  }
+  .sync-anchors {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .sync-anchor-actions {
+    justify-content: flex-start;
   }
   .trim-panel,
   .export-panel {

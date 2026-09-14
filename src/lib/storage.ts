@@ -32,6 +32,8 @@ const str = (v: unknown, l: string, req = true): string => {
     fail(`${l} must be a non-empty string`);
   return v as string;
 };
+const optionalStr = (v: unknown, l: string): string =>
+  v === undefined ? "" : str(v, l, false);
 const num = (v: unknown, l: string): number => {
   if (typeof v !== "number" || !Number.isFinite(v)) fail(`${l} must be finite`);
   return v as number;
@@ -97,6 +99,21 @@ export function validateData(input: unknown): AppData {
       brand: str(b.brand, `bikes[${i}].brand`, false),
       travel: num(b.travel, `bikes[${i}].travel`),
       type: str(b.type, `bikes[${i}].type`),
+      ...(b.suspensionSetup !== undefined
+        ? { suspensionSetup: optionalStr(b.suspensionSetup, `bikes[${i}].suspensionSetup`) }
+        : {}),
+      ...(b.tyres !== undefined
+        ? { tyres: optionalStr(b.tyres, `bikes[${i}].tyres`) }
+        : {}),
+      ...(b.wheels !== undefined
+        ? { wheels: optionalStr(b.wheels, `bikes[${i}].wheels`) }
+        : {}),
+      ...(b.notes !== undefined
+        ? { notes: optionalStr(b.notes, `bikes[${i}].notes`) }
+        : {}),
+      ...(b.lastService !== undefined
+        ? { lastService: optionalStr(b.lastService, `bikes[${i}].lastService`) }
+        : {}),
     };
   });
   const trails: Trail[] = (v.trails as unknown[]).map(

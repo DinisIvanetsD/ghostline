@@ -1,4 +1,4 @@
-import type { StopAnalysis } from "./videoSync";
+import type { StopAnalysis, VideoSyncAnchor } from "./videoSync";
 
 export interface VideoTrimWindow {
   start: number;
@@ -12,6 +12,7 @@ export interface VideoProjectState {
   skipStops: boolean;
   stopAnalysis: StopAnalysis | null;
   trim: VideoTrimWindow | null;
+  anchors?: VideoSyncAnchor[];
 }
 
 const STORAGE_KEY = "ghostline.video-projects.v1";
@@ -39,6 +40,21 @@ function validTrim(value: unknown): VideoTrimWindow | null {
     : null;
 }
 
+function validAnchors(value: unknown): VideoSyncAnchor[] {
+  if (!Array.isArray(value)) return [];
+  const anchors = value.filter((item): item is VideoSyncAnchor => {
+    if (!item || typeof item !== "object") return false;
+    const candidate = item as Partial<VideoSyncAnchor>;
+    return isFiniteNumber(candidate.runTime) && isFiniteNumber(candidate.videoTime) && candidate.runTime >= 0 && candidate.videoTime >= 0;
+  }).sort((a, b) => a.runTime - b.runTime);
+  return anchors.filter(
+    (anchor, index) =>
+      index === 0 ||
+      (anchor.runTime > anchors[index - 1].runTime &&
+        anchor.videoTime > anchors[index - 1].videoTime),
+  );
+}
+
 function readProjects(): Record<string, VideoProjectState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -61,6 +77,7 @@ export function loadVideoProject(runId: string): VideoProjectState | null {
     skipStops: typeof value.skipStops === "boolean" ? value.skipStops : true,
     stopAnalysis: validStopAnalysis(value.stopAnalysis),
     trim: validTrim(value.trim),
+    anchors: validAnchors(value.anchors),
   };
 }
 

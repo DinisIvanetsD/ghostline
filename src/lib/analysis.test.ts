@@ -48,6 +48,16 @@ describe("analysis", () => {
     expect(t.avgSpeed).toBeCloseTo((t.distance / 20) * 3.6);
     expect(t.samples.every((s) => Number.isFinite(s.speed))).toBe(true);
   });
+  it("removes an isolated GPS spike before deriving telemetry", () => {
+    const t = analyze([
+      { lat: 41.5, lon: -8.37, ele: 500, time: 0 },
+      { lat: 42.5, lon: -8.37, ele: 500, time: 1 },
+      { lat: 41.5001, lon: -8.37, ele: 499, time: 2 },
+    ]);
+    expect(t.duration).toBe(2);
+    expect(t.maxSpeed).toBeLessThan(160);
+    expect(t.distance).toBeLessThan(30);
+  });
   it("rejects invalid, non-monotonic, zero-duration, and zero-distance input", () => {
     expect(() => analyze([{ ...points[0], lat: 91 }, points[1]])).toThrow(
       /coordinates/,

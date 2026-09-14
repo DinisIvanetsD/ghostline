@@ -226,6 +226,42 @@ test("video lab reports an unsupported local clip", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Download edit plan" })).toBeDisabled();
 });
 
+test("video lab restores two point sync when the same clip is reattached", async ({ page }) => {
+  await open(page, "Video lab");
+  const video = await readFile(new URL("./fixtures/dji-mimo-sample.webm", import.meta.url));
+  await page.getByLabel("Choose video file").first().setInputFiles({
+    name: "dji-mimo-anchors.webm",
+    mimeType: "video/webm",
+    buffer: video,
+  });
+  await expect.poll(() => page.locator("video").evaluate((element) => element.duration)).toBeGreaterThan(0);
+  const timeline = page.getByLabel("Video timeline");
+  await timeline.fill("0.2");
+  await page.getByRole("button", { name: "Mark start" }).click();
+  // Keep a little room before the final frame so the range input receives a
+  // valid value in all Chromium builds.
+  await timeline.fill("4");
+  await page.getByRole("button", { name: "Mark finish" }).click();
+  await expect(page.locator(".sync-anchors")).toContainText("2 anchors");
+  await expect.poll(() => page.evaluate(() => {
+    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1") ?? "{}");
+    return projects["run-07"]?.videoName ?? "";
+  })).toBe("dji-mimo-anchors.webm");
+  await page.reload();
+  await open(page, "Video lab");
+  await expect.poll(() => page.evaluate(() => {
+    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1") ?? "{}");
+    return projects["run-07"]?.videoName ?? "";
+  })).toBe("dji-mimo-anchors.webm");
+  await expect(page.getByText("Pick up your synced run.")).toBeVisible();
+  await page.getByLabel("Choose video file").first().setInputFiles({
+    name: "dji-mimo-anchors.webm",
+    mimeType: "video/webm",
+    buffer: video,
+  });
+  await expect(page.locator(".sync-anchors")).toContainText("2 anchors");
+});
+
 test("garage supports add edit delete and protects referenced bikes", async ({
   page,
 }) => {

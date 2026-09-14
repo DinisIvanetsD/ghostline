@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { parseGPX } from "../lib/gpx";
 import { analyze, formatTime } from "../lib/analysis";
+import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
 import { clipToRouteFinish, matchRoute } from "../lib/routeMatch";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
@@ -94,6 +95,11 @@ export function Garage({ data, onChange }: Props) {
     brand: "",
     travel: 0,
     type: "Downhill",
+    suspensionSetup: "",
+    tyres: "",
+    wheels: "",
+    notes: "",
+    lastService: "",
   };
   const [draft, setDraft] = useState<Bike>(empty);
   const [editing, setEditing] = useState<string | null>(null);
@@ -110,6 +116,11 @@ export function Garage({ data, onChange }: Props) {
       name: draft.name.trim(),
       brand: draft.brand.trim(),
       travel: Number(draft.travel) || 0,
+      suspensionSetup: draft.suspensionSetup?.trim() ?? "",
+      tyres: draft.tyres?.trim() ?? "",
+      wheels: draft.wheels?.trim() ?? "",
+      notes: draft.notes?.trim() ?? "",
+      lastService: draft.lastService ?? "",
     };
     next.bikes = editing
       ? next.bikes.map((b) => (b.id === editing ? bike : b))
@@ -214,6 +225,47 @@ export function Garage({ data, onChange }: Props) {
               }
             />
           </label>
+          <label className="field">
+            Suspension setup
+            <input
+              placeholder="e.g. 78 psi · 2 clicks"
+              value={draft.suspensionSetup ?? ""}
+              onChange={(e) => setDraft({ ...draft, suspensionSetup: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            Tyres
+            <input
+              placeholder="e.g. DH casing · soft"
+              value={draft.tyres ?? ""}
+              onChange={(e) => setDraft({ ...draft, tyres: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            Wheels
+            <input
+              placeholder="e.g. 29 / 27.5"
+              value={draft.wheels ?? ""}
+              onChange={(e) => setDraft({ ...draft, wheels: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            Last service
+            <input
+              type="date"
+              value={draft.lastService ?? ""}
+              onChange={(e) => setDraft({ ...draft, lastService: e.target.value })}
+            />
+          </label>
+          <label className="field garage-notes">
+            Setup notes
+            <textarea
+              rows={2}
+              placeholder="Anything worth remembering before the next run"
+              value={draft.notes ?? ""}
+              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            />
+          </label>
           <div className="form-actions">
             <button className="button primary" type="submit">
               <Save size={16} />
@@ -283,6 +335,20 @@ export function Garage({ data, onChange }: Props) {
                       <strong className="mono">{personalBests}</strong>
                     </div>
                   </div>
+                  {(b.suspensionSetup || b.tyres || b.wheels) && (
+                    <div className="bike-setup-summary">
+                      <span className="bike-setup-label">SETUP</span>
+                      <span>
+                        {[b.suspensionSetup, b.tyres, b.wheels].filter(Boolean).join(" · ")}
+                      </span>
+                    </div>
+                  )}
+                  {b.lastService && (
+                    <div className="bike-service">
+                      <span>Last service</span>
+                      <strong className="mono">{b.lastService}</strong>
+                    </div>
+                  )}
                   <div className="bike-card-footer">
                     <span className="muted">
                       {runs.length
@@ -668,6 +734,7 @@ export function ImportRun({
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState("");
+  const [gpsQuality, setGpsQuality] = useState<GpsQualityResult | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const trail = useMemo(
@@ -679,6 +746,7 @@ export function ImportRun({
     if (!picked) return;
     setFile(null);
     setPoints(null);
+    setGpsQuality(null);
     setError("");
     if (picked.size > 10 * 1024 * 1024) {
       setError("GPX and FIT files must be 10 MB or smaller.");
@@ -692,8 +760,12 @@ export function ImportRun({
         throw new Error(
           "This file has no usable timestamps. Choose a timestamped GPX or FIT ride export.",
         );
+      const quality = cleanTrack(parsed);
+      if (quality.points.length < 2)
+        throw new Error("This track has too few usable points after GPS cleanup.");
       setFile(picked);
-      setPoints(parsed);
+      setPoints(quality.points);
+      setGpsQuality(quality);
       setName(picked.name.replace(/\.(?:gpx|fit)$/i, ""));
       const firstTime = parsed[0]?.time;
       if (firstTime) setDate(new Date(firstTime).toISOString().slice(0, 10));
@@ -827,6 +899,15 @@ export function ImportRun({
             {telemetry ? formatTime(telemetry.duration) : "—"} · ready to save
           </span>
         </div>
+      )}
+      {gpsQuality && (gpsQuality.confidence !== "good" || gpsQuality.maxObservedSpeedKmh > 120) && (
+        <p className={`import-quality-note ${gpsQuality.confidence === "poor" ? "poor" : "review"}`} role="status">
+          <CircleAlert size={15} />
+          {gpsQuality.removedPoints.length
+            ? `${gpsQuality.removedPoints.length} GPS spike${gpsQuality.removedPoints.length === 1 ? "" : "s"} removed before analysis.`
+            : "GPS needs a quick review before you chase this run."}{" "}
+          {gpsQuality.maxObservedSpeedKmh > 120 && `Peak segment ${Math.round(gpsQuality.maxObservedSpeedKmh)} km/h.`}
+        </p>
       )}
       <form className="form-grid" onSubmit={save}>
         <label className="field">

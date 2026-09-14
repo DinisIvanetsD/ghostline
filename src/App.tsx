@@ -7,6 +7,7 @@ import {
   Check,
   Clapperboard,
   ChevronDown,
+  CircleAlert,
   Download,
   Flag,
   Ghost,
@@ -40,6 +41,8 @@ import {
   readStorageWarning,
 } from "./lib/storage";
 import { downloadGPX } from "./lib/export";
+import { progressionInsights } from "./lib/progressionInsights";
+import { cleanTrack } from "./lib/gpsQuality";
 import { TrailMap } from "./components/TrailMap";
 import { TelemetryChart, Progression } from "./components/Charts";
 import {
@@ -76,11 +79,23 @@ export default function App() {
     [notice, setNotice] = useState(readStorageWarning),
     [historyQuery, setHistoryQuery] = useState("");
   const [playing, setPlaying] = useState(false);
+  const [online, setOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
   const backupInput = useRef<HTMLInputElement>(null);
   const replayPosition = useRef(progress);
   useEffect(() => {
     replayPosition.current = progress;
   }, [progress]);
+  useEffect(() => {
+    const updateConnection = () => setOnline(navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
+  }, []);
   const inspectProgress = useCallback((value: number) => {
     setPlaying(false);
     setProgress(value);
@@ -106,6 +121,10 @@ export default function App() {
   const compare =
     compareId === "pb" ? pb : (runs.find((r) => r.id === compareId) ?? pb);
   const current = useMemo(() => (run ? analyze(run.points) : null), [run]);
+  const runQuality = useMemo(
+    () => (run ? cleanTrack(run.points) : null),
+    [run],
+  );
   const ghost = useMemo(
     () => (compare ? analyze(compare.points) : null),
     [compare],
@@ -139,6 +158,10 @@ export default function App() {
   );
   const theory = useMemo(
     () => (trail ? theoreticalBest(runs, trail) : null),
+    [runs, trail],
+  );
+  const progression = useMemo(
+    () => progressionInsights(runs, { trail, recentWindow: 5 }),
     [runs, trail],
   );
   const boundaries = trail ? [0, ...trail.boundaries, 1] : [0, 1];
@@ -260,9 +283,9 @@ export default function App() {
             Workspace <span>/</span> <strong>{names[page]}</strong>
           </div>
           <div className="top-actions">
-            <span className="device-state">
+            <span className={`device-state ${online ? "" : "offline"}`} role="status">
               <i />
-              On-device workspace
+              {online ? "On-device workspace" : "Offline mode · maps may be unavailable"}
             </span>
             <button
               className="button primary"
@@ -626,6 +649,15 @@ export default function App() {
                     Comparisons aligned by normalized GPS distance. GPS accuracy
                     affects sector precision.
                   </span>
+                  {runQuality && runQuality.confidence !== "good" && (
+                    <span className={`gps-quality-flag ${runQuality.confidence}`}>
+                      <CircleAlert size={14} />
+                      GPS {runQuality.confidence === "poor" ? "needs review" : "cleaned"}
+                      {runQuality.removedPoints.length
+                        ? ` · ${runQuality.removedPoints.length} spike${runQuality.removedPoints.length === 1 ? "" : "s"} removed`
+                        : ""}
+                    </span>
+                  )}
                   <button
                     className="text-button"
                     onClick={() => setPage("history")}
@@ -637,6 +669,46 @@ export default function App() {
             ))}
           {page === "history" && (
             <>
+              <section className="progression-snapshot" aria-label="Progress snapshot">
+                <div className="progression-snapshot-item">
+                  <span>Latest vs Ghost</span>
+                  <strong
+                    className={
+                      progression.latestDeltaToPersonalBest !== null &&
+                      progression.latestDeltaToPersonalBest > 0.005
+                        ? "lost mono"
+                        : "gained mono"
+                    }
+                  >
+                    {progression.latestDeltaToPersonalBest === null
+                      ? "—"
+                      : formatDelta(progression.latestDeltaToPersonalBest)}
+                  </strong>
+                  <small>
+                    {progression.latestRunId === progression.personalBestRunId
+                      ? "Latest run is your PB"
+                      : "Against this trail's personal best"}
+                  </small>
+                </div>
+                <div className="progression-snapshot-item">
+                  <span>Recent average</span>
+                  <strong className="mono">
+                    {progression.recentAverageDuration === null
+                      ? "—"
+                      : formatTime(progression.recentAverageDuration)}
+                  </strong>
+                  <small>Last five attempts on this trail</small>
+                </div>
+                <div className="progression-snapshot-item">
+                  <span>Consistency</span>
+                  <strong className="mono">
+                    {progression.consistencySpread === null
+                      ? "—"
+                      : `${progression.consistencySpread.toFixed(2)}s`}
+                  </strong>
+                  <small>Fastest to slowest in recent window</small>
+                </div>
+              </section>
               <Progression runs={runs} onSelect={selectRun} />
               <section className="panel history-panel">
                 <div className="section-heading">

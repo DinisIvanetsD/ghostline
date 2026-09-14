@@ -66,7 +66,17 @@ function baseRate(settings: VideoSyncSettings): number {
   if (!Number.isFinite(settings.offsetSeconds)) throw new Error("Video offset must be finite");
   return rate;
 }
-function validAnchors(settings: VideoSyncSettings) { return [...(settings.anchors ?? [])].filter((a) => Number.isFinite(a.runTime) && Number.isFinite(a.videoTime)).sort((a, b) => a.runTime - b.runTime); }
+function validAnchors(settings: VideoSyncSettings): VideoSyncAnchor[] {
+  const sorted = [...(settings.anchors ?? [])]
+    .filter((a) => Number.isFinite(a.runTime) && Number.isFinite(a.videoTime))
+    .sort((a, b) => a.runTime - b.runTime);
+  return sorted.filter(
+    (anchor, index) =>
+      index === 0 ||
+      (anchor.runTime > sorted[index - 1].runTime &&
+        anchor.videoTime > sorted[index - 1].videoTime),
+  );
+}
 
 /** Maps run elapsed seconds onto the video timeline, using anchors when supplied. */
 export function videoTimeForRun(runTime: number, settings: VideoSyncSettings): number {
@@ -84,7 +94,7 @@ export function videoTimeForRun(runTime: number, settings: VideoSyncSettings): n
 export function runTimeForVideo(videoTime: number, settings: VideoSyncSettings): number {
   const rate = baseRate(settings);
   if (!Number.isFinite(videoTime)) throw new Error("Video time must be finite");
-  const anchors = validAnchors(settings).sort((a, b) => a.videoTime - b.videoTime);
+  const anchors = validAnchors(settings).sort((a, b) => a.videoTime - b.videoTime).filter((anchor, index, list) => index === 0 || anchor.videoTime > list[index - 1].videoTime);
   if (!anchors.length) return (videoTime - settings.offsetSeconds) * rate;
   if (anchors.length === 1) return anchors[0].runTime + (videoTime - anchors[0].videoTime) * rate;
   if (videoTime <= anchors[0].videoTime) { const a = anchors[0], b = anchors[1]; return a.runTime + (videoTime - a.videoTime) * (b.runTime - a.runTime) / (b.videoTime - a.videoTime); }

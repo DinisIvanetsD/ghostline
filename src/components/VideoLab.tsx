@@ -138,12 +138,14 @@ export function VideoLab({ data }: Props) {
   const [stopAnalysis, setStopAnalysis] = useState<StopAnalysis | null>(null);
   const [skipStops, setSkipStops] = useState(true);
   const [trim, setTrim] = useState<TrimWindow | null>(null);
+  const [anchors, setAnchors] = useState<{ runTime: number; videoTime: number }[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "done" | "error">("idle");
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderError, setRenderError] = useState("");
   const renderAbort = useRef<AbortController | null>(null);
   const hydratedProjectRun = useRef<string | null>(null);
+  const [projectReady, setProjectReady] = useState(false);
   const previousOffset = useRef(offsetSeconds);
 
   const trail = data.trails.find((item) => item.id === trailId) ?? data.trails[0];
@@ -162,8 +164,8 @@ export function VideoLab({ data }: Props) {
   );
   const ghost = useMemo(() => (pb ? analyze(pb.points) : current), [pb, current]);
   const settings: VideoSyncSettings = useMemo(
-    () => ({ offsetSeconds }),
-    [offsetSeconds],
+    () => ({ offsetSeconds, anchors }),
+    [offsetSeconds, anchors],
   );
   const windows = useMemo(
     () => (run && trail ? sectorVideoWindows(run, trail, settings) : []),
@@ -205,6 +207,7 @@ export function VideoLab({ data }: Props) {
     setProgress(0);
     setStopAnalysis(null);
     setTrim(null);
+    setAnchors([]);
     setSelectedEvent(null);
     setRenderState("idle");
     setRenderProgress(0);
@@ -217,6 +220,7 @@ export function VideoLab({ data }: Props) {
     setProgress(0);
     setStopAnalysis(null);
     setTrim(null);
+    setAnchors([]);
     setSelectedEvent(null);
     setRenderState("idle");
     setRenderProgress(0);
@@ -236,13 +240,15 @@ export function VideoLab({ data }: Props) {
 
   useEffect(() => {
     if (!run?.id || hydratedProjectRun.current !== run.id) return;
-    saveVideoProject(run.id, { videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim });
-  }, [run?.id, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim]);
+    if (!projectReady) return;
+    saveVideoProject(run.id, { videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors });
+  }, [run?.id, projectReady, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors]);
 
   useEffect(() => {
     if (!run?.id) return;
     const saved = loadVideoProject(run.id);
     hydratedProjectRun.current = run.id;
+    setProjectReady(false);
     setVideoName(saved?.videoName ?? "");
     const savedOffset = saved?.offsetSeconds ?? 0;
     previousOffset.current = savedOffset;
@@ -251,6 +257,8 @@ export function VideoLab({ data }: Props) {
     setSkipStops(saved?.skipStops ?? true);
     setStopAnalysis(saved?.stopAnalysis ?? null);
     setTrim(saved?.trim ?? null);
+    setAnchors(saved?.anchors ?? []);
+    setProjectReady(true);
   }, [run?.id]);
 
   const onVideoTime = () => {
@@ -281,6 +289,7 @@ export function VideoLab({ data }: Props) {
 
   const selectVideo = (file: File | undefined) => {
     if (!file) return;
+    const isSavedClip = file.name === videoName;
     renderAbort.current?.abort();
     if (previousUrl.current) URL.revokeObjectURL(previousUrl.current);
     const nextUrl = URL.createObjectURL(file);
@@ -292,6 +301,10 @@ export function VideoLab({ data }: Props) {
     setVideoPlaying(false);
     setVideoError("");
     setTrim(null);
+    // Object URLs cannot survive a refresh, but the sync plan can. Keep the
+    // calibration when the rider re-attaches the same DJI Mimo export and
+    // clear it when they choose a replacement clip.
+    if (!isSavedClip) setAnchors([]);
     setRenderState("idle");
     setRenderProgress(0);
     setRenderError("");
@@ -305,8 +318,40 @@ export function VideoLab({ data }: Props) {
   };
 
   const setRunStartAtPlayhead = () => {
+    const finish = anchors.find((anchor) => anchor.runTime > 0);
+    if (finish && videoTime >= finish.videoTime) return;
     setOffsetSeconds(videoTime);
+    setAnchors((currentAnchors) => currentAnchors.filter((anchor) => anchor.runTime !== 0).concat({ runTime: 0, videoTime }).sort((a, b) => a.runTime - b.runTime));
     setProgress(0);
+  };
+
+  const setRunFinishAtPlayhead = () => {
+    if (!videoDuration || !current) return;
+    const start = anchors.find((anchor) => anchor.runTime === 0);
+    if (start && videoTime <= start.videoTime) return;
+    setAnchors((currentAnchors) => {
+      const next = currentAnchors.filter((anchor) => anchor.runTime !== current.duration);
+      return [...next, { runTime: current.duration, videoTime }].sort((a, b) => a.runTime - b.runTime);
+    });
+  };
+
+  const resetAnchors = () => setAnchors([]);
+
+  const changeOffset = (value: number) => {
+    const nextOffset = Math.max(0, Number.isFinite(value) ? value : 0);
+    setAnchors((currentAnchors) => {
+      const start = currentAnchors.find((anchor) => anchor.runTime === 0);
+      // A finish-only marker has no stable baseline for an offset edit. Clear
+      // it so the newly entered offset becomes the active mapping instead of
+      // leaving the field looking editable while having no effect.
+      if (!start) return currentAnchors.length ? [] : currentAnchors;
+      const delta = nextOffset - start.videoTime;
+      return currentAnchors.map((anchor) => ({
+        ...anchor,
+        videoTime: Math.max(0, anchor.videoTime + delta),
+      }));
+    });
+    setOffsetSeconds(nextOffset);
   };
 
   const scanStops = () => {
@@ -541,11 +586,15 @@ export function VideoLab({ data }: Props) {
               <span className="sync-status"><Check size={13} /> Local sync</span>
             </div>
             <div className="sync-grid">
-              <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" step="0.1" value={offsetSeconds} onChange={(event) => setOffsetSeconds(Number(event.target.value) || 0)} /></label>
+              <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" min="0" step="0.1" value={offsetSeconds} onChange={(event) => changeOffset(Number(event.target.value))} /></label>
               <label className="field"><span>Preview speed</span><select aria-label="Video playback rate" value={previewRate} onChange={(event) => setPreviewRate(Number(event.target.value))}><option value="1">1× real time</option><option value="0.5">0.5× slow motion</option><option value="2">2× analysis</option></select></label>
               <button className="button secondary sync-action" onClick={setRunStartAtPlayhead}><Target size={15} /> Set run start at playhead</button>
             </div>
-            <p className="sync-help">Scrub to the moment the bike leaves the start, then set it as the GPS start. Sector markers and telemetry follow this offset.</p>
+            <div className="sync-anchors">
+              <div><strong>Two point sync</strong><span className="muted">{anchors.length ? `${anchors.length} anchor${anchors.length === 1 ? "" : "s"} · ${anchors.map((anchor) => `${anchor.runTime === 0 ? "start" : "finish"} ${clock(anchor.videoTime)}`).join(" · ")}` : "Optional: lock both ends of the run to the video."}</span></div>
+              <div className="sync-anchor-actions"><button className="button secondary" onClick={setRunStartAtPlayhead}><Target size={14} /> Mark start</button><button className="button secondary" disabled={!videoDuration} onClick={setRunFinishAtPlayhead}><Target size={14} /> Mark finish</button><button className="text-button" disabled={!anchors.length} onClick={resetAnchors}>Reset anchors</button></div>
+            </div>
+            <p className="sync-help">Scrub to the moment the bike leaves the start, then set it as the GPS start. With two anchors active, changing the offset shifts both markers together.</p>
           </section>
 
           <div className="video-tools-grid">

@@ -15,3 +15,12 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>,
 );
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Offline support is an enhancement; an unavailable worker must never
+      // interrupt the telemetry workspace.
+    });
+  });
+}

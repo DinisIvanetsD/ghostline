@@ -10,6 +10,12 @@ export interface Bike {
   brand: string;
   travel: number;
   type: string;
+  /** Optional setup notes kept with the bike so runs remain reproducible. */
+  suspensionSetup?: string;
+  tyres?: string;
+  wheels?: string;
+  notes?: string;
+  lastService?: string;
 }
 export interface Profile {
   name: string;
