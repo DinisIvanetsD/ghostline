@@ -113,6 +113,24 @@ describe("analysis", () => {
     expect(result.total).toBeCloseTo(20);
     expect(result.sectors).toHaveLength(2);
   });
+  it("anchors sector gates to the trail route when a run takes a detour", () => {
+    const detour: Run = {
+      ...run("detour"),
+      points: [
+        { ...points[0], time: 0 },
+        { lat: 38.003, lon: -8.997, ele: 100, time: 4 },
+        { lat: 38, lon: -8.997, ele: 100, time: 6 },
+        { ...points[1], time: 10 },
+        { ...points[2], time: 20 },
+      ],
+    };
+    const [firstSector, secondSector] = sectorTimes(detour, {
+      ...trail,
+      boundaries: [0.25],
+    });
+    expect(firstSector).toBeCloseTo(7.14, 1);
+    expect(firstSector + secondSector).toBeCloseTo(20, 8);
+  });
   it("formats time and signed deltas including rounding carry", () => {
     expect(formatTime(59.999)).toBe("1:00.00");
     expect(formatDelta(1.2)).toBe("+1.20s");

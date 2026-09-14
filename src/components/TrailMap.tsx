@@ -2,6 +2,7 @@ import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { LocateFixed, Mountain, Layers } from "lucide-react";
 import type { Trail, Telemetry } from "../types";
+import { routePositionAt } from "../lib/analysis";
 import "leaflet/dist/leaflet.css";
 
 interface Props {
@@ -24,9 +25,13 @@ export function TrailMap({
     map = useRef<L.Map | null>(null),
     layers = useRef<L.LayerGroup | null>(null),
     marker = useRef<L.CircleMarker | null>(null),
-    ghostMarker = useRef<L.CircleMarker | null>(null);
+    ghostMarker = useRef<L.CircleMarker | null>(null),
+    onProgressRef = useRef(onProgress);
   const [terrain, setTerrain] = useState(true),
     [tileError, setTileError] = useState(false);
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
   useEffect(() => {
     if (!el.current) return;
     const instance = L.map(el.current, {
@@ -86,8 +91,9 @@ export function TrailMap({
       ).addTo(group);
     }
     boundaries.forEach((f, i) => {
-      const p = current.samples.reduce((a, b) =>
-        Math.abs(b.fraction - f) < Math.abs(a.fraction - f) ? b : a,
+      const p = routePositionAt(
+        trail.points.length > 1 ? trail.points : current.samples,
+        f,
       );
       L.marker([p.lat, p.lon], {
         icon: L.divIcon({
@@ -97,7 +103,7 @@ export function TrailMap({
           iconAnchor: [13, 13],
         }),
       })
-        .on("click", () => onProgress(f))
+        .on("click", () => onProgressRef.current(f))
         .addTo(group);
     });
     ghostMarker.current = L.circleMarker(coords[0], {
@@ -114,8 +120,12 @@ export function TrailMap({
       fillColor: "#d5f55a",
       fillOpacity: 1,
     }).addTo(group);
+  }, [trail, current, ghost, sector]);
+  useEffect(() => {
+    if (!map.current) return;
+    const coords = current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple);
     map.current.fitBounds(L.latLngBounds(coords), { padding: [48, 45] });
-  }, [trail, current, ghost, sector, onProgress]);
+  }, [trail, current, ghost]);
   useEffect(() => {
     const p = current.samples.reduce((a, b) =>
       Math.abs(b.fraction - progress) < Math.abs(a.fraction - progress) ? b : a,
@@ -125,7 +135,7 @@ export function TrailMap({
       Math.abs(b.time - p.time) < Math.abs(a.time - p.time) ? b : a,
     );
     ghostMarker.current?.setLatLng([g.lat, g.lon]);
-  }, [progress, current, ghost, sector]);
+  }, [progress, current, ghost]);
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
@@ -136,13 +146,13 @@ export function TrailMap({
           ? b
           : a,
       );
-      onProgress(p.fraction);
+      onProgressRef.current(p.fraction);
     };
     instance.on("click", click);
     return () => {
       instance.off("click", click);
     };
-  }, [current, onProgress]);
+  }, [current]);
   return (
     <div className="map-panel">
       <div

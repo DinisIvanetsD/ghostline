@@ -207,6 +207,11 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   await expect.poll(() => page.locator("video").evaluate((element) => element.duration)).toBeGreaterThan(0);
   await expect(page.getByText("Make the clocks agree")).toBeVisible();
   await expect(page.getByLabel("Video timeline")).toBeEnabled();
+  const mapPane = page.locator(".leaflet-map-pane");
+  await page.locator(".leaflet-control-zoom-in").click();
+  const zoomedMapStyle = await mapPane.getAttribute("style");
+  await page.getByLabel("Video timeline").fill("0.8");
+  await expect.poll(() => mapPane.getAttribute("style")).toBe(zoomedMapStyle);
   const sectorWindow = page.locator(".sector-video-row").first().locator("small");
   const normalWindow = await sectorWindow.innerText();
   await page.getByLabel("Video playback rate").selectOption("2");
@@ -366,6 +371,17 @@ test("FIT activity imports through the run workflow", async ({ page }) => {
   await expect(page.getByText(/points ·/)).toBeVisible();
   await page.getByRole("button", { name: "Save run" }).click();
   await expect(page.getByText("Against the Ghost")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const saved = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+        return saved.runs?.some(
+          (run: { trailId?: string; synthetic?: boolean }) =>
+            run.trailId === "mundial" && run.synthetic,
+        ) ?? false;
+      }),
+    )
+    .toBe(false);
 });
 
 test("first real ride can replace a demo trail route", async ({ page }) => {

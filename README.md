@@ -46,7 +46,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Geographic route compatibility checks, including direction, sparse routes and closed loops.
 - Interactive Leaflet map with zoom, pan, start/finish/sector markers, selected sector highlighting, and current/Ghost markers.
 - Time, distance, average/top speed, elevation, ascent/descent analysis; speed/elevation graphs and synchronized inspection.
-- Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs.
+- Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs. Sector gates follow the physical trail route and are interpolated onto each run's GPS trace.
 - Run history, search, clickable progression, and immediate recomputation after edits/deletions.
 - **Video lab** with local video preview, FIT/GPX-to-video offset sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, Ghost deltas, and a portable JSON edit plan.
 - Responsive desktop/mobile interface, keyboard controls, self-hosted typography and reduced-motion support.
@@ -73,7 +73,7 @@ Raw GPS points are retained. Metrics and bests are derived, not duplicated as mu
 
 Distances use haversine calculations, speed is **km/h**, elevation/distance are **metres**, analysis time is **seconds**. GPX timestamps are epoch milliseconds and FIT timestamps are converted from Garmin time; the engine also accepts epoch/relative seconds. Sector boundaries are strictly increasing interior fractions of total traveled distance. Time at a split is linearly interpolated between GPS samples. Full duration includes stationary start/end time.
 
-PB is the shortest total duration among the rider's runs assigned to the selected trail. Theoretical best is the sum of independent minimum sector times on that trail. Ties retain the first stored run. Comparisons use normalized distance, not a race-grade geographic timing gate. Route validation guards against mismatched imports; it is not exact map matching.
+PB is the shortest total duration among the rider's runs assigned to the selected trail. Theoretical best is the sum of independent minimum sector times on that trail. Ties retain the first stored run. Sector gates use the trail's physical route and nearest-run interpolation when geometry is available; a normalized-distance fallback is used for geometry-less trails. Comparisons use normalized distance, not a race-grade geographic timing gate. Route validation guards against mismatched imports; it is not exact map matching.
 
 ## Deliberate MVP limits
 

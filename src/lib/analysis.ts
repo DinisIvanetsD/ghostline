@@ -4,7 +4,10 @@ const EARTH_RADIUS = 6_371_000;
 const finite = (value: number, label: string) => {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`);
 };
-const distanceBetween = (a: Point, b: Point) => {
+const distanceBetween = (
+  a: Pick<Point, "lat" | "lon">,
+  b: Pick<Point, "lat" | "lon">,
+) => {
   const lat1 = (a.lat * Math.PI) / 180,
     lat2 = (b.lat * Math.PI) / 180;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180,
@@ -107,9 +110,86 @@ export function sectorTimes(run: Run, trail: Trail): number[] {
   if (run.trailId !== trail.id) return [];
   const telemetry = analyze(run.points);
   const boundaries = [0, ...interiorBoundaries(trail.boundaries), 1];
-  return boundaries
-    .slice(1)
-    .map((end, i) => timeAt(telemetry, end) - timeAt(telemetry, boundaries[i]));
+  if (trail.points.length < 2)
+    return boundaries
+      .slice(1)
+      .map(
+        (end, i) =>
+          timeAt(telemetry, end) - timeAt(telemetry, boundaries[i]),
+      );
+
+  // Sector gates belong to the trail's physical route. Looking them up on
+  // each run's own normalized distance would move a gate when a rider takes
+  // a wider line or records a GPS detour before the split.
+  const gates = boundaries.map((fraction) => routePositionAt(trail.points, fraction));
+  const gateTimes = gates.map((gate, index) => {
+    if (index === 0) return 0;
+    if (index === gates.length - 1) return telemetry.duration;
+    return timeAtNearestPosition(telemetry, gate.lat, gate.lon);
+  });
+  for (let i = 1; i < gateTimes.length; i += 1)
+    gateTimes[i] = Math.max(
+      gateTimes[i - 1],
+      Math.min(telemetry.duration, gateTimes[i]),
+    );
+  return gateTimes.slice(1).map((end, i) => end - gateTimes[i]);
+}
+
+/** Return the geographic position at a fraction of a route's traveled distance. */
+export function routePositionAt(
+  points: Array<Pick<Point, "lat" | "lon">>,
+  fraction: number,
+): Pick<Point, "lat" | "lon"> {
+  if (!points.length) return { lat: 0, lon: 0 };
+  if (points.length === 1) return { lat: points[0].lat, lon: points[0].lon };
+  const distances = [0];
+  for (let i = 1; i < points.length; i += 1)
+    distances.push(distances[i - 1] + distanceBetween(points[i - 1], points[i]));
+  const total = distances[distances.length - 1];
+  const target = Math.max(0, Math.min(1, fraction)) * total;
+  for (let i = 1; i < distances.length; i += 1) {
+    if (target <= distances[i]) {
+      const span = distances[i] - distances[i - 1];
+      const local = span > 0 ? (target - distances[i - 1]) / span : 0;
+      return {
+        lat: points[i - 1].lat + (points[i].lat - points[i - 1].lat) * local,
+        lon: points[i - 1].lon + (points[i].lon - points[i - 1].lon) * local,
+      };
+    }
+  }
+  return { lat: points[points.length - 1].lat, lon: points[points.length - 1].lon };
+}
+
+function timeAtNearestPosition(
+  telemetry: Telemetry,
+  lat: number,
+  lon: number,
+): number {
+  let bestDistance = Infinity;
+  let bestTime = 0;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  const project = (sample: Sample) => ({
+    x: (sample.lon - lon) * cosLat,
+    y: sample.lat - lat,
+  });
+  for (let i = 1; i < telemetry.samples.length; i += 1) {
+    const a = telemetry.samples[i - 1];
+    const b = telemetry.samples[i];
+    const pa = project(a);
+    const pb = project(b);
+    const dx = pb.x - pa.x;
+    const dy = pb.y - pa.y;
+    const span = dx * dx + dy * dy;
+    const local = span > 0 ? Math.max(0, Math.min(1, -(pa.x * dx + pa.y * dy) / span)) : 0;
+    const x = pa.x + dx * local;
+    const y = pa.y + dy * local;
+    const distance = x * x + y * y;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestTime = a.time + (b.time - a.time) * local;
+    }
+  }
+  return bestTime;
 }
 
 export function personalBest(runs: Run[], trailId: string): Run | undefined {

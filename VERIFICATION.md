@@ -6,7 +6,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed, zero errors.
-- `npm test`: 6 files, 37 tests passed.
+- `npm test`: 6 files, 38 tests passed.
 - `npm run build`: passed (Vite production bundle).
 - `npm run test:e2e`: 14 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan and edit-plan flows.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
@@ -22,7 +22,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 | Multiple same-trail runs                 | Seven Mundial, two Free Ride and two Secret Spot synthetic runs; newly created trail receives two user-imported runs in E2E | Pass                       |
 | Automatic PB                             | Pure-domain tests; faster import earns PB badge; deleting PB updates reference to next fastest                               | Pass                       |
 | Ghost and arbitrary comparison           | Reference selector, current run selector and signed total delta exercised                                                    | Pass                       |
-| Sector gains/losses                      | All sectors render; sector click highlights route; sector count changes after editing; unit tests verify sum equals duration | Pass                       |
+| Sector gains/losses                      | All sectors render; physical trail gates are interpolated onto each run; sector click highlights route; sector count changes after editing; unit tests verify detours and sum equals duration | Pass                       |
 | Theoretical Best                         | Fastest per-sector run references preserved; demo test verifies faster than PB and multiple source runs                      | Pass                       |
 | Functional maps/telemetry                | Loaded real map tiles, geographic trace, markers, zoom controls, slider, elevation toggle, replay and selected sector        | Pass                       |
 | Desktop/mobile polish                    | Two visual capture rounds; responsive charts; mobile overflow checks; independent review                                     | Pass                       |
