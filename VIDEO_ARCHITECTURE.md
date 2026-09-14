@@ -1,6 +1,6 @@
 # Video analysis path
 
-The Video Lab is deliberately split into a deterministic sync layer and an optional vision layer. A rider can already import a DJI Mimo clip, choose the matching FIT/GPX run, align the GPS start, skip detected pauses in preview, jump to sector windows, and export a small edit plan. The original video never leaves the browser in this workflow.
+The Video Lab is deliberately split into a deterministic sync layer, a local rendering layer and an optional vision layer. A rider can already import a DJI Mimo clip, choose the matching FIT/GPX run, align the GPS start, skip detected pauses in preview, jump to sector windows or riding signals, render a WebM telemetry overlay, and export a small edit plan. The original video never leaves the browser in this workflow.
 
 ## Current pipeline
 
@@ -8,7 +8,9 @@ The Video Lab is deliberately split into a deterministic sync layer and an optio
 2. `videoSync.ts` normalizes timestamps, detects contiguous low-speed intervals, and returns the moving ride window.
 3. An offset maps run elapsed seconds to video seconds. Optional anchors and a rate can provide a piecewise correction when a camera clock drifts; the UI's preview speed stays separate so slow motion never changes GPS timing.
 4. Trail boundaries are converted into video windows. Each window carries the run time, video time, sector name and delta to the selected Ghost.
-5. The exported JSON edit plan is portable. It contains the source filename, sync settings, detected stop intervals, trim window and sector metadata for a desktop editor or a future renderer.
+5. The exported JSON edit plan is portable. It contains the source filename, sync settings, detected stop intervals, riding events, trim window and sector metadata for a desktop editor or a future renderer.
+
+The current renderer uses a canvas and `MediaRecorder` to produce a local WebM clip with the trail name, Ghost delta, sector and GPS speed drawn over the original frames. It preserves audio when the browser exposes an audio capture track. Rendering is intentionally opt-in and reports a clear fallback when the browser cannot encode WebM.
 
 ## AI extension
 

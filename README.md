@@ -34,7 +34,7 @@ Browser tests use installed Google Chrome locally. CI uses Playwright Chromium: 
 5. Create a trail in **Trails**, or import its GPX/FIT route. Set interior sector boundaries as fractions, e.g. `0.25, 0.5, 0.75`, and name the sectors. Start and finish are included automatically.
 6. **Import run** accepts timestamped GPX and Garmin FIT descents. Use **Try a sample GPX** to download a synthetic sample, then import it against Mundial da Santa Marta or your empty new trail. The first run defines an empty trail's geometry.
 7. Export or restore a JSON backup from **Rider profile**.
-8. Open **Video lab**, choose an MP4/MOV/WebM clip from DJI Mimo, select the matching FIT/GPX run, set the GPS start at the video playhead, scan pauses, and jump between sector windows. Download the edit plan when you are ready to cut the footage.
+8. Open **Video lab**, choose an MP4/MOV/WebM clip from DJI Mimo, select the matching FIT/GPX run, set the GPS start at the video playhead, scan pauses, jump between sector windows or GPS riding signals, and export a local WebM overlay. Download the edit plan when you are ready to cut the footage elsewhere.
 
 The seeded trail references follow the rider's Santa Marta das Cortiças setup. Public Trailforks pages identify the network as Santa Marta, Braga: [Freeride](https://www.trailforks.com/trails/freeride-8627/), [Mundial](https://www.trailforks.com/trails/mundial-835186/) and [Secret Spot](https://www.trailforks.com/trails/secret-spot-234073/). Trailforks requires a login to download the source GPX, so the demo keeps clearly marked synthetic geometry around the public trailheads.
 
@@ -48,7 +48,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Time, distance, average/top speed, elevation, ascent/descent analysis; speed/elevation graphs and synchronized inspection.
 - Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs. Sector gates follow the physical trail route and are interpolated onto each run's GPS trace.
 - Run history, search, clickable progression, and immediate recomputation after edits/deletions.
-- **Video lab** with local video preview, FIT/GPX-to-video offset sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, Ghost deltas, and a portable JSON edit plan.
+- **Video lab** with local video preview, FIT/GPX-to-video offset sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, riding-signal review, per-run project settings, a rendered WebM telemetry overlay, and a portable JSON edit plan.
 - Responsive desktop/mobile interface, keyboard controls, self-hosted typography and reduced-motion support.
 - Versioned browser persistence, validated backups, quota errors and corrupt-storage recovery.
 
@@ -84,7 +84,7 @@ PB is the shortest total duration among the rider's runs assigned to the selecte
 - Normalized distance alignment is approximate, especially where riders take different lines or GPS drifts. Corridor/end-point tolerance is 200 m, length tolerance 25%; no race timing precision is claimed.
 - Synthetic demo geometry is illustrative and is not trail navigation guidance.
 - The basemap requires internet. GPS traces, timing and charts continue to work without tiles. Browser tile requests disclose the viewed map area to OpenStreetMap. No raw GPX is uploaded by the app.
-- The Video lab exports deterministic sync/cut metadata; it does not render a new MP4 in the browser yet. Braking/jump detection, line analysis and AI feedback are future modules that can consume the same frame timestamps.
+- The Video lab renders a browser-native WebM telemetry overlay when the device supports MediaRecorder; it does not render a new MP4 in the browser yet. GPS-based braking/jump signals are available today; camera-vision line analysis and AI feedback are future modules that can consume the same frame timestamps.
 
 The default basemap uses [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) with visible attribution and browser caching. A hosted production rollout should select a tile service appropriate to expected traffic.
 

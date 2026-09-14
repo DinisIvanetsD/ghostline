@@ -2154,6 +2154,42 @@ td small {
 .export-panel .button {
   margin-top: 17px;
 }
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.export-actions .button {
+  margin-top: 17px;
+}
+.render-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 13px;
+}
+.render-progress progress {
+  flex: 1;
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent);
+}
+.render-progress .text-button {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.render-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--gained);
+  font-size: 10px;
+}
+.render-error {
+  margin-bottom: 0 !important;
+  font-size: 11px;
+}
 .export-note {
   display: block;
   margin-top: 12px;
@@ -2214,6 +2250,104 @@ td small {
   font-size: 8px;
   letter-spacing: 0.08em;
 }
+.riding-events-panel {
+  margin-bottom: 20px;
+  padding: 20px 22px;
+}
+.riding-events-panel .section-heading {
+  margin-bottom: 10px;
+}
+.riding-events-help {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.riding-events-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 13px;
+}
+.riding-event-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.riding-event-row:hover:not(:disabled),
+.riding-event-row.selected {
+  background: #242d21;
+}
+.riding-event-row:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+.riding-event-time {
+  color: #a8b4a1;
+  font-size: 10px;
+}
+.riding-event-kind {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+}
+.riding-event-kind strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.riding-event-kind small,
+.riding-event-confidence small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.riding-event-confidence {
+  color: #cdd7c8;
+  font: 10px "IBM Plex Mono", monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+.riding-event-confidence small {
+  display: block;
+  margin-top: 3px;
+  font-family: "Barlow", sans-serif;
+  text-align: right;
+}
+.riding-event-action {
+  min-width: 66px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: right;
+}
+.event-braking .riding-event-kind strong,
+.event-pause .riding-event-kind strong {
+  color: var(--lost);
+}
+.event-acceleration .riding-event-kind strong {
+  color: var(--gained);
+}
+.event-jump .riding-event-kind strong {
+  color: var(--accent);
+}
+.riding-events-empty {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
 .video-ai-note {
   gap: 14px;
   padding: 16px 19px;
@@ -2254,7 +2388,8 @@ td small {
   .sync-controls,
   .trim-panel,
   .export-panel,
-  .sector-video-panel {
+  .sector-video-panel,
+  .riding-events-panel {
     padding: 16px;
   }
   .video-setup-head,
@@ -2297,6 +2432,19 @@ td small {
   }
   .sector-video-grid {
     grid-template-columns: 1fr;
+  }
+  .export-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .riding-events-list {
+    grid-template-columns: 1fr;
+  }
+  .riding-event-row {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+  .riding-event-action {
+    display: none;
   }
   .sector-video-row {
     grid-template-columns: 25px minmax(0, 1fr) auto auto;

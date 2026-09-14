@@ -15,6 +15,7 @@ import {
   Target,
   Timer,
   Upload,
+  Zap,
 } from "lucide-react";
 import type { AppData } from "../types";
 import {
@@ -35,6 +36,13 @@ import {
   type StopAnalysis,
   type VideoSyncSettings,
 } from "../lib/videoSync";
+import { loadVideoProject, saveVideoProject } from "../lib/videoProjects";
+import {
+  detectRidingEvents,
+  type RidingEvent,
+  type RidingEventType,
+} from "../lib/ridingEvents";
+import { renderOverlayWebM } from "../lib/videoRender";
 import { TrailMap } from "./TrailMap";
 
 interface Props {
@@ -84,9 +92,32 @@ function downloadEditPlan(payload: object, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function rideWindowLabel(window: RideWindow | null): string {
   if (!window) return "No ride window scanned";
   return `${clock(window.startTime)} → ${clock(window.endTime)}`;
+}
+
+const eventLabels: Record<RidingEventType, string> = {
+  braking: "Braking",
+  acceleration: "Acceleration",
+  jump: "Jump / drop",
+  pause: "Pause",
+};
+
+function eventDetail(event: RidingEvent): string {
+  if (event.type === "braking") return `${Math.abs(event.speedChange).toFixed(0)} km/h drop`;
+  if (event.type === "acceleration") return `${Math.abs(event.speedChange).toFixed(0)} km/h gain`;
+  if (event.type === "jump") return `${Math.abs(event.elevationChange).toFixed(1)} m drop`;
+  return `${(event.endTime - event.startTime).toFixed(1)}s stopped`;
 }
 
 export function VideoLab({ data }: Props) {
@@ -107,6 +138,13 @@ export function VideoLab({ data }: Props) {
   const [stopAnalysis, setStopAnalysis] = useState<StopAnalysis | null>(null);
   const [skipStops, setSkipStops] = useState(true);
   const [trim, setTrim] = useState<TrimWindow | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [renderState, setRenderState] = useState<"idle" | "rendering" | "done" | "error">("idle");
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderError, setRenderError] = useState("");
+  const renderAbort = useRef<AbortController | null>(null);
+  const hydratedProjectRun = useRef<string | null>(null);
+  const previousOffset = useRef(offsetSeconds);
 
   const trail = data.trails.find((item) => item.id === trailId) ?? data.trails[0];
   const runs = useMemo(
@@ -143,38 +181,77 @@ export function VideoLab({ data }: Props) {
     () => (trail ? theoreticalBest(runs, trail) : null),
     [runs, trail],
   );
+  const ridingEvents = useMemo(
+    () => (run ? detectRidingEvents(run.points) : []),
+    [run],
+  );
+  const highlightedEvents = useMemo(
+    () => [...ridingEvents].sort((a, b) => b.severity - a.severity).slice(0, 8),
+    [ridingEvents],
+  );
   const runProgressTime = current ? timeAt(current, progress) : 0;
 
   useEffect(() => {
     return () => {
       if (previousUrl.current) URL.revokeObjectURL(previousUrl.current);
+      renderAbort.current?.abort();
     };
   }, []);
 
   useEffect(() => {
+    renderAbort.current?.abort();
     setRunId("");
     setSelectedSector(null);
     setProgress(0);
     setStopAnalysis(null);
     setTrim(null);
+    setSelectedEvent(null);
+    setRenderState("idle");
+    setRenderProgress(0);
+    setRenderError("");
   }, [trailId]);
 
   useEffect(() => {
+    renderAbort.current?.abort();
     setSelectedSector(null);
     setProgress(0);
     setStopAnalysis(null);
     setTrim(null);
+    setSelectedEvent(null);
+    setRenderState("idle");
+    setRenderProgress(0);
+    setRenderError("");
   }, [run?.id]);
 
   useEffect(() => {
     // A trim window is stored in video coordinates. Changing alignment makes
     // that window stale, so require a fresh ride-window apply.
-    setTrim(null);
+    if (previousOffset.current !== offsetSeconds) setTrim(null);
+    previousOffset.current = offsetSeconds;
   }, [offsetSeconds]);
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = previewRate;
   }, [previewRate, videoUrl]);
+
+  useEffect(() => {
+    if (!run?.id || hydratedProjectRun.current !== run.id) return;
+    saveVideoProject(run.id, { videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim });
+  }, [run?.id, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim]);
+
+  useEffect(() => {
+    if (!run?.id) return;
+    const saved = loadVideoProject(run.id);
+    hydratedProjectRun.current = run.id;
+    setVideoName(saved?.videoName ?? "");
+    const savedOffset = saved?.offsetSeconds ?? 0;
+    previousOffset.current = savedOffset;
+    setOffsetSeconds(savedOffset);
+    setPreviewRate(saved?.previewRate ?? 1);
+    setSkipStops(saved?.skipStops ?? true);
+    setStopAnalysis(saved?.stopAnalysis ?? null);
+    setTrim(saved?.trim ?? null);
+  }, [run?.id]);
 
   const onVideoTime = () => {
     const video = videoRef.current;
@@ -204,6 +281,7 @@ export function VideoLab({ data }: Props) {
 
   const selectVideo = (file: File | undefined) => {
     if (!file) return;
+    renderAbort.current?.abort();
     if (previousUrl.current) URL.revokeObjectURL(previousUrl.current);
     const nextUrl = URL.createObjectURL(file);
     previousUrl.current = nextUrl;
@@ -214,6 +292,9 @@ export function VideoLab({ data }: Props) {
     setVideoPlaying(false);
     setVideoError("");
     setTrim(null);
+    setRenderState("idle");
+    setRenderProgress(0);
+    setRenderError("");
   };
 
   const seekVideo = (nextTime: number) => {
@@ -254,6 +335,73 @@ export function VideoLab({ data }: Props) {
     if (window && current) setProgress(fractionAtTime(current, window.runStartTime));
   };
 
+  const inspectEvent = (event: RidingEvent) => {
+    setSelectedEvent(event.id);
+    if (!current) return;
+    setProgress(fractionAtTime(current, event.startTime));
+    if (videoUrl && videoDuration) seekVideo(videoTimeForRun(event.startTime, settings));
+  };
+
+  const exportOverlay = async () => {
+    if (!videoRef.current || !videoDuration || !current || !run || !trail) return;
+    const controller = new AbortController();
+    renderAbort.current = controller;
+    setRenderState("rendering");
+    setRenderProgress(0);
+    setRenderError("");
+    const start = trim?.start ?? 0;
+    const end = trim?.end ?? videoDuration;
+    try {
+      const blob = await renderOverlayWebM({
+        video: videoRef.current,
+        startTime: start,
+        endTime: end,
+        signal: controller.signal,
+        onProgress: setRenderProgress,
+        drawOverlay: (context, frame) => {
+          const runSeconds = Math.max(0, Math.min(current.duration, runTimeForVideo(frame.currentTime, settings)));
+          const fraction = fractionAtTime(current, runSeconds);
+          const sample = current.samples.reduce((closest, next) =>
+            Math.abs(next.fraction - fraction) < Math.abs(closest.fraction - fraction) ? next : closest,
+          );
+          const sectorIndex = windows.findIndex((window) => runSeconds >= window.runStartTime && runSeconds <= window.runEndTime);
+          const delta = sectorIndex >= 0 ? splits[sectorIndex] - (ghostSplits[sectorIndex] ?? splits[sectorIndex]) : 0;
+          const sectorLabel = sectorIndex >= 0 ? `S${sectorIndex + 1} · ${windows[sectorIndex].name}` : "RUN REVIEW";
+          const panelHeight = Math.max(62, Math.round(frame.height * 0.12));
+          context.fillStyle = "rgba(10, 14, 10, 0.78)";
+          context.fillRect(0, 0, frame.width, panelHeight);
+          context.fillStyle = "#d5f55a";
+          context.font = `600 ${Math.max(16, Math.round(frame.width / 62))}px Barlow, sans-serif`;
+          context.fillText("GHOSTLINE", Math.round(frame.width * 0.025), Math.round(panelHeight * 0.38));
+          context.fillStyle = "#f0f2e9";
+          context.font = `${Math.max(12, Math.round(frame.width / 84))}px Barlow, sans-serif`;
+          context.fillText(`${trail.name}  ·  ${sectorLabel}`, Math.round(frame.width * 0.025), Math.round(panelHeight * 0.68));
+          context.textAlign = "right";
+          context.fillStyle = "#f0f2e9";
+          context.font = `500 ${Math.max(14, Math.round(frame.width / 70))}px "IBM Plex Mono", monospace`;
+          context.fillText(`${clock(runSeconds)}  ${sample.speed.toFixed(1)} km/h`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.42));
+          context.fillStyle = delta > 0.005 ? "#f19784" : "#9edfc0";
+          context.font = `${Math.max(11, Math.round(frame.width / 92))}px "IBM Plex Mono", monospace`;
+          context.fillText(`${formatDelta(delta)} vs Ghost`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.72));
+          context.textAlign = "left";
+        },
+      });
+      downloadBlob(blob, `${run.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "run"}-ghostline.webm`);
+      setRenderState("done");
+      setRenderProgress(1);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setRenderState("idle");
+        setRenderProgress(0);
+      } else {
+        setRenderState("error");
+        setRenderError(error instanceof Error ? error.message : "The overlay video could not be exported.");
+      }
+    } finally {
+      renderAbort.current = null;
+    }
+  };
+
   const exportPlan = () => {
     if (!run || !trail) return;
     downloadEditPlan(
@@ -266,6 +414,7 @@ export function VideoLab({ data }: Props) {
         sync: settings,
         trim,
         detectedStops: stopAnalysis?.stops ?? [],
+        ridingEvents,
         sectors: windows.map((window, index) => ({
           ...window,
           bestSector: theory?.sectors[index]?.runId === run.id,
@@ -298,7 +447,7 @@ export function VideoLab({ data }: Props) {
           </div>
           <label className="button secondary video-file-button">
             <Upload size={16} />
-            {videoName ? "Replace video" : "Choose video"}
+            {videoUrl ? "Replace video" : "Choose video"}
             <input
               aria-label="Choose video file"
               type="file"
@@ -331,8 +480,8 @@ export function VideoLab({ data }: Props) {
         <section className="video-empty panel">
           <div className="video-empty-icon"><Film size={29} /></div>
           <div>
-            <h2>Drop in your ride footage.</h2>
-            <p>MP4, MOV or WebM works in the browser. Import your DJI Mimo export, then set the GPS start point once.</p>
+            <h2>{videoName ? "Pick up your synced run." : "Drop in your ride footage."}</h2>
+            <p>{videoName ? `Your ${videoName} sync settings are saved on this device. Re-select the original file to continue.` : "MP4, MOV or WebM works in the browser. Import your DJI Mimo export, then set the GPS start point once."}</p>
           </div>
           <label className="button primary video-file-button">
             <Camera size={16} /> Choose video
@@ -410,9 +559,15 @@ export function VideoLab({ data }: Props) {
             </section>
             <section className="panel export-panel">
               <div className="section-heading"><div><span className="eyebrow"><Download size={13} /> TAKE IT FURTHER</span><h2>Export an edit plan</h2></div></div>
-              <p>Send a small JSON edit plan to your desktop editor or the future GHOSTLINE renderer. It includes sync, cuts, sector windows and deltas.</p>
-              <button className="button primary" disabled={!videoDuration} onClick={exportPlan}><Download size={15} /> Download edit plan</button>
-              <span className="muted export-note">Video stays local; no upload is required.</span>
+              <p>Render a shareable overlay locally, or send the precise cuts and sector windows to your desktop editor.</p>
+              <div className="export-actions">
+                <button className="button primary" disabled={!videoDuration || renderState === "rendering"} onClick={() => void exportOverlay()}><Film size={15} /> {renderState === "rendering" ? `Rendering ${Math.round(renderProgress * 100)}%` : "Export overlay WebM"}</button>
+                <button className="button secondary" disabled={!videoDuration || renderState === "rendering"} onClick={exportPlan}><Download size={15} /> Download edit plan</button>
+              </div>
+              {renderState === "rendering" && <div className="render-progress"><progress max="1" value={renderProgress} /><button className="text-button" onClick={() => renderAbort.current?.abort()}>Cancel render</button></div>}
+              {renderState === "done" && <span className="render-success"><Check size={14} /> Overlay clip downloaded</span>}
+              {renderError && <p className="error-line render-error"><Camera size={14} /> {renderError}</p>}
+              <span className="muted export-note">WebM overlay keeps the source local; MP4 rendering can use the same frame plan later.</span>
             </section>
           </div>
 
@@ -425,6 +580,33 @@ export function VideoLab({ data }: Props) {
                 return <button key={window.index} className={`sector-video-row ${selectedSector === index ? "selected" : ""}`} onClick={() => inspectSector(index)}><span className="sector-video-index">S{index + 1}</span><span className="sector-video-name">{window.name}<small>{clock(window.videoStartTime)} → {clock(window.videoEndTime)}</small></span><span className="sector-video-time mono">{formatTime(window.duration)}</span><strong className={delta > 0.005 ? "lost" : "gained"}>{formatDelta(delta)}</strong>{best && <span className="sector-video-best">BEST</span>}</button>;
               })}
             </div>
+          </section>
+
+          <section className="panel riding-events-panel">
+            <div className="section-heading">
+              <div><span className="eyebrow"><Zap size={13} /> RIDE INTELLIGENCE</span><h2>Signals worth reviewing</h2></div>
+              <span className="muted">GPS assisted · {ridingEvents.length} found</span>
+            </div>
+            <p className="riding-events-help">Local telemetry highlights braking, acceleration, pauses and drop-like elevation changes. Jump to a signal to review it against the Ghost.</p>
+            {highlightedEvents.length ? (
+              <div className="riding-events-list">
+                {highlightedEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    className={`riding-event-row event-${event.type} ${selectedEvent === event.id ? "selected" : ""}`}
+                    disabled={!videoUrl || !videoDuration}
+                    onClick={() => inspectEvent(event)}
+                  >
+                    <span className="riding-event-time mono">{clock(event.startTime)}</span>
+                    <span className="riding-event-kind"><strong>{eventLabels[event.type]}</strong><small>{eventDetail(event)}</small></span>
+                    <span className="riding-event-confidence">{Math.round(event.confidence * 100)}% <small>confidence</small></span>
+                    <span className="riding-event-action">{videoUrl && videoDuration ? "Review" : "Upload video"}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="riding-events-empty">No strong riding signals found in this run. GPS data stays untouched and private.</div>
+            )}
           </section>
         </>
       )}

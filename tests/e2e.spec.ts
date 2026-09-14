@@ -99,6 +99,7 @@ test.beforeEach(async ({ page }) => {
   await blockTiles(page);
   await page.goto("/");
   await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => localStorage.removeItem("ghostline.video-projects.v1"));
   await page.reload();
 });
 
@@ -220,6 +221,13 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   await expect.poll(() => page.locator("video").evaluate((element) => !element.paused)).toBe(true);
   await page.getByLabel("GPS start offset").fill("0.4");
   await expect(page.getByLabel("GPS start offset")).toHaveValue("0.4");
+  const originalRun = await page.getByLabel("Video run").inputValue();
+  await page.getByLabel("Video run").selectOption({ index: 1 });
+  await page.getByLabel("Video run").selectOption(originalRun);
+  await expect(page.getByLabel("GPS start offset")).toHaveValue("0.4");
+  const eventRow = page.locator(".riding-event-row").first();
+  await eventRow.click();
+  await expect(eventRow).toHaveClass(/selected/);
   await page.getByRole("button", { name: "Scan GPS stops" }).click();
   await page.getByRole("button", { name: "Apply ride window" }).click();
   await expect(page.getByText(/Output window/)).toBeVisible();
@@ -231,6 +239,14 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   const plan = JSON.parse(await readFile(planPath!, "utf8")) as { sync: { offsetSeconds: number }; trim: { start: number; end: number } };
   expect(plan.sync.offsetSeconds).toBe(0.4);
   expect(plan.trim.end).toBeGreaterThan(plan.trim.start);
+  const rendered = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export overlay WebM" }).click();
+  const renderedDownload = await rendered;
+  expect(renderedDownload.suggestedFilename()).toMatch(/ghostline\.webm$/);
+  const renderedPath = await renderedDownload.path();
+  expect(renderedPath).toBeTruthy();
+  expect((await readFile(renderedPath!)).byteLength).toBeGreaterThan(100);
+  await expect(page.getByText("Overlay clip downloaded")).toBeVisible();
 });
 
 test("video lab reports an unsupported local clip", async ({ page }) => {
