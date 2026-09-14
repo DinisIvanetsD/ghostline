@@ -6,9 +6,9 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed, zero errors.
-- `npm test`: 8 files, 43 tests passed.
+- `npm test`: 8 files, 48 tests passed.
 - `npm run build`: passed (Vite production bundle).
-- `npm run test:e2e`: 14 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan and edit-plan flows.
+- `npm run test:e2e`: 15 Playwright tests passed, including playable/invalid Video Lab media, sync, stop scan, edit-plan and Secret Spot finish-gate flows.
 - Runtime capture: zero page errors; actual basemap tiles loaded at desktop and mobile widths.
 - Viewports: 1440px desktop and 390px mobile screenshots inspected. Browser tests additionally checked 360px analysis and 390px management. Document scroll width equals viewport width.
 - Video Lab screenshots inspected with and without a local clip; desktop and mobile scroll width stayed equal to the viewport and no page errors were recorded.
@@ -28,6 +28,7 @@ Verified 14 September 2026 on Windows, Node 24, system Chrome.
 | Desktop/mobile polish                    | Two visual capture rounds; responsive charts; mobile overflow checks; independent review                                     | Pass                       |
 | Immediate demo                           | Eleven dense synthetic runs across Mundial da Santa Marta and Free Ride in Santa Marta das Cortiças plus Secret Spot Sameiro, two bikes, one demo rider; sample GPX download | Pass                       |
 | Video and FIT/GPX sync                    | Local MP4/MOV/WebM preview, run-linked offset sync with independent preview speed, GPS stop scan, ride-window trimming, sector jump points, riding signals, per-run settings and WebM overlay/edit-plan export | Pass within local workflow |
+| Secret Spot finish                        | Rider-defined physical finish gate at 41.5628056, -8.3732222; GPX/FIT imports and existing saved runs are clipped at the marked endpoint, with two accepted uphill starts | Pass |
 | No obvious broken screens/runtime errors | E2E covers analysis, history, garage, profile, trails, GPX/FIT import, demo route replacement, empty/corrupt state; capture records zero page errors | Pass within tested scope   |
 | Build/lint/types/tests                   | Commands listed above all passed                                                                                             | Pass                       |
 

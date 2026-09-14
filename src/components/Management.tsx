@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { parseGPX } from "../lib/gpx";
 import { analyze, formatTime } from "../lib/analysis";
-import { matchRoute } from "../lib/routeMatch";
+import { clipToFinish, matchRoute } from "../lib/routeMatch";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
 type Props = { data: AppData; onChange: (data: AppData) => boolean | void };
@@ -392,6 +392,8 @@ export function TrailManager({
             { length: count },
             (_, i) => `Sector ${String(i + 1).padStart(2, "0")}`,
           ),
+      ...(existing?.startPoints ? { startPoints: existing.startPoints } : {}),
+      ...(existing?.finishPoint ? { finishPoint: existing.finishPoint } : {}),
     };
     next.trails = selected
       ? next.trails.map((t) => (t.id === selected ? trail : t))
@@ -647,17 +649,27 @@ export function ImportRun({
     if (!points || !file) return setError("Choose a GPX or FIT run first.");
     if (!trail) return setError("Choose a trail.");
     if (!bikeId) return setError("Choose the bike used for this run.");
-    let targetTrail = trail;
+    // Apply an explicit physical finish gate before matching and persisting.
+    // This removes post-finish GPS capture for configured trails such as
+    // Secret Spot Sameiro while preserving the original behavior elsewhere.
+    const importedPoints = clipToFinish(points, trail.finishPoint);
+    const physicalTrail = clipToFinish(trail.points, trail.finishPoint);
+    let targetTrail =
+      physicalTrail.length === trail.points.length
+        ? trail
+        : { ...trail, points: physicalTrail };
     let savedRuns = data.runs;
-    if (!trail.points.length)
+    if (!physicalTrail.length)
       targetTrail = {
         ...trail,
-        points,
+        points: importedPoints,
         boundaries: trail.boundaries,
         sectorNames: trail.sectorNames,
       };
     else {
-      const match = matchRoute(points, trail.points);
+      const match = matchRoute(importedPoints, physicalTrail, {
+        startPoints: trail.startPoints,
+      });
       const existingRuns = data.runs.filter((run) => run.trailId === trail.id);
       const replacingDemoRoute =
         existingRuns.length > 0 && existingRuns.every((run) => run.synthetic);
@@ -666,7 +678,7 @@ export function ImportRun({
           match.reason ?? "This run does not match the selected trail route.",
         );
       if (replacingDemoRoute) {
-        if (!match.ok) targetTrail = { ...trail, points };
+        if (!match.ok) targetTrail = { ...trail, points: importedPoints };
         // A first real file becomes the source of truth for this demo trail;
         // leave other demo trails available while removing stale sample runs.
         savedRuns = data.runs.filter(
@@ -686,7 +698,7 @@ export function ImportRun({
           bikeId,
           name: name.trim() || file.name,
           date,
-          points,
+          points: importedPoints,
           notes: "",
         },
       ],
@@ -717,6 +729,13 @@ export function ImportRun({
         Drop in a timestamped GPX or FIT export up to 10 MB. GHOSTLINE checks
         its route against the selected trail before saving.
       </p>
+      {trail?.finishPoint && (
+        <p className="muted import-finish-note">
+          Secret Spot finish gate uses the marked endpoint and accepts either uphill
+          access start. GPS points recorded after the finish are clipped
+          automatically.
+        </p>
+      )}
       <button
         className="button secondary"
         disabled={loading}

@@ -1,8 +1,29 @@
 import { analyze } from "./analysis";
-import { createDemoData } from "./demo";
+import {
+  createDemoData,
+  SECRET_SPOT_FINISH,
+  SECRET_SPOT_STARTS,
+} from "./demo";
+import { clipToFinish } from "./routeMatch";
 import type { AppData, Bike, Point, Profile, Run, Trail } from "../types";
 const KEY = "ghostline.data.v1";
 let storageWarning = "";
+const metersBetween = (a: Pick<Point, "lat" | "lon">, b: Pick<Point, "lat" | "lon">) => {
+  const rad = Math.PI / 180;
+  return Math.hypot(
+    (b.lon - a.lon) * rad * 6_371_000 * Math.cos(((a.lat + b.lat) * rad) / 2),
+    (b.lat - a.lat) * rad * 6_371_000,
+  );
+};
+const retime = (run: Run, route: Point[]): Point[] => {
+  const start = run.points[0]?.time ?? 0;
+  const duration = Math.max(0, (run.points.at(-1)?.time ?? start) - start);
+  return route.map((point, index) => ({
+    ...point,
+    time: start + (index / Math.max(1, route.length - 1)) * duration,
+  }));
+};
+const LEGACY_SECRET_FINISH = { lat: 41.553, lon: -8.37221 } as const;
 const fail = (m: string): never => {
   throw new Error(`Invalid GHOSTLINE data: ${m}`);
 };
@@ -105,6 +126,27 @@ export function validateData(input: unknown): AppData {
         ns.some((n: unknown) => typeof n !== "string" || !n.trim())
       )
         fail(`trails[${i}].sectorNames are invalid`);
+      const finishPoint =
+        t.finishPoint && typeof t.finishPoint === "object"
+          ? (() => {
+              const fp = t.finishPoint as Record<string, unknown>;
+              return {
+                lat: num(fp.lat, `trails[${i}].finishPoint.lat`),
+                lon: num(fp.lon, `trails[${i}].finishPoint.lon`),
+              };
+            })()
+          : undefined;
+      const startPoints = Array.isArray(t.startPoints)
+        ? (t.startPoints as unknown[]).map((value, j) => {
+            if (!value || typeof value !== "object")
+              fail(`trails[${i}].startPoints[${j}] is invalid`);
+            const point = value as Record<string, unknown>;
+            return {
+              lat: num(point.lat, `trails[${i}].startPoints[${j}].lat`),
+              lon: num(point.lon, `trails[${i}].startPoints[${j}].lon`),
+            };
+          })
+        : undefined;
       return {
         id: str(t.id, `trails[${i}].id`),
         name: str(t.name, `trails[${i}].name`),
@@ -113,6 +155,8 @@ export function validateData(input: unknown): AppData {
         points: pts(t.points, `trails[${i}].points`, true),
         boundaries: [...bs] as number[],
         sectorNames: [...ns] as string[],
+        ...(startPoints?.length ? { startPoints } : {}),
+        ...(finishPoint ? { finishPoint } : {}),
       };
     },
   );
@@ -200,6 +244,104 @@ export function loadData(): AppData {
       localStorage.setItem(KEY, JSON.stringify(upgraded));
       storageWarning = "";
       return upgraded;
+    }
+    // Refresh an untouched Braga demo created before the canonical Secret
+    // Spot geometry and physical finish gate were added. User edits and
+    // imported rides set demo=false, so this cannot overwrite rider work.
+    if (
+      data.demo &&
+      data.profile.home === "Braga, Portugal" &&
+      data.bikes.length === 2 &&
+      data.trails.length === 3 &&
+      data.runs.length === 11 &&
+      data.trails.some((trail) => trail.id === "secret-spot" && !trail.finishPoint)
+    ) {
+      const upgraded = createDemoData();
+      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      storageWarning = "";
+      return upgraded;
+    }
+    // A rider may already have imported a Secret Spot file before the finish
+    // gate existed. Add the canonical gate and trim only that trail's old
+    // post-finish GPS tail; every other trail remains byte-for-byte intact.
+    const secret = data.trails.find((trail) => trail.id === "secret-spot");
+    const secretRuns = data.runs.filter((run) => run.trailId === "secret-spot");
+    const canonicalSecret = secret
+      ? createDemoData().trails.find((trail) => trail.id === "secret-spot")
+      : undefined;
+    // An older demo could have been personalized (which sets demo=false)
+    // while retaining its old synthetic Secret Spot route. Replace that stale
+    // geometry with the rider-defined gate route in the same load pass.
+    const staleSyntheticSecret =
+      secret &&
+      canonicalSecret &&
+      secretRuns.length > 0 &&
+      secretRuns.every((run) => run.synthetic) &&
+      metersBetween(secret.points.at(-1) ?? SECRET_SPOT_FINISH, SECRET_SPOT_FINISH) > 250;
+    const legacySecretRoute =
+      secret &&
+      canonicalSecret &&
+      metersBetween(secret.points[0] ?? SECRET_SPOT_STARTS[0], SECRET_SPOT_STARTS[0]) < 200 &&
+      metersBetween(secret.points.at(-1) ?? LEGACY_SECRET_FINISH, LEGACY_SECRET_FINISH) < 250 &&
+      metersBetween(secret.points.at(-1) ?? LEGACY_SECRET_FINISH, SECRET_SPOT_FINISH) > 500;
+    const replaceSecretRoute = Boolean(staleSyntheticSecret || legacySecretRoute);
+    if (secret) {
+      const finishPoint = SECRET_SPOT_FINISH;
+      const physicalPoints = replaceSecretRoute
+        ? canonicalSecret!.points
+        : clipToFinish(secret.points, finishPoint);
+      const runs = data.runs.map((run) =>
+        run.trailId === secret.id
+          ? {
+              ...run,
+              points: replaceSecretRoute && run.synthetic
+                ? retime(run, canonicalSecret!.points)
+                : clipToFinish(run.points, finishPoint),
+            }
+          : run,
+      );
+      const previousLast = secret.points.at(-1);
+      const physicalLast = physicalPoints.at(-1);
+      const previousStarts = secret.startPoints ?? [];
+      const startsChanged =
+        previousStarts.length !== SECRET_SPOT_STARTS.length ||
+        SECRET_SPOT_STARTS.some(
+          (point, index) =>
+            previousStarts[index]?.lat !== point.lat ||
+            previousStarts[index]?.lon !== point.lon,
+        );
+      const trailChanged =
+        !secret.finishPoint ||
+        secret.finishPoint.lat !== finishPoint.lat ||
+        secret.finishPoint.lon !== finishPoint.lon ||
+        startsChanged ||
+        physicalPoints.length !== secret.points.length ||
+        physicalLast?.lat !== previousLast?.lat ||
+        physicalLast?.lon !== previousLast?.lon;
+      const runsChanged = data.runs.some((run, index) => {
+        const next = runs[index];
+        return (
+          run.points.length !== next.points.length ||
+          run.points.at(-1)?.lat !== next.points.at(-1)?.lat ||
+          run.points.at(-1)?.lon !== next.points.at(-1)?.lon
+        );
+      });
+      if (trailChanged || runsChanged) {
+        const trails = data.trails.map((trail) =>
+          trail.id === secret.id
+            ? {
+                ...trail,
+                points: physicalPoints,
+                startPoints: [...SECRET_SPOT_STARTS],
+                finishPoint,
+              }
+            : trail,
+        );
+        const upgraded = validateData({ ...data, trails, runs });
+        localStorage.setItem(KEY, JSON.stringify(upgraded));
+        storageWarning = "";
+        return upgraded;
+      }
     }
     storageWarning = "";
     return data;

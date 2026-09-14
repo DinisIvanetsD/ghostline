@@ -20,43 +20,6 @@ async function blockTiles(page: Page) {
   );
 }
 
-async function playableWebm(page: Page) {
-  return page.evaluate(async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 320;
-    canvas.height = 180;
-    const context = canvas.getContext("2d");
-    if (!context || !window.MediaRecorder) throw new Error("MediaRecorder is unavailable");
-    const stream = canvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-    const chunks: Blob[] = [];
-    recorder.ondataavailable = (event) => {
-      if (event.data.size) chunks.push(event.data);
-    };
-    const encoded = new Promise<string>((resolve, reject) => {
-      recorder.onerror = () => reject(new Error("Could not encode test video"));
-      recorder.onstop = async () => {
-        const bytes = new Uint8Array(await new Blob(chunks, { type: "video/webm" }).arrayBuffer());
-        let binary = "";
-        for (const byte of bytes) binary += String.fromCharCode(byte);
-        resolve(btoa(binary));
-      };
-    });
-    recorder.start();
-    const started = performance.now();
-    while (performance.now() - started < 1800) {
-      const hue = Math.round((performance.now() - started) / 8) % 360;
-      context.fillStyle = `hsl(${hue} 55% 24%)`;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = "#d4ff3f";
-      context.font = "bold 24px sans-serif";
-      context.fillText("GHOSTLINE", 24, 96);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    recorder.stop();
-    return encoded;
-  });
-}
 async function open(page: Page, label: string) {
   await page.getByRole("button", { name: label, exact: true }).click();
 }
@@ -198,11 +161,11 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   page,
 }) => {
   await open(page, "Video lab");
-  const video = await playableWebm(page);
+  const video = await readFile(new URL("./fixtures/dji-mimo-sample.webm", import.meta.url));
   await page.getByLabel("Choose video file").first().setInputFiles({
     name: "dji-mimo-run.webm",
     mimeType: "video/webm",
-    buffer: Buffer.from(video, "base64"),
+    buffer: video,
   });
   await expect(page.getByText("dji-mimo-run.webm")).toBeVisible();
   await expect.poll(() => page.locator("video").evaluate((element) => element.duration)).toBeGreaterThan(0);
@@ -211,7 +174,9 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   const mapPane = page.locator(".leaflet-map-pane");
   await page.locator(".leaflet-control-zoom-in").click();
   const zoomedMapStyle = await mapPane.getAttribute("style");
-  await page.getByLabel("Video timeline").fill("0.8");
+  const timeline = page.getByLabel("Video timeline");
+  const scrubTime = Math.min(0.8, Number(await timeline.getAttribute("max")) * 0.7);
+  await timeline.fill(String(scrubTime));
   await expect.poll(() => mapPane.getAttribute("style")).toBe(zoomedMapStyle);
   const sectorWindow = page.locator(".sector-video-row").first().locator("small");
   const normalWindow = await sectorWindow.innerText();
@@ -398,6 +363,43 @@ test("FIT activity imports through the run workflow", async ({ page }) => {
       }),
     )
     .toBe(false);
+});
+
+test("Secret Spot imports stop at the marked physical finish", async ({ page }) => {
+  const data = await demo(page);
+  const secret = data.trails.find((trail: { id: string }) => trail.id === "secret-spot")!;
+  const start = Date.parse("2026-09-14T09:00:00Z");
+  const route = secret.points.map((point: { lat: number; lon: number; ele: number }, index: number) => ({
+    ...point,
+    time: start + index * 1000,
+  }));
+  const withForgottenTail = [
+    ...route,
+    { lat: 41.5635, lon: -8.3733, ele: 440, time: route.at(-1)!.time + 1000 },
+    { lat: 41.565, lon: -8.374, ele: 435, time: route.at(-1)!.time + 2000 },
+  ];
+  await open(page, "Import run");
+  await page
+    .locator("label.field")
+    .filter({ hasText: /^Trail/ })
+    .locator("select")
+    .selectOption("secret-spot");
+  await expect(page.getByText(/Secret Spot finish gate/)).toBeVisible();
+  await page.getByRole("button", { name: /Choose GPX or FIT file/ }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "secret-with-tail.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(gpx(withForgottenTail)),
+  });
+  await page.getByRole("button", { name: "Save run" }).click();
+  await expect(page.getByText("Against the Ghost")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => {
+      const saved = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+      const run = saved.runs?.at(-1);
+      return { count: run?.points?.length ?? 0, last: run?.points?.at(-1) ?? null };
+    }))
+    .toMatchObject({ count: route.length, last: { lat: 41.5628056, lon: -8.3732222 } });
 });
 
 test("first real ride can replace a demo trail route", async ({ page }) => {

@@ -24,6 +24,10 @@ export interface Trail {
   points: Point[];
   boundaries: number[];
   sectorNames: string[];
+  /** Optional alternate start gates for trails with more than one access point. */
+  startPoints?: Array<Pick<Point, "lat" | "lon">>;
+  /** Optional physical finish gate used to trim GPS captures after the run. */
+  finishPoint?: Pick<Point, "lat" | "lon">;
 }
 export interface Run {
   id: string;

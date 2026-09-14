@@ -153,7 +153,7 @@ it("demo has eleven dense realistic runs across Braga trails and a theoretical b
   for (const run of data.runs) {
     const t = analyze(run.points);
     expect(run.points.length).toBeGreaterThan(100);
-    expect(t.distance).toBeGreaterThan(1000);
+    expect(t.distance).toBeGreaterThan(run.trailId === "secret-spot" ? 500 : 1000);
     expect(t.maxSpeed).toBeLessThan(100);
     expect(t.duration).toBeGreaterThan(100);
   }

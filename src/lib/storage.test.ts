@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createDemoData } from "./demo";
+import {
+  createDemoData,
+  SECRET_SPOT_FINISH,
+  SECRET_SPOT_STARTS,
+} from "./demo";
 import { loadData, parseBackup, readStorageWarning, saveData } from "./storage";
 
 describe("storage validation", () => {
@@ -58,6 +62,61 @@ describe("storage validation", () => {
       "Free Ride",
       "Secret Spot Sameiro",
     ]);
+  });
+  it("adds the Secret Spot finish gate and trims an old post-finish tail", () => {
+    const previous = createDemoData();
+    const secret = previous.trails.find((trail) => trail.id === "secret-spot")!;
+    delete secret.finishPoint;
+    const base = secret.points.map((point, index) => ({
+      ...point,
+      time: Date.parse("2026-09-14T09:00:00Z") + index * 1000,
+    }));
+    const tail = [
+      ...base,
+      { lat: 41.5635, lon: -8.3733, ele: 440, time: base.at(-1)!.time + 1000 },
+      { lat: 41.565, lon: -8.374, ele: 435, time: base.at(-1)!.time + 2000 },
+    ];
+    previous.runs = previous.runs.map((run) =>
+      run.trailId === "secret-spot" ? { ...run, points: tail } : run,
+    );
+    previous.demo = false;
+    secret.points = tail;
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+
+    const loaded = loadData();
+    const loadedTrail = loaded.trails.find((trail) => trail.id === "secret-spot")!;
+    expect(loadedTrail.finishPoint).toEqual(SECRET_SPOT_FINISH);
+    expect(loadedTrail.startPoints).toEqual(SECRET_SPOT_STARTS);
+    expect(loadedTrail.points.at(-1)).toMatchObject(SECRET_SPOT_FINISH);
+    loaded.runs
+      .filter((run) => run.trailId === "secret-spot")
+      .forEach((run) => expect(run.points.at(-1)).toMatchObject(SECRET_SPOT_FINISH));
+    expect(localStorage.getItem("ghostline.data.v1")).toContain("finishPoint");
+  });
+  it("refreshes a personalized workspace that still has the old Secret Spot demo route", () => {
+    const previous = createDemoData();
+    const secret = previous.trails.find((trail) => trail.id === "secret-spot")!;
+    const oldRoute = Array.from({ length: 181 }, (_, index) => ({
+      lat: 41.54833 - (index / 180) * 0.009,
+      lon: -8.37211 + (index / 180) * 0.013,
+      ele: 511 - (index / 180) * 190,
+      time: Date.parse("2026-09-14T09:00:00Z") + index * 1000,
+    }));
+    secret.points = oldRoute;
+    secret.finishPoint = SECRET_SPOT_FINISH;
+    previous.runs = previous.runs.map((run) =>
+      run.trailId === "secret-spot"
+        ? { ...run, points: oldRoute.map((point, index) => ({ ...point, time: point.time + index * 1000 })) }
+        : run,
+    );
+    previous.demo = false;
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+
+    const loaded = loadData();
+    const loadedTrail = loaded.trails.find((trail) => trail.id === "secret-spot")!;
+    expect(loadedTrail.points).toHaveLength(271);
+    expect(loadedTrail.points.at(-1)).toMatchObject(SECRET_SPOT_FINISH);
+    expect(loadedTrail.points.at(-1)!.lat).toBe(41.5628056);
   });
   it("validates backups and rejects duplicate IDs", () => {
     const data = createDemoData();

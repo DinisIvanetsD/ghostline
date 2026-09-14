@@ -32,7 +32,7 @@ Browser tests use installed Google Chrome locally. CI uses Playwright Chromium: 
 3. Open **Run history** to see progression, compare attempts, delete a run, and inspect the source of each theoretical-best sector.
 4. Edit your **Rider profile**, then add/edit bikes in **Bike garage**.
 5. Create a trail in **Trails**, or import its GPX/FIT route. Set interior sector boundaries as fractions, e.g. `0.25, 0.5, 0.75`, and name the sectors. Start and finish are included automatically.
-6. **Import run** accepts timestamped GPX and Garmin FIT descents. Use **Try a sample GPX** to download a synthetic sample, then import it against Mundial da Santa Marta or your empty new trail. The first run defines an empty trail's geometry.
+6. **Import run** accepts timestamped GPX and Garmin FIT descents. Use **Try a sample GPX** to download a synthetic sample, then import it against Mundial da Santa Marta or your empty new trail. The first run defines an empty trail's geometry. Secret Spot Sameiro uses the rider-defined finish gate (`41.5628056, -8.3732222`) and accepts either marked uphill start; GPS points captured after the endpoint are clipped automatically.
 7. Export or restore a JSON backup from **Rider profile**.
 8. Open **Video lab**, choose an MP4/MOV/WebM clip from DJI Mimo, select the matching FIT/GPX run, set the GPS start at the video playhead, scan pauses, jump between sector windows or GPS riding signals, and export a local WebM overlay. Download the edit plan when you are ready to cut the footage elsewhere.
 
@@ -49,6 +49,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs. Sector gates follow the physical trail route and are interpolated onto each run's GPS trace.
 - Run history, search, clickable progression, and immediate recomputation after edits/deletions.
 - **Video lab** with local video preview, FIT/GPX-to-video offset sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, riding-signal review, per-run project settings, a rendered WebM telemetry overlay, and a portable JSON edit plan.
+- Physical finish gates for known trails. Secret Spot Sameiro trims forgotten post-finish capture in future GPX/FIT imports and supports both marked uphill starts.
 - Responsive desktop/mobile interface, keyboard controls, self-hosted typography and reduced-motion support.
 - Versioned browser persistence, validated backups, quota errors and corrupt-storage recovery.
 
@@ -59,7 +60,7 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - `src/types.ts`: explicit domain types for points, runs, trails, sectors, bikes and profile.
 - `src/lib/analysis.ts`: pure telemetry, time interpolation, PB and theoretical-best calculations.
 - `src/lib/gpx.ts` and `src/lib/fit.ts`: import boundaries; untrusted files become validated points.
-- `src/lib/routeMatch.ts`: bounded geometric compatibility checks independent of timestamps.
+- `src/lib/routeMatch.ts`: bounded geometric compatibility checks plus explicit physical finish gates for trails whose GPS capture commonly continues after the run.
 - `src/lib/storage.ts`: versioned persistence and backup validation; replaceable with a server-backed repository later.
 - `src/components/TrailMap.tsx`, `Charts.tsx`: geographic and telemetry inspection.
 - `src/components/Management.tsx`: rider, bike, trail and import flows.
@@ -82,7 +83,7 @@ PB is the shortest total duration among the rider's runs assigned to the selecte
 - One complete track/segment or route per file, up to 10 MB and 25,000 points. Runs accept GPX or Garmin FIT timestamps; duplicate second-resolution samples are coalesced. TCX, multiple segments, trimming and sensor streams are not included.
 - Missing elevation is represented as zero; elevation/descent then cannot be treated as measured telemetry. GPS speed is not smoothed and can contain device noise.
 - Normalized distance alignment is approximate, especially where riders take different lines or GPS drifts. Corridor/end-point tolerance is 200 m, length tolerance 25%; no race timing precision is claimed.
-- Synthetic demo geometry is illustrative and is not trail navigation guidance.
+- Synthetic demo geometry is illustrative and is not trail navigation guidance. Secret Spot Sameiro's seeded route follows the rider-provided start/finish gates; Trailforks remains the source of truth for access and current trail conditions.
 - The basemap requires internet. GPS traces, timing and charts continue to work without tiles. Browser tile requests disclose the viewed map area to OpenStreetMap. No raw GPX is uploaded by the app.
 - The Video lab renders a browser-native WebM telemetry overlay when the device supports MediaRecorder; it does not render a new MP4 in the browser yet. GPS-based braking/jump signals are available today; camera-vision line analysis and AI feedback are future modules that can consume the same frame timestamps.
 
