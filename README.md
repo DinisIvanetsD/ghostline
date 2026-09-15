@@ -25,6 +25,10 @@ npm run test:e2e
 
 Browser tests use installed Google Chrome locally. CI uses Playwright Chromium: `npx playwright install --with-deps chromium`, then `CI=true npm run test:e2e`. On Windows PowerShell set `$env:CI='true'` before running if using downloaded Chromium instead of Chrome. `npm run preview` serves the production build. The GitHub Actions workflow runs all checks.
 
+## Install on iPhone
+
+The public build is published at [dinisivanetsd.github.io/ghostline](https://dinisivanetsd.github.io/ghostline/). Open it in Safari, tap **Share**, choose **Add to Home Screen**, keep the `GHOSTLINE.` name, and tap **Add**. The app opens in standalone mode and keeps the rider's local workspace on that iPhone.
+
 ## Try the product
 
 1. Open **Run analysis**. The latest Mundial da Santa Marta run is compared against its automatically selected Personal Best.
