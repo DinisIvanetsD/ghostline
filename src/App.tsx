@@ -42,7 +42,7 @@ import {
 } from "./lib/storage";
 import { downloadGPX } from "./lib/export";
 import { progressionInsights } from "./lib/progressionInsights";
-import { cleanTrack } from "./lib/gpsQuality";
+import { cleanTrack, MAX_BELIEVABLE_SPEED_KMH } from "./lib/gpsQuality";
 import { TrailMap } from "./components/TrailMap";
 import { TelemetryChart, Progression } from "./components/Charts";
 import {
@@ -505,8 +505,14 @@ export default function App() {
                       <div>
                         <span>Top speed</span>
                         <strong>
-                          {current.maxSpeed.toFixed(1)}
-                          <small>km/h</small>
+                          {current.maxSpeed > MAX_BELIEVABLE_SPEED_KMH
+                            ? "—"
+                            : current.maxSpeed.toFixed(1)}
+                          <small>
+                            {current.maxSpeed > MAX_BELIEVABLE_SPEED_KMH
+                              ? "GPS review"
+                              : "km/h"}
+                          </small>
                         </strong>
                       </div>
                       <div>

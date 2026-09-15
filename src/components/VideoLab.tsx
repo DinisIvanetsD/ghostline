@@ -37,6 +37,7 @@ import {
   type VideoSyncSettings,
 } from "../lib/videoSync";
 import { loadVideoProject, saveVideoProject } from "../lib/videoProjects";
+import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 import {
   detectRidingEvents,
   type RidingEvent,
@@ -570,7 +571,11 @@ export function VideoLab({ data }: Props) {
               </div>
               <div className="video-progress-line"><i style={{ width: `${progress * 100}%` }} /></div>
               <div className="video-player-meta">
-                <span><Gauge size={14} /> {current ? `${current.samples.find((sample) => Math.abs(sample.fraction - progress) < 0.02)?.speed.toFixed(1) ?? "0.0"} km/h` : "—"}</span>
+                <span><Gauge size={14} /> {(() => {
+                  const sample = current?.samples.find((item) => Math.abs(item.fraction - progress) < 0.02);
+                  if (!sample) return "—";
+                  return sample.speed > MAX_BELIEVABLE_SPEED_KMH ? "GPS review" : `${sample.speed.toFixed(1)} km/h`;
+                })()}</span>
                 <span className="mono">GPS {formatTime(runProgressTime)}</span>
                 <span>{trail?.name}</span>
               </div>

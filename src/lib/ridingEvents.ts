@@ -98,7 +98,11 @@ function validate(points: Point[]): void {
 export function detectRidingEvents(points: Point[], options: RidingEventOptions = {}): RidingEvent[] {
   validate(points);
   const config = { ...defaults, ...options };
-  const values = measurements(cleanTrack(points).points);
+  const values = measurements(
+    cleanTrack(points, {
+      removeImpossible: points.some((point) => Math.abs(point.time) > 1e11),
+    }).points,
+  );
   const events: RidingEvent[] = [];
   const addRuns = (type: RidingEventType, matches: (index: number) => boolean) => {
     let start = -1;

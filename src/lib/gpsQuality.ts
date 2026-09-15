@@ -1,6 +1,8 @@
 import type { Point } from "../types";
 
 const EARTH_RADIUS_METERS = 6_371_000;
+/** Generous upper bound for downhill MTB GPS telemetry. Values above this are treated as GPS review data. */
+export const MAX_BELIEVABLE_SPEED_KMH = 160;
 
 export type GpsConfidence = "good" | "review" | "poor";
 
@@ -45,7 +47,7 @@ export function cleanTrack(
   points: Point[],
   options: GpsQualityOptions = {},
 ): GpsQualityResult {
-  const maxSpeedKmh = options.maxSpeedKmh ?? 160;
+  const maxSpeedKmh = options.maxSpeedKmh ?? MAX_BELIEVABLE_SPEED_KMH;
   const maxGapSeconds = options.maxGapSeconds ?? 15;
   const poorGapSeconds = options.poorGapSeconds ?? 120;
   if (!(maxSpeedKmh > 0) || !(maxGapSeconds > 0) || !(poorGapSeconds >= maxGapSeconds))

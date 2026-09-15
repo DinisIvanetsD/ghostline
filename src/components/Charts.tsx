@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Telemetry, Trail, Run } from "../types";
 import { analyze, formatTime } from "../lib/analysis";
+import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 function useChartWidth() {
   const [element, ref] = useState<SVGSVGElement | null>(null);
   const [width, setWidth] = useState(1000);
@@ -34,7 +35,11 @@ export function TelemetryChart({
     right = width - 12,
     span = right - left;
   const values = current.samples.concat(ghost.samples);
-  const max = values.reduce((v, s) => Math.max(v, s[metric]), -Infinity) * 1.08;
+  const plottedValue = (sample: (typeof values)[number]) =>
+    metric === "speed"
+      ? Math.min(MAX_BELIEVABLE_SPEED_KMH, Math.max(0, sample.speed))
+      : sample.elevation;
+  const max = values.reduce((v, s) => Math.max(v, plottedValue(s)), -Infinity) * 1.08;
   const min =
     metric === "elevation"
       ? values.reduce((v, s) => Math.min(v, s.elevation), Infinity) - 10
@@ -50,12 +55,13 @@ export function TelemetryChart({
       )
       .map(
         (s, i) =>
-          `${i ? "L" : "M"}${x(s.fraction).toFixed(2)},${y(s[metric]).toFixed(2)}`,
+          `${i ? "L" : "M"}${x(s.fraction).toFixed(2)},${y(plottedValue(s)).toFixed(2)}`,
       )
       .join(" ");
   const sample = current.samples.reduce((a, b) =>
     Math.abs(b.fraction - progress) < Math.abs(a.fraction - progress) ? b : a,
   );
+  const sampleValue = plottedValue(sample);
   const boundaries = [0, ...trail.boundaries, 1];
   return (
     <section className="panel telemetry">
@@ -81,7 +87,9 @@ export function TelemetryChart({
           <i className="dot current" />
           Current{" "}
           <b>
-            {sample[metric].toFixed(1)} {metric === "speed" ? "km/h" : "m"}
+            {metric === "speed" && sample.speed > MAX_BELIEVABLE_SPEED_KMH
+              ? "GPS review"
+              : `${sampleValue.toFixed(1)} ${metric === "speed" ? "km/h" : "m"}`}
           </b>
         </span>
         <span className="muted">
@@ -148,7 +156,7 @@ export function TelemetryChart({
           y2="150"
           className="cursor-line"
         />
-        <circle cx={x(progress)} cy={y(sample[metric])} r="4" fill="#d5f55a" />
+        <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#d5f55a" />
       </svg>
       <label className="scrubber">
         <span>Trail progress</span>
