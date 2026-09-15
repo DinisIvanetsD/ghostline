@@ -10,6 +10,7 @@ import {
   Check,
   CircleAlert,
   FileUp,
+  LogOut,
   MapPin,
   Pencil,
   Plus,
@@ -24,7 +25,11 @@ import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
 import { clipToRouteFinish, matchRoute } from "../lib/routeMatch";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
-type Props = { data: AppData; onChange: (data: AppData) => boolean | void };
+type Props = {
+  data: AppData;
+  onChange: (data: AppData) => boolean | void;
+  onSignOut?: () => void;
+};
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 const clone = (data: AppData): AppData => ({
@@ -387,7 +392,7 @@ export function Garage({ data, onChange }: Props) {
   );
 }
 
-export function ProfileSettings({ data, onChange }: Props) {
+export function ProfileSettings({ data, onChange, onSignOut }: Props) {
   const [profile, setProfile] = useState<Profile>(data.profile);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -408,8 +413,8 @@ export function ProfileSettings({ data, onChange }: Props) {
   return (
     <Section title="Rider profile">
       <p className="muted">
-        Your profile lives on this device. GHOSTLINE does not create an account
-        or store a password here.
+        Your rider workspace is saved on this device. Account sign-in keeps it
+        separate from other riders using this phone; cloud sync is coming next.
       </p>
       <form className="form-grid" onSubmit={save}>
         <label className="field">
@@ -443,6 +448,12 @@ export function ProfileSettings({ data, onChange }: Props) {
             <span className="muted">
               <Check size={15} /> Saved locally
             </span>
+          )}
+          {onSignOut && (
+            <button className="button secondary" type="button" onClick={onSignOut}>
+              <LogOut size={16} />
+              Sign out
+            </button>
           )}
         </div>
       </form>

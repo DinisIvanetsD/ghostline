@@ -18,6 +18,17 @@ describe("storage validation", () => {
     const broken = { ...data, runs: [{ ...data.runs[0], bikeId: "missing" }] };
     expect(() => saveData(broken)).toThrow(/missing bike/);
   });
+  it("keeps workspaces isolated when an account scope is supplied", () => {
+    const data = createDemoData();
+    data.profile.name = "Rider A";
+    saveData(data, "user-a");
+
+    expect(loadData("user-a").profile.name).toBe("Rider A");
+    expect(loadData("user-b").demo).toBe(true);
+    expect(localStorage.getItem("ghostline.data.v1.user-a")).toContain(
+      "Rider A",
+    );
+  });
   it("shows demo data while preserving corrupt storage and exposes a warning", () => {
     localStorage.setItem("ghostline.data.v1", JSON.stringify({ version: 2 }));
     const loaded = loadData();

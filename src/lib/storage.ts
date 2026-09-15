@@ -7,6 +7,7 @@ import {
 import { clipToRouteFinish } from "./routeMatch";
 import type { AppData, Bike, Point, Profile, Run, Trail } from "../types";
 const KEY = "ghostline.data.v1";
+const storageKey = (scope?: string) => (scope ? `${KEY}.${scope}` : KEY);
 let storageWarning = "";
 const metersBetween = (a: Pick<Point, "lat" | "lon">, b: Pick<Point, "lat" | "lon">) => {
   const rad = Math.PI / 180;
@@ -220,9 +221,10 @@ export function validateData(input: unknown): AppData {
 export function readStorageWarning(): string {
   return storageWarning;
 }
-export function loadData(): AppData {
+export function loadData(scope?: string): AppData {
   try {
-    const raw = localStorage.getItem(KEY);
+    const key = storageKey(scope);
+    const raw = localStorage.getItem(key);
     if (!raw) {
       storageWarning = "";
       return createDemoData();
@@ -241,7 +243,7 @@ export function loadData(): AppData {
       )
     ) {
       const upgraded = createDemoData();
-      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      localStorage.setItem(key, JSON.stringify(upgraded));
       storageWarning = "";
       return upgraded;
     }
@@ -258,7 +260,7 @@ export function loadData(): AppData {
       )
     ) {
       const upgraded = createDemoData();
-      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      localStorage.setItem(key, JSON.stringify(upgraded));
       storageWarning = "";
       return upgraded;
     }
@@ -274,7 +276,7 @@ export function loadData(): AppData {
       data.trails.some((trail) => trail.id === "secret-spot" && !trail.finishPoint)
     ) {
       const upgraded = createDemoData();
-      localStorage.setItem(KEY, JSON.stringify(upgraded));
+      localStorage.setItem(key, JSON.stringify(upgraded));
       storageWarning = "";
       return upgraded;
     }
@@ -355,7 +357,7 @@ export function loadData(): AppData {
             : trail,
         );
         const upgraded = validateData({ ...data, trails, runs });
-        localStorage.setItem(KEY, JSON.stringify(upgraded));
+        localStorage.setItem(key, JSON.stringify(upgraded));
         storageWarning = "";
         return upgraded;
       }
@@ -367,8 +369,8 @@ export function loadData(): AppData {
     return createDemoData();
   }
 }
-export function saveData(data: AppData): void {
-  localStorage.setItem(KEY, JSON.stringify(validateData(data)));
+export function saveData(data: AppData, scope?: string): void {
+  localStorage.setItem(storageKey(scope), JSON.stringify(validateData(data)));
   storageWarning = "";
 }
 export function parseBackup(text: string): AppData {

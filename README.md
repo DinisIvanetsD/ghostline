@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173. No API keys, database, or account-provider configuration is required.
+Open http://127.0.0.1:5173. No API keys, database, or external account-provider configuration is required for the local MVP.
 
 ```sh
 npm run typecheck
@@ -86,7 +86,7 @@ PB is the shortest total duration among the rider's runs assigned to the selecte
 
 ## Deliberate MVP limits
 
-- **The rider profile is local, not a cloud-authenticated account.** No password, multi-user authorization, server database, cross-device sync or recovery service is implemented. Data lives in this browser; export backups before clearing it.
+- **Accounts are local to this device in the MVP.** The production build includes email/password registration and sign-in, with password hashes and each rider's workspace kept in browser storage. There is no cloud database, cross-device sync, password reset or recovery service yet; export backups before clearing browser data.
 - Local storage capacity varies by browser. Save failures retain the current workspace and show a message. Large libraries should move to IndexedDB/server storage next. Video blobs are previewed locally and are never copied into the workspace store.
 - One complete track/segment or route per file, up to 10 MB and 25,000 points. Runs accept GPX or Garmin FIT timestamps; duplicate second-resolution samples are coalesced. TCX, multiple segments and sensor streams are not included; Video Lab ride-window trimming is available after import.
 - Missing elevation is represented as zero; elevation/descent then cannot be treated as measured telemetry. GPS speed is derived from geometry and isolated impossible spikes are removed before telemetry; unrecoverable gaps remain flagged for review.
@@ -99,7 +99,7 @@ The default basemap uses [OpenStreetMap tiles](https://operations.osmfoundation.
 
 ## Next steps
 
-1. Add authenticated accounts, a database and object storage for cross-device libraries.
+1. Move authentication and workspace storage to a hosted backend (Supabase, Firebase or Clerk + a database) for secure cross-device libraries, password recovery and team sharing.
 2. Introduce geographic timing gates, GPS quality reporting and run trimming.
 3. Add IndexedDB/offline app caching and a production map-provider configuration.
 4. Persist run-linked video assets in IndexedDB/object storage and add an FFmpeg/WebCodecs renderer for one-click MP4 export.

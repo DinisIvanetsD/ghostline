@@ -3,8 +3,8 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 const isPagesBuild = Boolean(
-  (globalThis as { process?: { env?: { GITHUB_ACTIONS?: string } } }).process?.env
-    ?.GITHUB_ACTIONS,
+  (globalThis as { process?: { env?: { GITHUB_PAGES?: string } } }).process?.env
+    ?.GITHUB_PAGES,
 );
 
 function offlineServiceWorker(): Plugin {

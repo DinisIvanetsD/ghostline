@@ -52,6 +52,8 @@ import {
   ImportRun,
 } from "./components/Management";
 import { VideoLab } from "./components/VideoLab";
+import { AuthScreen } from "./components/AuthScreen";
+import { getSession, signOut, type AuthSession } from "./lib/auth";
 
 type Page =
   | "analysis"
@@ -69,7 +71,9 @@ const nav = [
   { id: "garage", label: "Bike garage", icon: Bike },
 ] as const;
 export default function App() {
-  const [data, setData] = useState<AppData>(loadData),
+  const requiresAuth = import.meta.env.PROD;
+  const [session, setSession] = useState<AuthSession | null>(() => getSession());
+  const [data, setData] = useState<AppData>(() => loadData(getSession()?.userId)),
     [page, setPage] = useState<Page>("analysis"),
     [trailId, setTrailId] = useState(data.trails[0]?.id ?? ""),
     [runId, setRunId] = useState(""),
@@ -173,7 +177,7 @@ export default function App() {
   const worst = deltas.length ? deltas.indexOf(Math.max(...deltas)) : 0;
   const update = (next: AppData) => {
     try {
-      saveData(next);
+      saveData(next, session?.userId);
       setData(next);
       setNotice("Changes saved on this device.");
       return true;
@@ -185,6 +189,33 @@ export default function App() {
       );
       return false;
     }
+  };
+  const authenticate = (nextSession: AuthSession) => {
+    const loaded = loadData(nextSession.userId);
+    const nextData = loaded.demo
+      ? {
+          ...loaded,
+          demo: false,
+          profile: {
+            ...loaded.profile,
+            name: nextSession.name,
+            email: nextSession.email,
+          },
+        }
+      : loaded;
+    try {
+      saveData(nextData, nextSession.userId);
+      setData(nextData);
+      setSession(nextSession);
+      setPage("analysis");
+      setNotice("");
+    } catch {
+      setNotice("Could not open your rider workspace on this device.");
+    }
+  };
+  const logout = () => {
+    signOut();
+    setSession(null);
   };
   const selectTrail = (id: string) => {
     setTrailId(id);
@@ -219,6 +250,9 @@ export default function App() {
     import: "Import a run",
     video: "Video lab",
   };
+  if (requiresAuth && !session) {
+    return <AuthScreen onAuthenticated={authenticate} />;
+  }
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -275,7 +309,7 @@ export default function App() {
             </span>
             <span>
               <strong>{data.profile.name}</strong>
-              <small>{data.demo ? "Demo rider" : "Local rider"}</small>
+              <small>{session ? "Signed-in rider" : data.demo ? "Demo rider" : "Local rider"}</small>
             </span>
             <Settings size={16} />
           </button>
@@ -328,7 +362,7 @@ export default function App() {
                       : "Every attempt, every improvement. All in one place."}
                   </p>
                 </div>
-                {run?.synthetic && (
+                {data.demo && run?.synthetic && (
                   <span className="demo-label">
                     DEMO SESSION <i />
                   </span>
@@ -848,6 +882,7 @@ export default function App() {
                 key={JSON.stringify(data.profile)}
                 data={data}
                 onChange={update}
+                onSignOut={session ? logout : undefined}
               />
               <section className="panel data-panel">
                 <h2>Your data stays yours.</h2>
@@ -943,9 +978,11 @@ export default function App() {
               <span>Chase yourself.</span>
             </span>
             <span>
-              {data.runs.some((r) => r.synthetic)
+              {data.demo && data.runs.some((r) => r.synthetic)
                 ? "Includes synthetic demo GPS · Santa Marta das Cortiças"
-                : "Local workspace"}{" "}
+                : session
+                  ? "Signed-in workspace · saved on this device"
+                  : "Local workspace"}{" "}
               <span className="footer-divider">/</span> RIDE → ANALYZE → SEND
               AGAIN
             </span>
