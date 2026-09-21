@@ -800,8 +800,22 @@ export default function App() {
                                 })}
                               </td>
                               <td>
-                                {data.bikes.find((b) => b.id === r.bikeId)
-                                  ?.name ?? "Unassigned"}
+                                <span className="history-bike-cell">
+                                  {data.bikes.find((b) => b.id === r.bikeId)
+                                    ?.name ?? "Unassigned"}
+                                  {r.bikeSetupSnapshot &&
+                                    [
+                                      r.bikeSetupSnapshot.suspensionSetup,
+                                      r.bikeSetupSnapshot.tyres,
+                                      r.bikeSetupSnapshot.wheels,
+                                    ].some(Boolean) && (
+                                      <small>
+                                        {[r.bikeSetupSnapshot.suspensionSetup, r.bikeSetupSnapshot.tyres, r.bikeSetupSnapshot.wheels]
+                                          .filter(Boolean)
+                                          .join(" · ")}
+                                      </small>
+                                    )}
+                                </span>
                               </td>
                               <td className="mono">{formatTime(t.duration)}</td>
                               <td

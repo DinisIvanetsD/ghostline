@@ -43,7 +43,7 @@ import {
   type RidingEvent,
   type RidingEventType,
 } from "../lib/ridingEvents";
-import { renderOverlayWebM } from "../lib/videoRender";
+import { canRenderOverlayWebM, renderOverlayWebM } from "../lib/videoRender";
 import { TrailMap } from "./TrailMap";
 
 interface Props {
@@ -144,6 +144,7 @@ export function VideoLab({ data }: Props) {
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "done" | "error">("idle");
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderError, setRenderError] = useState("");
+  const overlayExportSupported = canRenderOverlayWebM();
   const renderAbort = useRef<AbortController | null>(null);
   const hydratedProjectRun = useRef<string | null>(null);
   const [projectReady, setProjectReady] = useState(false);
@@ -615,13 +616,13 @@ export function VideoLab({ data }: Props) {
               <div className="section-heading"><div><span className="eyebrow"><Download size={13} /> TAKE IT FURTHER</span><h2>Export an edit plan</h2></div></div>
               <p>Render a shareable overlay locally, or send the precise cuts and sector windows to your desktop editor.</p>
               <div className="export-actions">
-                <button className="button primary" disabled={!videoDuration || renderState === "rendering"} onClick={() => void exportOverlay()}><Film size={15} /> {renderState === "rendering" ? `Rendering ${Math.round(renderProgress * 100)}%` : "Export overlay WebM"}</button>
+                <button className="button primary" disabled={!videoDuration || !overlayExportSupported || renderState === "rendering"} onClick={() => void exportOverlay()}><Film size={15} /> {renderState === "rendering" ? `Rendering ${Math.round(renderProgress * 100)}%` : "Export overlay WebM"}</button>
                 <button className="button secondary" disabled={!videoDuration || renderState === "rendering"} onClick={exportPlan}><Download size={15} /> Download edit plan</button>
               </div>
               {renderState === "rendering" && <div className="render-progress"><progress max="1" value={renderProgress} /><button className="text-button" onClick={() => renderAbort.current?.abort()}>Cancel render</button></div>}
               {renderState === "done" && <span className="render-success"><Check size={14} /> Overlay clip downloaded</span>}
               {renderError && <p className="error-line render-error"><Camera size={14} /> {renderError}</p>}
-              <span className="muted export-note">WebM overlay keeps the source local; MP4 rendering can use the same frame plan later.</span>
+              <span className="muted export-note">{overlayExportSupported ? "WebM overlay keeps the source local; MP4 rendering can use the same frame plan later." : "This device cannot render WebM in-browser. Download the edit plan and render it in a desktop editor."}</span>
             </section>
           </div>
 

@@ -22,6 +22,12 @@ export interface Profile {
   email: string;
   home: string;
 }
+export interface BikeSetupSnapshot {
+  suspensionSetup: string;
+  tyres: string;
+  wheels: string;
+  notes: string;
+}
 export interface Trail {
   id: string;
   name: string;
@@ -43,6 +49,8 @@ export interface Run {
   date: string;
   points: Point[];
   notes: string;
+  /** Bike settings captured at import time so historical comparisons stay honest. */
+  bikeSetupSnapshot?: BikeSetupSnapshot;
   synthetic?: boolean;
 }
 export interface AppData {

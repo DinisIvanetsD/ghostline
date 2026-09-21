@@ -23,6 +23,7 @@ import { parseGPX } from "../lib/gpx";
 import { analyze, formatTime } from "../lib/analysis";
 import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
 import { clipToRouteFinish, matchRoute } from "../lib/routeMatch";
+import { clipToRideWindow, detectStops, type StopAnalysis } from "../lib/videoSync";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
 type Props = {
@@ -746,6 +747,8 @@ export function ImportRun({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState("");
   const [gpsQuality, setGpsQuality] = useState<GpsQualityResult | null>(null);
+  const [rideWindow, setRideWindow] = useState<StopAnalysis | null>(null);
+  const [trimToRideWindow, setTrimToRideWindow] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const trail = useMemo(
@@ -758,6 +761,8 @@ export function ImportRun({
     setFile(null);
     setPoints(null);
     setGpsQuality(null);
+    setRideWindow(null);
+    setTrimToRideWindow(false);
     setError("");
     if (picked.size > 10 * 1024 * 1024) {
       setError("GPX and FIT files must be 10 MB or smaller.");
@@ -784,6 +789,7 @@ export function ImportRun({
       setFile(picked);
       setPoints(quality.points);
       setGpsQuality(quality);
+      setRideWindow(detectStops(quality.points));
       setName(picked.name.replace(/\.(?:gpx|fit)$/i, ""));
       const firstTime = parsed[0]?.time;
       if (firstTime) setDate(new Date(firstTime).toISOString().slice(0, 10));
@@ -809,9 +815,12 @@ export function ImportRun({
     const physicalTrail = trail.finishPoint
       ? clipToRouteFinish(trail.points, trail.points, trail.finishPoint)
       : trail.points;
-    const importedPoints = trail.finishPoint
-      ? clipToRouteFinish(points, physicalTrail, trail.finishPoint)
+    const ridePoints = trimToRideWindow && rideWindow
+      ? clipToRideWindow(points, rideWindow.rideWindow)
       : points;
+    const importedPoints = trail.finishPoint
+      ? clipToRouteFinish(ridePoints, physicalTrail, trail.finishPoint)
+      : ridePoints;
     let targetTrail =
       physicalTrail.length === trail.points.length
         ? trail
@@ -858,6 +867,17 @@ export function ImportRun({
           date,
           points: importedPoints,
           notes: "",
+          bikeSetupSnapshot: (() => {
+            const bike = data.bikes.find((item) => item.id === bikeId);
+            return bike
+              ? {
+                  suspensionSetup: bike.suspensionSetup ?? "",
+                  tyres: bike.tyres ?? "",
+                  wheels: bike.wheels ?? "",
+                  notes: bike.notes ?? "",
+                }
+              : undefined;
+          })(),
         },
       ],
       demo: false,
@@ -866,6 +886,8 @@ export function ImportRun({
     onImported(trailId, runId);
     setFile(null);
     setPoints(null);
+    setRideWindow(null);
+    setTrimToRideWindow(false);
     setError("");
   };
   const telemetryResult = useMemo(() => {
@@ -926,6 +948,21 @@ export function ImportRun({
             : "GPS needs a quick review before you chase this run."}{" "}
           {gpsQuality.maxObservedSpeedKmh > 120 && `Peak segment ${Math.round(gpsQuality.maxObservedSpeedKmh)} km/h.`}
         </p>
+      )}
+      {rideWindow && rideWindow.stops.length > 0 && (
+        <label className="import-trim-toggle">
+          <input
+            type="checkbox"
+            checked={trimToRideWindow}
+            onChange={(event) => setTrimToRideWindow(event.target.checked)}
+          />
+          <span>
+            <strong>Trim to active ride</strong>
+            <small>
+              {rideWindow.stops.length} pause{rideWindow.stops.length === 1 ? "" : "s"} detected · active window {formatTime(rideWindow.rideWindow.duration)}. Removes lead-in and roll-out before saving.
+            </small>
+          </span>
+        </label>
       )}
       <form className="form-grid" onSubmit={save}>
         <label className="field">

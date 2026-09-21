@@ -60,6 +60,23 @@ export function detectStops(points: Point[], options: StopDetectionOptions = {})
   return { stops, rideWindow: { startTime, endTime, duration: Math.max(0, endTime - startTime) } };
 }
 
+/**
+ * Returns the samples inside a detected moving window. We intentionally keep
+ * the original samples (rather than inventing interpolated points) so FIT and
+ * DJI timestamps stay auditable and strictly increasing.
+ */
+export function clipToRideWindow(points: Point[], window: RideWindow): Point[] {
+  if (points.length < 2 || !Number.isFinite(window.startTime) || !Number.isFinite(window.endTime) || window.endTime <= window.startTime)
+    return points;
+  const scale = points.reduce((max, point) => Math.max(max, Math.abs(point.time)), 0) > 1e11 ? 1000 : 1;
+  const start = points[0].time / scale;
+  const clipped = points.filter((point) => {
+    const elapsed = point.time / scale - start;
+    return elapsed >= window.startTime && elapsed <= window.endTime;
+  });
+  return clipped.length >= 2 ? clipped : points;
+}
+
 function baseRate(settings: VideoSyncSettings): number {
   const rate = settings.playbackRate ?? 1;
   if (!Number.isFinite(rate) || rate <= 0) throw new Error("Playback rate must be greater than zero");

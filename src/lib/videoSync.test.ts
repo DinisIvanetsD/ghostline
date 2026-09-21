@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point, Run, Trail } from "../types";
-import { detectStops, runTimeForVideo, sectorVideoWindows, videoTimeForRun } from "./videoSync";
+import { clipToRideWindow, detectStops, runTimeForVideo, sectorVideoWindows, videoTimeForRun } from "./videoSync";
 
 const point = (time: number, lat: number, lon = -8.4): Point => ({ time, lat, lon, ele: 100 });
 const trail: Trail = { id: "t", name: "Trail", location: "Braga", difficulty: "Black", points: [point(0, 41), point(10, 41.001)], boundaries: [0.5], sectorNames: ["Top", "Bottom"] };
@@ -27,6 +27,7 @@ describe("video synchronization", () => {
     const result = detectStops(points, { speedThresholdKmh: 2, minDurationSeconds: 3 });
     expect(result.stops).toHaveLength(2);
     expect(result.rideWindow).toMatchObject({ startTime: 5, endTime: 15, duration: 10 });
+    expect(clipToRideWindow(points, result.rideWindow).map((sample) => sample.time)).toEqual([5, 10, 15]);
   });
 
   it("maps both directions with offset, playback rate, and piecewise anchors", () => {

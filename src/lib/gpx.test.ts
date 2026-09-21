@@ -29,7 +29,7 @@ describe("GPX parser", () => {
     expect(points).toHaveLength(2);
     expect(points[0].ele).toBe(0);
   });
-  it("rejects malformed XML, mixed track and route, and discontinuous tracks", () => {
+  it("rejects malformed XML and mixed track and route", () => {
     expect(() =>
       parseGPX('<gpx><trk><trkseg><trkpt lat="0" lon="0"></gpx>'),
     ).toThrow(/malformed/);
@@ -38,9 +38,13 @@ describe("GPX parser", () => {
         '<gpx><trk><trkseg><trkpt lat="0" lon="0"/><trkpt lat="1" lon="1"/></trkseg></trk><rte><rtept lat="0" lon="0"/><rtept lat="1" lon="1"/></rte></gpx>',
       ),
     ).toThrow(/both/);
-    expect(() => parseGPX("<gpx><trk><trkseg/><trkseg/></trk></gpx>")).toThrow(
-      /segments/,
+  });
+  it("joins multiple track segments in recorded order", () => {
+    const points = parseGPX(
+      '<gpx><trk><trkseg><trkpt lat="38" lon="-9"><time>2026-01-01T00:00:00Z</time></trkpt><trkpt lat="38.001" lon="-9.001"><time>2026-01-01T00:00:01Z</time></trkpt></trkseg><trkseg><trkpt lat="38.002" lon="-9.002"><time>2026-01-01T00:00:02Z</time></trkpt><trkpt lat="38.003" lon="-9.003"><time>2026-01-01T00:00:03Z</time></trkpt></trkseg></trk></gpx>',
     );
+    expect(points).toHaveLength(4);
+    expect(points.at(-1)?.lat).toBe(38.003);
   });
   it("rejects out of range coordinates and non-monotonic timestamps", () => {
     expect(() =>

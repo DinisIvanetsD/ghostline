@@ -27,6 +27,13 @@ function preferredMimeType(): string {
   return candidates.find((mime) => MediaRecorder.isTypeSupported(mime)) ?? "";
 }
 
+/** Capability check used to keep the export action honest on iOS Safari. */
+export function canRenderOverlayWebM(): boolean {
+  if (typeof MediaRecorder === "undefined" || typeof HTMLCanvasElement === "undefined") return false;
+  if (!MediaRecorder.isTypeSupported || !preferredMimeType()) return false;
+  return typeof HTMLVideoElement !== "undefined" && "captureStream" in HTMLVideoElement.prototype;
+}
+
 function waitForSeek(video: HTMLVideoElement, target: number): Promise<void> {
   if (video.readyState >= 2 && Math.abs(video.currentTime - target) < 0.02)
     return Promise.resolve();

@@ -31,12 +31,12 @@ export function parseGPX(text: string, requireTime = false): Point[] {
   let nodes: Element[];
   if (tracks[0]) {
     const segments = children(container, "trkseg");
-    if (segments.length > 1)
-      throw new Error("Invalid GPX: multiple track segments are not supported");
-    nodes =
-      segments.length === 1
-        ? children(segments[0], "trkpt")
-        : children(container, "trkpt");
+    // DJI Mimo and several head units split a recording into multiple
+    // segments after a pause or a brief GPS dropout. Treat them as one
+    // ordered track while retaining the timestamp validation below.
+    nodes = segments.length
+      ? segments.flatMap((segment) => children(segment, "trkpt"))
+      : children(container, "trkpt");
   } else nodes = children(container, "rtept");
   if (nodes.length < 2)
     throw new Error("Invalid GPX: at least two track points are required");
