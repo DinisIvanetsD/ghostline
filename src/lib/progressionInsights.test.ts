@@ -37,6 +37,10 @@ describe("progressionInsights", () => {
       latestDeltaToPersonalBest: null,
       recentAverageDuration: null,
       consistencySpread: null,
+      consistencyScore: null,
+      trend: "insufficient",
+      nextTargetDuration: null,
+      focusSector: null,
       sectorTrends: [],
     });
   });
@@ -48,6 +52,9 @@ describe("progressionInsights", () => {
     expect(result.latestDeltaToPersonalBest).toBe(0);
     expect(result.recentAverageDuration).toBe(20);
     expect(result.consistencySpread).toBe(0);
+    expect(result.consistencyScore).toBe(100);
+    expect(result.trend).toBe("insufficient");
+    expect(result.nextTargetDuration).toBe(20);
   });
 
   it("orders by date and computes the latest delta to the PB", () => {
@@ -61,6 +68,9 @@ describe("progressionInsights", () => {
     expect(result.latestDeltaToPersonalBest).toBe(6);
     expect(result.recentAverageDuration).toBe(22.5);
     expect(result.consistencySpread).toBe(3);
+    expect(result.consistencyScore).toBeCloseTo(86.67, 1);
+    expect(result.trend).toBe("slowing");
+    expect(result.nextTargetDuration).toBeCloseTo(19.575, 5);
   });
 
   it("provides sector trend metrics when a trail is supplied", () => {
@@ -71,5 +81,6 @@ describe("progressionInsights", () => {
     expect(result.sectorTrends).toHaveLength(2);
     expect(result.sectorTrends[0].name).toBe("Top");
     expect(result.sectorTrends[0].deltaToBest).toBe(0);
+    expect(result.focusSector?.name).toBe("Top");
   });
 });

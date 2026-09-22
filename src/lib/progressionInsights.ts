@@ -23,6 +23,14 @@ export interface ProgressionInsights {
   recentAverageDuration: number | null;
   /** Max minus min duration across the recent window, in seconds. */
   consistencySpread: number | null;
+  /** 0-100 score where 100 means the recent runs are tightly grouped. */
+  consistencyScore: number | null;
+  /** Direction of the recent average compared with the previous window. */
+  trend: "improving" | "stable" | "slowing" | "insufficient";
+  /** A reachable next target between the current average and the PB. */
+  nextTargetDuration: number | null;
+  /** Sector with the largest latest-to-best gap. */
+  focusSector: SectorTrend | null;
   sectorTrends: SectorTrend[];
 }
 
@@ -51,6 +59,10 @@ export function progressionInsights(
     latestDeltaToPersonalBest: null,
     recentAverageDuration: null,
     consistencySpread: null,
+    consistencyScore: null,
+    trend: "insufficient",
+    nextTargetDuration: null,
+    focusSector: null,
     sectorTrends: [],
   };
   if (!runs.length) return empty;
@@ -79,6 +91,32 @@ export function progressionInsights(
   const recentAverageDuration =
     durations.reduce((sum, value) => sum + value, 0) / durations.length;
   const consistencySpread = Math.max(...durations) - Math.min(...durations);
+  const consistencyScore = Math.max(
+    0,
+    Math.min(100, 100 - (consistencySpread / recentAverageDuration) * 100),
+  );
+  const previous = timed.slice(Math.max(0, timed.length - windowSize * 2), -windowSize);
+  const previousAverage = previous.length
+    ? previous.reduce((sum, item) => sum + item.duration, 0) / previous.length
+    : null;
+  const trend =
+    previousAverage === null || recent.length < 2
+      ? "insufficient"
+      : recentAverageDuration < previousAverage - 0.25
+        ? "improving"
+        : recentAverageDuration > previousAverage + 0.25
+          ? "slowing"
+          : "stable";
+  const nextTargetDuration =
+    recentAverageDuration > personalBest.duration
+      ? personalBest.duration + (recentAverageDuration - personalBest.duration) * 0.35
+      : personalBest.duration;
+  const sectorTrends = buildSectorTrends(timed, options.trail);
+  const focusSector = sectorTrends.length
+    ? sectorTrends.reduce((worst, sector) =>
+        sector.deltaToBest > worst.deltaToBest ? sector : worst,
+      )
+    : null;
 
   return {
     runCount: timed.length,
@@ -89,7 +127,11 @@ export function progressionInsights(
     latestDeltaToPersonalBest: latest.duration - personalBest.duration,
     recentAverageDuration,
     consistencySpread,
-    sectorTrends: buildSectorTrends(timed, options.trail),
+    consistencyScore,
+    trend,
+    nextTargetDuration,
+    focusSector,
+    sectorTrends,
   };
 }
 

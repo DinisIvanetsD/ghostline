@@ -12,10 +12,19 @@ export interface Bike {
   type: string;
   /** Optional setup notes kept with the bike so runs remain reproducible. */
   suspensionSetup?: string;
+  sag?: string;
+  rebound?: string;
+  pressure?: string;
   tyres?: string;
   wheels?: string;
   notes?: string;
   lastService?: string;
+  serviceHistory?: BikeServiceRecord[];
+}
+export interface BikeServiceRecord {
+  id: string;
+  date: string;
+  description: string;
 }
 export interface Profile {
   name: string;
@@ -24,6 +33,9 @@ export interface Profile {
 }
 export interface BikeSetupSnapshot {
   suspensionSetup: string;
+  sag?: string;
+  rebound?: string;
+  pressure?: string;
   tyres: string;
   wheels: string;
   notes: string;

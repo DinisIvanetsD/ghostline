@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../types";
-import { clipToFinish, clipToRouteFinish, matchRoute } from "./routeMatch";
+import { clipToFinish, clipToRouteFinish, detectTrail, matchRoute, scoreRouteMatch } from "./routeMatch";
 
 const route: Point[] = Array.from({ length: 20 }, (_, i) => ({
   lat: 38 + i * 0.001,
@@ -73,6 +73,16 @@ describe("matchRoute", () => {
     const loop = [...route, route[0]];
     expect(matchRoute(loop, loop).ok).toBe(true);
     expect(matchRoute([...loop].reverse(), loop).ok).toBe(false);
+  });
+  it("scores a matching route and detects it among nearby trail choices", () => {
+    const other: Point[] = route.map((point) => ({ ...point, lat: point.lat + 0.05 }));
+    const scored = scoreRouteMatch(shifted(2), route);
+    expect(scored.confidence).toBe("high");
+    expect(scored.corridorCoverage).toBeGreaterThan(0.9);
+    expect(detectTrail(shifted(2), [
+      { id: "other", name: "Other", location: "Braga", difficulty: "Black", points: other, boundaries: [], sectorNames: [] },
+      { id: "target", name: "Target", location: "Braga", difficulty: "Black", points: route, boundaries: [], sectorNames: [] },
+    ])?.trail.id).toBe("target");
   });
 });
 

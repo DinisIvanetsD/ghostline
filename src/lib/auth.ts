@@ -2,6 +2,7 @@ export type AuthSession = {
   userId: string;
   name: string;
   email: string;
+  provider?: "local" | "supabase";
 };
 
 type StoredUser = AuthSession & { passwordHash: string };
@@ -65,7 +66,7 @@ async function hashPassword(value: string): Promise<string> {
 }
 
 function sessionFrom(user: StoredUser): AuthSession {
-  return { userId: user.userId, name: user.name, email: user.email };
+  return { userId: user.userId, name: user.name, email: user.email, provider: "local" };
 }
 
 export function getSession(): AuthSession | null {

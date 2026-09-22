@@ -1,4 +1,4 @@
-import type { Point } from "../types";
+import type { Point, Trail } from "../types";
 const R = 6_371_000;
 const distance = (
   a: Pick<Point, "lat" | "lon">,
@@ -189,4 +189,80 @@ export function matchRoute(
     previous = Math.max(previous, progress);
   }
   return { ok: true };
+}
+
+export interface RouteMatchScore {
+  score: number;
+  corridorCoverage: number;
+  endpointDistance: number;
+  lengthRatio: number;
+  confidence: "high" | "medium" | "low";
+}
+
+export interface DetectedTrail {
+  trail: Trail;
+  match: RouteMatchScore;
+}
+
+const clamp = (value: number, min = 0, max = 1) =>
+  Math.max(min, Math.min(max, value));
+
+/**
+ * Scores a recording against a trail without requiring a perfect endpoint.
+ * This is deliberately a review aid for imports: the existing strict
+ * matchRoute guard still decides whether a selected route may be saved.
+ */
+export function scoreRouteMatch(
+  runPoints: Point[],
+  trailPoints: Point[],
+  options?: { startPoints?: Array<Pick<Point, "lat" | "lon">> },
+): RouteMatchScore {
+  if (runPoints.length < 2 || trailPoints.length < 2)
+    return { score: 0, corridorCoverage: 0, endpointDistance: Infinity, lengthRatio: 0, confidence: "low" };
+  const baseRoute = simplify(trailPoints, 800);
+  const run = simplify(runPoints, 300);
+  const startCandidates = [baseRoute[0], ...(options?.startPoints ?? [])];
+  const start = startCandidates.reduce((best, candidate) =>
+    distance(run[0], candidate) < distance(run[0], best) ? candidate : best,
+  );
+  const route = start === baseRoute[0] ? baseRoute : [start, ...baseRoute];
+  const distances = cumulative(route);
+  const routeLength = distances.at(-1) ?? 0;
+  const runLength = cumulative(runPoints).at(-1) ?? 0;
+  const lengthRatio = routeLength > 0 ? runLength / routeLength : 0;
+  const hits = run.map((point) => nearest(point, route, distances));
+  const corridorCoverage = hits.length
+    ? hits.filter((hit) => hit.distance <= 250).length / hits.length
+    : 0;
+  const endpointDistance =
+    distance(run[0], route[0]) + distance(run.at(-1)!, route.at(-1)!);
+  const endpointScore = Math.exp(-endpointDistance / 500);
+  const lengthScore = clamp(1 - Math.abs(Math.log(Math.max(0.01, lengthRatio))) / Math.log(1.4));
+  const score = clamp(
+    corridorCoverage * 0.55 + endpointScore * 0.2 + lengthScore * 0.25,
+  );
+  return {
+    score,
+    corridorCoverage,
+    endpointDistance,
+    lengthRatio,
+    confidence: score >= 0.82 ? "high" : score >= 0.62 ? "medium" : "low",
+  };
+}
+
+/** Find the most likely trail for an imported recording for pre-save review. */
+export function detectTrail(runPoints: Point[], trails: Trail[]): DetectedTrail | undefined {
+  return trails
+    .map((trail) => {
+      // A configured finish gate makes DJI Mimo recordings robust to a walk
+      // or roll-out captured after the actual line.
+      const clipped = trail.finishPoint
+        ? clipToRouteFinish(runPoints, trail.points, trail.finishPoint)
+        : runPoints;
+      return {
+        trail,
+        match: scoreRouteMatch(clipped, trail.points, { startPoints: trail.startPoints }),
+      };
+    })
+    .sort((a, b) => b.match.score - a.match.score)[0];
 }

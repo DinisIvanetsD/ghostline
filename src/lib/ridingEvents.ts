@@ -1,7 +1,7 @@
 import type { Point } from "../types";
 import { cleanTrack } from "./gpsQuality";
 
-export type RidingEventType = "braking" | "acceleration" | "jump" | "pause";
+export type RidingEventType = "braking" | "acceleration" | "jump" | "pause" | "corner";
 
 export interface RidingEvent {
   id: string;
@@ -16,6 +16,7 @@ export interface RidingEvent {
   peakSpeed: number;
   speedChange: number;
   elevationChange: number;
+  turnAngle?: number;
 }
 
 export interface RidingEventOptions {
@@ -24,6 +25,7 @@ export interface RidingEventOptions {
   pauseSpeed?: number;
   pauseDuration?: number;
   jumpDrop?: number;
+  cornerAngle?: number;
   maxEventDuration?: number;
 }
 
@@ -34,6 +36,7 @@ const defaults: Required<RidingEventOptions> = {
   pauseSpeed: 2,
   pauseDuration: 3,
   jumpDrop: 1.5,
+  cornerAngle: 25,
   maxEventDuration: 5,
 };
 
@@ -46,6 +49,20 @@ function distanceBetween(a: Point, b: Point): number {
   return 2 * EARTH_RADIUS * Math.asin(Math.sqrt(Math.min(1, h)));
 }
 
+function bearing(a: Point, b: Point): number {
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  return Math.atan2(
+    Math.sin(dLon) * Math.cos(lat2),
+    Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon),
+  ) * 180 / Math.PI;
+}
+
+function angleBetween(a: number, b: number): number {
+  return Math.abs(((b - a + 540) % 360) - 180);
+}
+
 function seconds(points: Point): number {
   return Math.abs(points.time) > 1e11 ? points.time / 1000 : points.time;
 }
@@ -54,13 +71,14 @@ function measurements(points: Point[]) {
   const start = seconds(points[0]);
   return points.map((point, index) => {
     const time = seconds(point) - start;
-    if (!index) return { time, speed: 0, distance: 0, elevation: point.ele, acceleration: 0 };
+    if (!index) return { time, speed: 0, distance: 0, elevation: point.ele, acceleration: 0, turnAngle: 0 };
     const previous = points[index - 1];
     const dt = Math.max(0.001, time - (seconds(previous) - start));
     const distance = distanceBetween(previous, point);
     const speed = (distance / dt) * 3.6;
     const previousSpeed = index > 1 ? (distanceBetween(points[index - 2], previous) / Math.max(0.001, seconds(previous) - seconds(points[index - 2]))) * 3.6 : speed;
-    return { time, speed, distance, elevation: point.ele, acceleration: ((speed - previousSpeed) / 3.6) / dt };
+    const turnAngle = index > 1 ? angleBetween(bearing(points[index - 2], previous), bearing(previous, point)) : 0;
+    return { time, speed, distance, elevation: point.ele, acceleration: ((speed - previousSpeed) / 3.6) / dt, turnAngle };
   });
 }
 
@@ -70,8 +88,8 @@ function eventFrom(type: RidingEventType, start: number, end: number, values: Re
   const speedChange = b.speed - a.speed;
   const elevationChange = b.elevation - a.elevation;
   const peakSpeed = Math.max(...values.slice(start, end + 1).map((value) => value.speed));
-  const magnitude = type === "braking" || type === "acceleration" ? Math.abs(speedChange) : type === "jump" ? Math.abs(elevationChange) : b.time - a.time;
-  const scale = type === "jump" ? 6 : type === "pause" ? 8 : 30;
+  const magnitude = type === "braking" || type === "acceleration" ? Math.abs(speedChange) : type === "jump" ? Math.abs(elevationChange) : type === "corner" ? Math.max(...values.slice(start, end + 1).map((value) => value.turnAngle)) : b.time - a.time;
+  const scale = type === "jump" ? 6 : type === "pause" ? 8 : type === "corner" ? 90 : 30;
   const confidence = Math.min(0.99, Math.max(0.35, 0.45 + magnitude / scale));
   return {
     id: `${type}-${start}-${end}`,
@@ -86,6 +104,7 @@ function eventFrom(type: RidingEventType, start: number, end: number, values: Re
     peakSpeed,
     speedChange,
     elevationChange,
+    ...(type === "corner" ? { turnAngle: magnitude } : {}),
   };
 }
 
@@ -119,6 +138,7 @@ export function detectRidingEvents(points: Point[], options: RidingEventOptions 
   addRuns("braking", (i) => values[i].acceleration <= -1.0 && values[i].speed < values[i - 1].speed && values[i - 1].speed - values[i].speed >= config.brakingSpeedChange / 3);
   addRuns("acceleration", (i) => values[i].acceleration >= 1.0 && values[i].speed > values[i - 1].speed && values[i].speed - values[i - 1].speed >= config.accelerationSpeedChange / 3);
   addRuns("pause", (i) => values[i].speed <= config.pauseSpeed);
+  addRuns("corner", (i) => values[i].speed >= 8 && values[i].turnAngle >= (config.cornerAngle ?? defaults.cornerAngle));
   events.filter((event) => event.type === "pause").forEach((event) => {
     if (event.endTime - event.startTime < config.pauseDuration) events.splice(events.indexOf(event), 1);
   });
@@ -135,3 +155,4 @@ export const detectBrakingEvents = (points: Point[], options?: RidingEventOption
 export const detectAccelerationEvents = (points: Point[], options?: RidingEventOptions) => detectRidingEvents(points, options).filter((event) => event.type === "acceleration");
 export const detectJumpEvents = (points: Point[], options?: RidingEventOptions) => detectRidingEvents(points, options).filter((event) => event.type === "jump");
 export const detectPauseEvents = (points: Point[], options?: RidingEventOptions) => detectRidingEvents(points, options).filter((event) => event.type === "pause");
+export const detectCornerEvents = (points: Point[], options?: RidingEventOptions) => detectRidingEvents(points, options).filter((event) => event.type === "corner");

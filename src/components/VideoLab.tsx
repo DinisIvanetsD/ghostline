@@ -37,6 +37,7 @@ import {
   type VideoSyncSettings,
 } from "../lib/videoSync";
 import { loadVideoProject, saveVideoProject } from "../lib/videoProjects";
+import { loadCloudVideoProject, saveCloudVideoProject, signedRideVideoUrl, uploadRideVideo } from "../lib/videoCloud";
 import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 import {
   detectRidingEvents,
@@ -48,6 +49,8 @@ import { TrailMap } from "./TrailMap";
 
 interface Props {
   data: AppData;
+  userId?: string;
+  cloudUserId?: string;
 }
 
 interface TrimWindow {
@@ -112,16 +115,18 @@ const eventLabels: Record<RidingEventType, string> = {
   acceleration: "Acceleration",
   jump: "Jump / drop",
   pause: "Pause",
+  corner: "Corner signal",
 };
 
 function eventDetail(event: RidingEvent): string {
   if (event.type === "braking") return `${Math.abs(event.speedChange).toFixed(0)} km/h drop`;
   if (event.type === "acceleration") return `${Math.abs(event.speedChange).toFixed(0)} km/h gain`;
   if (event.type === "jump") return `${Math.abs(event.elevationChange).toFixed(1)} m drop`;
+  if (event.type === "corner") return `${Math.round(event.turnAngle ?? 0)}° GPS direction change`;
   return `${(event.endTime - event.startTime).toFixed(1)}s stopped`;
 }
 
-export function VideoLab({ data }: Props) {
+export function VideoLab({ data, userId, cloudUserId }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const previousUrl = useRef<string | null>(null);
   const [trailId, setTrailId] = useState(data.trails[0]?.id ?? "");
@@ -132,6 +137,9 @@ export function VideoLab({ data }: Props) {
   const [videoTime, setVideoTime] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [videoError, setVideoError] = useState("");
+  const [cloudPath, setCloudPath] = useState("");
+  const [cloudVideoStatus, setCloudVideoStatus] = useState("");
+  const [cloudUploadProgress, setCloudUploadProgress] = useState(0);
   const [offsetSeconds, setOffsetSeconds] = useState(0);
   const [previewRate, setPreviewRate] = useState(1);
   const [progress, setProgress] = useState(0);
@@ -243,25 +251,67 @@ export function VideoLab({ data }: Props) {
   useEffect(() => {
     if (!run?.id || hydratedProjectRun.current !== run.id) return;
     if (!projectReady) return;
-    saveVideoProject(run.id, { videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors });
-  }, [run?.id, projectReady, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors]);
+    const project = { videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors, cloudPath: cloudPath || undefined };
+    saveVideoProject(run.id, project, userId);
+    if (!cloudUserId || !cloudPath) return;
+    const timeout = window.setTimeout(() => {
+      void saveCloudVideoProject(cloudUserId, run.id, project, cloudPath)
+        .then(() => setCloudVideoStatus("Video and sync markers are saved to your private account."))
+        .catch((error: unknown) => setCloudVideoStatus(error instanceof Error ? `Cloud project save failed: ${error.message}` : "Cloud project save failed."));
+    }, 650);
+    return () => window.clearTimeout(timeout);
+  }, [run?.id, projectReady, userId, cloudUserId, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors, cloudPath]);
 
   useEffect(() => {
     if (!run?.id) return;
-    const saved = loadVideoProject(run.id);
     hydratedProjectRun.current = run.id;
     setProjectReady(false);
-    setVideoName(saved?.videoName ?? "");
-    const savedOffset = saved?.offsetSeconds ?? 0;
-    previousOffset.current = savedOffset;
-    setOffsetSeconds(savedOffset);
-    setPreviewRate(saved?.previewRate ?? 1);
-    setSkipStops(saved?.skipStops ?? true);
-    setStopAnalysis(saved?.stopAnalysis ?? null);
-    setTrim(saved?.trim ?? null);
-    setAnchors(saved?.anchors ?? []);
-    setProjectReady(true);
-  }, [run?.id]);
+    setCloudPath("");
+    setCloudVideoStatus(cloudUserId ? "Checking private video library…" : "Original clips stay on this device.");
+    const localProject = loadVideoProject(run.id, userId);
+    let active = true;
+    const restore = async () => {
+      let saved = localProject;
+      let remotePath = localProject?.cloudPath ?? "";
+      if (cloudUserId) {
+        try {
+          const remote = await loadCloudVideoProject(cloudUserId, run.id);
+          if (remote) {
+            saved = remote;
+            remotePath = remote.storagePath;
+          }
+        } catch (error) {
+          if (active) setCloudVideoStatus(error instanceof Error ? `Cloud video library unavailable: ${error.message}` : "Cloud video library unavailable.");
+        }
+      }
+      if (!active) return;
+      const savedOffset = saved?.offsetSeconds ?? 0;
+      previousOffset.current = savedOffset;
+      if (saved?.videoName) setVideoName(saved.videoName);
+      setOffsetSeconds(savedOffset);
+      setPreviewRate(saved?.previewRate ?? 1);
+      setSkipStops(saved?.skipStops ?? true);
+      setStopAnalysis(saved?.stopAnalysis ?? null);
+      setTrim(saved?.trim ?? null);
+      setAnchors(saved?.anchors ?? []);
+      setCloudPath(remotePath);
+      if (cloudUserId && remotePath && saved?.videoName) {
+        try {
+          const url = await signedRideVideoUrl(cloudUserId, remotePath);
+          if (!active) return;
+          setVideoUrl(url);
+          setCloudVideoStatus("Private cloud video ready on this device.");
+        } catch (error) {
+          if (active) setCloudVideoStatus(error instanceof Error ? `Could not open cloud video: ${error.message}` : "Could not open cloud video.");
+        }
+      } else if (cloudUserId) {
+        setCloudVideoStatus("Choose a clip to save it to your private account.");
+      }
+      setProjectReady(true);
+    };
+    void restore();
+    return () => { active = false; };
+  }, [run?.id, userId, cloudUserId]);
 
   const onVideoTime = () => {
     const video = videoRef.current;
@@ -289,7 +339,7 @@ export function VideoLab({ data }: Props) {
     setVideoError("This clip could not be decoded in this browser. Try MP4 (H.264), MOV or WebM.");
   };
 
-  const selectVideo = (file: File | undefined) => {
+  const selectVideo = async (file: File | undefined) => {
     if (!file) return;
     const isSavedClip = file.name === videoName;
     renderAbort.current?.abort();
@@ -303,6 +353,9 @@ export function VideoLab({ data }: Props) {
     setVideoPlaying(false);
     setVideoError("");
     setTrim(null);
+    setCloudPath("");
+    setCloudVideoStatus(cloudUserId ? "Uploading private video…" : "Original clip stays on this device.");
+    setCloudUploadProgress(0);
     // Object URLs cannot survive a refresh, but the sync plan can. Keep the
     // calibration when the rider re-attaches the same DJI Mimo export and
     // clear it when they choose a replacement clip.
@@ -310,6 +363,21 @@ export function VideoLab({ data }: Props) {
     setRenderState("idle");
     setRenderProgress(0);
     setRenderError("");
+    if (cloudUserId && run?.id) {
+      try {
+        const path = await uploadRideVideo(cloudUserId, run.id, file, (fraction) => {
+          setCloudUploadProgress(fraction);
+          setCloudVideoStatus(`Uploading private video · ${Math.round(fraction * 100)}%`);
+        });
+        setCloudPath(path);
+        setCloudUploadProgress(1);
+        setCloudVideoStatus("Video uploaded securely. Saving its sync markers…");
+      } catch (error) {
+        setCloudVideoStatus(error instanceof Error ? `Video stays on this device: ${error.message}` : "Video stays on this device; upload failed.");
+      }
+    } else if (cloudUserId) {
+      setCloudVideoStatus("Select a run before uploading its video to your account.");
+    }
   };
 
   const seekVideo = (nextTime: number) => {
@@ -390,7 +458,7 @@ export function VideoLab({ data }: Props) {
   };
 
   const exportOverlay = async () => {
-    if (!videoRef.current || !videoDuration || !current || !run || !trail) return;
+    if (!videoRef.current || !videoDuration || !current || !ghost || !run || !trail) return;
     const controller = new AbortController();
     renderAbort.current = controller;
     setRenderState("rendering");
@@ -431,6 +499,52 @@ export function VideoLab({ data }: Props) {
           context.font = `${Math.max(11, Math.round(frame.width / 92))}px "IBM Plex Mono", monospace`;
           context.fillText(`${formatDelta(delta)} vs Ghost`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.72));
           context.textAlign = "left";
+
+          const mapWidth = Math.max(92, Math.round(frame.width * 0.13));
+          const mapHeight = Math.round(mapWidth * 0.68);
+          const mapX = frame.width - mapWidth - Math.round(frame.width * 0.025);
+          const mapY = panelHeight + Math.round(frame.height * 0.025);
+          const mapPad = Math.max(9, Math.round(mapWidth * 0.08));
+          const trace = current.samples;
+          const all = [...trace, ...ghost.samples];
+          const minLat = Math.min(...all.map((point) => point.lat));
+          const maxLat = Math.max(...all.map((point) => point.lat));
+          const minLon = Math.min(...all.map((point) => point.lon));
+          const maxLon = Math.max(...all.map((point) => point.lon));
+          const latSpan = Math.max(0.000001, maxLat - minLat);
+          const lonSpan = Math.max(0.000001, maxLon - minLon);
+          const project = (point: { lat: number; lon: number }) => ({
+            x: mapX + mapPad + ((point.lon - minLon) / lonSpan) * (mapWidth - mapPad * 2),
+            y: mapY + mapPad + ((maxLat - point.lat) / latSpan) * (mapHeight - mapPad * 2),
+          });
+          context.fillStyle = "rgba(10, 14, 10, 0.82)";
+          context.fillRect(mapX, mapY, mapWidth, mapHeight);
+          context.lineWidth = Math.max(2, Math.round(frame.width / 850));
+          context.lineCap = "round";
+          context.lineJoin = "round";
+          context.setLineDash([context.lineWidth * 2, context.lineWidth * 2]);
+          context.strokeStyle = "rgba(220, 231, 217, 0.75)";
+          context.beginPath();
+          ghost.samples.forEach((point, index) => {
+            const position = project(point);
+            if (!index) context.moveTo(position.x, position.y);
+            else context.lineTo(position.x, position.y);
+          });
+          context.stroke();
+          context.setLineDash([]);
+          context.strokeStyle = "#d5f55a";
+          context.beginPath();
+          trace.forEach((point, index) => {
+            const position = project(point);
+            if (!index) context.moveTo(position.x, position.y);
+            else context.lineTo(position.x, position.y);
+          });
+          context.stroke();
+          const mapMarker = project(sample);
+          context.fillStyle = "#d5f55a";
+          context.beginPath();
+          context.arc(mapMarker.x, mapMarker.y, Math.max(3, mapWidth * 0.025), 0, Math.PI * 2);
+          context.fill();
         },
       });
       downloadBlob(blob, `${run.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "run"}-ghostline.webm`);
@@ -488,9 +602,9 @@ export function VideoLab({ data }: Props) {
       <section className="video-setup panel">
         <div className="video-setup-head">
           <div>
-            <span className="eyebrow"><Sparkles size={13} /> LOCAL WORKFLOW</span>
+            <span className="eyebrow"><Sparkles size={13} /> {cloudUserId ? "PRIVATE CLOUD WORKFLOW" : "LOCAL WORKFLOW"}</span>
             <h2>Choose a ride to sync</h2>
-            <p>Keep the original video on this device. GHOSTLINE only stores the sync plan you export.</p>
+            <p>{cloudUserId ? "Upload private clips and their sync markers to your account, then open them on another device." : "Choose a clip from Photos or Files. Your original and sync plan stay on this device."}</p>
           </div>
           <label className="button secondary video-file-button">
             <Upload size={16} />
@@ -499,7 +613,7 @@ export function VideoLab({ data }: Props) {
               aria-label="Choose video file"
               type="file"
               accept="video/mp4,video/quicktime,video/webm,video/*"
-              onChange={(event) => selectVideo(event.currentTarget.files?.[0])}
+              onChange={(event) => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }}
             />
           </label>
         </div>
@@ -521,6 +635,10 @@ export function VideoLab({ data }: Props) {
             <span><MapPin size={14} /> {trail?.location ?? "No trail"}</span>
           </div>
         </div>
+        <p className={`video-cloud-status ${cloudPath ? "saved" : ""}`} role="status">{cloudVideoStatus}</p>
+        {cloudUserId && cloudUploadProgress > 0 && cloudUploadProgress < 1 && (
+          <progress className="video-cloud-progress" max="1" value={cloudUploadProgress} aria-label="Video upload progress" />
+        )}
       </section>
 
       {!videoUrl ? (
@@ -528,11 +646,11 @@ export function VideoLab({ data }: Props) {
           <div className="video-empty-icon"><Film size={29} /></div>
           <div>
             <h2>{videoName ? "Pick up your synced run." : "Drop in your ride footage."}</h2>
-            <p>{videoName ? `Your ${videoName} sync settings are saved on this device. Re-select the original file to continue.` : "MP4, MOV or WebM works in the browser. Import your DJI Mimo export, then set the GPS start point once."}</p>
+            <p>{videoName ? cloudPath ? `Your private ${videoName} is ready to open on this device.` : `Your ${videoName} sync settings are saved on this device. Re-select the original file to continue.` : "MP4, MOV or WebM works in the browser. Import your DJI Mimo export, then set the GPS start point once."}</p>
           </div>
           <label className="button primary video-file-button">
             <Camera size={16} /> Choose video
-            <input aria-label="Choose video file" type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={(event) => selectVideo(event.currentTarget.files?.[0])} />
+            <input aria-label="Choose video file" type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={(event) => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
           </label>
         </section>
       ) : (

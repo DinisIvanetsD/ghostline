@@ -22,14 +22,17 @@ import {
 import { parseGPX } from "../lib/gpx";
 import { analyze, formatTime } from "../lib/analysis";
 import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
-import { clipToRouteFinish, matchRoute } from "../lib/routeMatch";
+import { clipToRouteFinish, detectTrail, matchRoute } from "../lib/routeMatch";
 import { clipToRideWindow, detectStops, type StopAnalysis } from "../lib/videoSync";
+import { progressionInsights } from "../lib/progressionInsights";
+import { TrailMap } from "./TrailMap";
 import type { AppData, Bike, Point, Profile, Trail } from "../types";
 
 type Props = {
   data: AppData;
   onChange: (data: AppData) => boolean | void;
   onSignOut?: () => void;
+  cloudSyncEnabled?: boolean;
 };
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -102,14 +105,19 @@ export function Garage({ data, onChange }: Props) {
     travel: 0,
     type: "Downhill",
     suspensionSetup: "",
+    sag: "",
+    rebound: "",
+    pressure: "",
     tyres: "",
     wheels: "",
     notes: "",
     lastService: "",
+    serviceHistory: [],
   };
   const [draft, setDraft] = useState<Bike>(empty);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [serviceDrafts, setServiceDrafts] = useState<Record<string, { date: string; description: string }>>({});
   const linkedRuns = data.runs.filter((run) => data.bikes.some((bike) => bike.id === run.bikeId));
   const coveredTrails = new Set(linkedRuns.map((run) => run.trailId)).size;
   const save = (e: FormEvent) => {
@@ -123,10 +131,14 @@ export function Garage({ data, onChange }: Props) {
       brand: draft.brand.trim(),
       travel: Number(draft.travel) || 0,
       suspensionSetup: draft.suspensionSetup?.trim() ?? "",
+      sag: draft.sag?.trim() ?? "",
+      rebound: draft.rebound?.trim() ?? "",
+      pressure: draft.pressure?.trim() ?? "",
       tyres: draft.tyres?.trim() ?? "",
       wheels: draft.wheels?.trim() ?? "",
       notes: draft.notes?.trim() ?? "",
       lastService: draft.lastService ?? "",
+      serviceHistory: draft.serviceHistory ?? [],
     };
     next.bikes = editing
       ? next.bikes.map((b) => (b.id === editing ? bike : b))
@@ -134,6 +146,22 @@ export function Garage({ data, onChange }: Props) {
     if (onChange(next) === false) return;
     setDraft(empty);
     setEditing(null);
+    setError("");
+  };
+  const addService = (event: FormEvent, bike: Bike) => {
+    event.preventDefault();
+    const service = serviceDrafts[bike.id] ?? { date: new Date().toISOString().slice(0, 10), description: "" };
+    if (!service.description.trim()) return setError("Add a short service description.");
+    const next = clone(data);
+    next.bikes = next.bikes.map((item) => item.id === bike.id
+      ? {
+          ...item,
+          lastService: service.date,
+          serviceHistory: [...(item.serviceHistory ?? []), { id: uid("service"), date: service.date, description: service.description.trim() }],
+        }
+      : item);
+    if (onChange(next) === false) return;
+    setServiceDrafts((current) => ({ ...current, [bike.id]: { date: new Date().toISOString().slice(0, 10), description: "" } }));
     setError("");
   };
   const remove = (id: string) => {
@@ -240,6 +268,30 @@ export function Garage({ data, onChange }: Props) {
             />
           </label>
           <label className="field">
+            Sag
+            <input
+              placeholder="e.g. 28% rear · 20% front"
+              value={draft.sag ?? ""}
+              onChange={(e) => setDraft({ ...draft, sag: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            Rebound
+            <input
+              placeholder="e.g. 6 clicks out"
+              value={draft.rebound ?? ""}
+              onChange={(e) => setDraft({ ...draft, rebound: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            Tyre pressure
+            <input
+              placeholder="e.g. 22 / 25 psi"
+              value={draft.pressure ?? ""}
+              onChange={(e) => setDraft({ ...draft, pressure: e.target.value })}
+            />
+          </label>
+          <label className="field">
             Tyres
             <input
               placeholder="e.g. DH casing · soft"
@@ -317,6 +369,26 @@ export function Garage({ data, onChange }: Props) {
               const personalBests = runs.filter(
                 (run) => fastestByTrail.get(run.trailId)?.id === run.id,
               ).length;
+              const bikeProgression = progressionInsights(runs, { recentWindow: 5 });
+              const setupResults = new Map<string, { label: string; best: number; count: number }>();
+              runs.forEach((run) => {
+                const snapshot = run.bikeSetupSnapshot;
+                const label = snapshot
+                  ? [snapshot.suspensionSetup, snapshot.sag, snapshot.rebound, snapshot.pressure, snapshot.tyres, snapshot.wheels].filter(Boolean).join(" · ")
+                  : [b.suspensionSetup, b.sag, b.rebound, b.pressure, b.tyres, b.wheels].filter(Boolean).join(" · ");
+                if (!label) return;
+                const duration = analyze(run.points).duration;
+                const previous = setupResults.get(label);
+                setupResults.set(label, {
+                  label,
+                  best: Math.min(previous?.best ?? Number.POSITIVE_INFINITY, duration),
+                  count: (previous?.count ?? 0) + 1,
+                });
+              });
+              const bestSetup = [...setupResults.values()].sort((a, z) => a.best - z.best)[0];
+              const serviceAge = b.lastService
+                ? Math.floor((Date.now() - Date.parse(b.lastService)) / 86_400_000)
+                : null;
               return (
                 <article className="bike-card" key={b.id}>
                   <div className="bike-card-heading">
@@ -340,19 +412,85 @@ export function Garage({ data, onChange }: Props) {
                       <span>PB runs</span>
                       <strong className="mono">{personalBests}</strong>
                     </div>
+                    <div>
+                      <span>Consistency</span>
+                      <strong className="mono">
+                        {bikeProgression.consistencyScore === null
+                          ? "—"
+                          : `${Math.round(bikeProgression.consistencyScore)}%`}
+                      </strong>
+                    </div>
                   </div>
-                  {(b.suspensionSetup || b.tyres || b.wheels) && (
+                  {(b.suspensionSetup || b.sag || b.rebound || b.pressure || b.tyres || b.wheels) && (
                     <div className="bike-setup-summary">
                       <span className="bike-setup-label">SETUP</span>
                       <span>
-                        {[b.suspensionSetup, b.tyres, b.wheels].filter(Boolean).join(" · ")}
+                        {[b.suspensionSetup, b.sag, b.rebound, b.pressure, b.tyres, b.wheels].filter(Boolean).join(" · ")}
                       </span>
                     </div>
                   )}
                   {b.lastService && (
                     <div className="bike-service">
                       <span>Last service</span>
-                      <strong className="mono">{b.lastService}</strong>
+                      <strong className={`mono ${serviceAge !== null && serviceAge > 180 ? "service-due" : ""}`}>
+                        {b.lastService}{serviceAge !== null && serviceAge > 180 ? " · due" : ""}
+                      </strong>
+                    </div>
+                  )}
+                  <details className="bike-service-log">
+                    <summary>Maintenance history <span>{b.serviceHistory?.length ?? 0}</span></summary>
+                    <div className="bike-service-log-content">
+                      <form onSubmit={(event) => addService(event, b)}>
+                        <label className="field">
+                          Service date
+                          <input
+                            aria-label={`${b.name} service date`}
+                            type="date"
+                            value={serviceDrafts[b.id]?.date ?? new Date().toISOString().slice(0, 10)}
+                            onChange={(event) => setServiceDrafts((current) => ({ ...current, [b.id]: { date: event.target.value, description: current[b.id]?.description ?? "" } }))}
+                          />
+                        </label>
+                        <label className="field">
+                          Work done
+                          <input
+                            aria-label={`${b.name} service description`}
+                            placeholder="Fork lower service, brake bleed…"
+                            value={serviceDrafts[b.id]?.description ?? ""}
+                            onChange={(event) => setServiceDrafts((current) => ({ ...current, [b.id]: { date: current[b.id]?.date ?? new Date().toISOString().slice(0, 10), description: event.target.value } }))}
+                          />
+                        </label>
+                        <button className="button secondary" type="submit">Log service</button>
+                      </form>
+                      {(b.serviceHistory ?? []).slice().sort((a, z) => z.date.localeCompare(a.date)).map((record) => (
+                        <div className="bike-service-record" key={record.id}>
+                          <strong>{record.description}</strong>
+                          <span className="mono">{record.date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                  <div className="bike-performance">
+                    <div>
+                      <span>Next target</span>
+                      <strong className="mono">
+                        {bikeProgression.nextTargetDuration === null
+                          ? "Add a run"
+                          : formatTime(bikeProgression.nextTargetDuration)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Trend</span>
+                      <strong className={`trend-${bikeProgression.trend}`}>
+                        {bikeProgression.trend === "insufficient" ? "Building" : bikeProgression.trend}
+                      </strong>
+                    </div>
+                  </div>
+                  {bestSetup && (
+                    <div className="bike-setup-best">
+                      <span className="bike-setup-label">FASTEST SETUP</span>
+                      <span title={bestSetup.label}>
+                        {bestSetup.label} · {formatTime(bestSetup.best)} ({bestSetup.count} run{bestSetup.count === 1 ? "" : "s"})
+                      </span>
                     </div>
                   )}
                   <div className="bike-card-footer">
@@ -393,7 +531,7 @@ export function Garage({ data, onChange }: Props) {
   );
 }
 
-export function ProfileSettings({ data, onChange, onSignOut }: Props) {
+export function ProfileSettings({ data, onChange, onSignOut, cloudSyncEnabled }: Props) {
   const [profile, setProfile] = useState<Profile>(data.profile);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -414,8 +552,9 @@ export function ProfileSettings({ data, onChange, onSignOut }: Props) {
   return (
     <Section title="Rider profile">
       <p className="muted">
-        Your rider workspace is saved on this device. Account sign-in keeps it
-        separate from other riders using this phone; cloud sync is coming next.
+        {cloudSyncEnabled
+          ? "Your private rider workspace syncs across devices. Video clips can also be uploaded to your private library from Video lab."
+          : "Your rider workspace is saved on this device. Export a backup before clearing browser data or moving to another phone."}
       </p>
       <form className="form-grid" onSubmit={save}>
         <label className="field">
@@ -749,8 +888,10 @@ export function ImportRun({
   const [gpsQuality, setGpsQuality] = useState<GpsQualityResult | null>(null);
   const [rideWindow, setRideWindow] = useState<StopAnalysis | null>(null);
   const [trimToRideWindow, setTrimToRideWindow] = useState(false);
+  const [trailDetection, setTrailDetection] = useState<{ name: string; score: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const manuallySelectedTrail = useRef(false);
   const trail = useMemo(
     () => data.trails.find((t) => t.id === trailId),
     [data.trails, trailId],
@@ -763,6 +904,7 @@ export function ImportRun({
     setGpsQuality(null);
     setRideWindow(null);
     setTrimToRideWindow(false);
+    setTrailDetection(null);
     setError("");
     if (picked.size > 10 * 1024 * 1024) {
       setError("GPX and FIT files must be 10 MB or smaller.");
@@ -776,12 +918,19 @@ export function ImportRun({
         throw new Error(
           "This file has no usable timestamps. Choose a timestamped GPX or FIT ride export.",
         );
+      const detected = detectTrail(parsed, data.trails);
+      const detectedTrail = !manuallySelectedTrail.current && detected?.match.confidence === "high" ? detected.trail : undefined;
+      if (detectedTrail && detected) {
+        setTrailId(detectedTrail.id);
+        setTrailDetection({ name: detectedTrail.name, score: detected.match.score });
+      }
+      const importTrail = detectedTrail ?? trail;
       // Clip a configured physical finish before quality cleanup. DJI Mimo
       // captures often keep recording after the line; removing that tail
       // first prevents its final jump from pulling valid finish points out of
       // the cleaned route.
-      const capturedPoints = trail?.finishPoint
-        ? clipToRouteFinish(parsed, trail.points, trail.finishPoint)
+      const capturedPoints = importTrail?.finishPoint
+        ? clipToRouteFinish(parsed, importTrail.points, importTrail.finishPoint)
         : parsed;
       const quality = cleanTrack(capturedPoints, { removeImpossible: true });
       if (quality.points.length < 2)
@@ -872,6 +1021,9 @@ export function ImportRun({
             return bike
               ? {
                   suspensionSetup: bike.suspensionSetup ?? "",
+                  sag: bike.sag ?? "",
+                  rebound: bike.rebound ?? "",
+                  pressure: bike.pressure ?? "",
                   tyres: bike.tyres ?? "",
                   wheels: bike.wheels ?? "",
                   notes: bike.notes ?? "",
@@ -949,6 +1101,32 @@ export function ImportRun({
           {gpsQuality.maxObservedSpeedKmh > 120 && `Peak segment ${Math.round(gpsQuality.maxObservedSpeedKmh)} km/h.`}
         </p>
       )}
+      {trailDetection && (
+          <p className="import-trail-note" role="status">
+          <MapPin size={15} />
+          Trail detected automatically: <strong>{trailDetection.name}</strong>
+          <span>{Math.round(trailDetection.score * 100)}% route confidence. Review the GPS trace and selected trail before saving.</span>
+        </p>
+      )}
+      {points && telemetry && trail && (
+        <section className="import-preview" aria-label="Imported route review">
+          <div className="import-preview-heading">
+            <div>
+              <strong>Review the line before saving</strong>
+              <span>Check that the GPS start and finish match the run you meant to chase.</span>
+            </div>
+            <span className="mono">{points.length.toLocaleString()} points</span>
+          </div>
+          <TrailMap
+            trail={trail}
+            current={telemetry}
+            ghost={trail.points.length > 1 ? analyze(trail.points) : telemetry}
+            progress={0}
+            sector={null}
+            onProgress={() => undefined}
+          />
+        </section>
+      )}
       {rideWindow && rideWindow.stops.length > 0 && (
         <label className="import-trim-toggle">
           <input
@@ -967,7 +1145,7 @@ export function ImportRun({
       <form className="form-grid" onSubmit={save}>
         <label className="field">
           Trail
-          <select value={trailId} onChange={(e) => setTrailId(e.target.value)}>
+          <select value={trailId} onChange={(e) => { manuallySelectedTrail.current = true; setTrailId(e.target.value); setTrailDetection(null); }}>
             <option value="">Choose trail</option>
             {data.trails.map((t) => (
               <option key={t.id} value={t.id}>

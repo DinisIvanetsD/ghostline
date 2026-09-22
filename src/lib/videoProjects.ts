@@ -1,4 +1,5 @@
 import type { StopAnalysis, VideoSyncAnchor } from "./videoSync";
+import { localStorageAdapter, scopedStorageKey } from "./storageAdapter";
 
 export interface VideoTrimWindow {
   start: number;
@@ -13,6 +14,7 @@ export interface VideoProjectState {
   stopAnalysis: StopAnalysis | null;
   trim: VideoTrimWindow | null;
   anchors?: VideoSyncAnchor[];
+  cloudPath?: string;
 }
 
 const STORAGE_KEY = "ghostline.video-projects.v1";
@@ -55,9 +57,9 @@ function validAnchors(value: unknown): VideoSyncAnchor[] {
   );
 }
 
-function readProjects(): Record<string, VideoProjectState> {
+function readProjects(scope?: string): Record<string, VideoProjectState> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorageAdapter()?.getItem(scopedStorageKey(STORAGE_KEY, scope));
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed as Record<string, VideoProjectState> : {};
@@ -66,9 +68,9 @@ function readProjects(): Record<string, VideoProjectState> {
   }
 }
 
-export function loadVideoProject(runId: string): VideoProjectState | null {
+export function loadVideoProject(runId: string, scope?: string): VideoProjectState | null {
   if (!runId) return null;
-  const value = readProjects()[runId];
+  const value = readProjects(scope)[runId];
   if (!value || typeof value !== "object") return null;
   return {
     videoName: typeof value.videoName === "string" ? value.videoName : "",
@@ -78,24 +80,27 @@ export function loadVideoProject(runId: string): VideoProjectState | null {
     stopAnalysis: validStopAnalysis(value.stopAnalysis),
     trim: validTrim(value.trim),
     anchors: validAnchors(value.anchors),
+    ...(typeof value.cloudPath === "string" && value.cloudPath ? { cloudPath: value.cloudPath } : {}),
   };
 }
 
-export function saveVideoProject(runId: string, state: VideoProjectState): void {
+export function saveVideoProject(runId: string, state: VideoProjectState, scope?: string): void {
   if (!runId) return;
   try {
-    const projects = readProjects();
+    const storage = localStorageAdapter();
+    if (!storage) return;
+    const projects = readProjects(scope);
     projects[runId] = state;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    storage.setItem(scopedStorageKey(STORAGE_KEY, scope), JSON.stringify(projects));
   } catch {
     // Video projects are a convenience cache; a full or unavailable device
     // store must never interrupt the run analysis workflow.
   }
 }
 
-export function clearVideoProjects(): void {
+export function clearVideoProjects(scope?: string): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorageAdapter()?.removeItem(scopedStorageKey(STORAGE_KEY, scope));
   } catch {
     // Ignore unavailable storage in private browsing contexts.
   }

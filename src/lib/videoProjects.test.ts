@@ -30,4 +30,29 @@ describe("video project persistence", () => {
     localStorage.setItem("ghostline.video-projects.v1", JSON.stringify({ "run-3": { anchors: [{ runTime: 10, videoTime: 30 }, { runTime: 0, videoTime: 5 }, { runTime: 0, videoTime: 6 }, { runTime: -2, videoTime: 1 }, { runTime: 20, videoTime: "bad" }] } }));
     expect(loadVideoProject("run-3")?.anchors).toEqual([{ runTime: 0, videoTime: 5 }, { runTime: 10, videoTime: 30 }]);
   });
+
+  it("keeps video projects isolated by rider scope", () => {
+    saveVideoProject("run-1", state, "user-a");
+    saveVideoProject("run-1", { ...state, videoName: "other.mp4" }, "user-b");
+
+    expect(loadVideoProject("run-1", "user-a")?.videoName).toBe("dji-mimo-run.mp4");
+    expect(loadVideoProject("run-1", "user-b")?.videoName).toBe("other.mp4");
+    expect(loadVideoProject("run-1", "user-c")).toBeNull();
+    expect(localStorage.getItem("ghostline.video-projects.v1.user-a")).toBeTruthy();
+  });
+
+  it("persists a private cloud video locator without storing the clip itself", () => {
+    saveVideoProject("run-cloud", { ...state, cloudPath: "user-a/run-cloud/clip.mp4" }, "user-a");
+    expect(loadVideoProject("run-cloud", "user-a")?.cloudPath).toBe("user-a/run-cloud/clip.mp4");
+    expect(localStorage.getItem("ghostline.video-projects.v1.user-a")).not.toContain("blob:");
+  });
+
+  it("supports clearing one rider scope without removing another", () => {
+    saveVideoProject("run-1", state, "user-a");
+    saveVideoProject("run-1", state, "user-b");
+    clearVideoProjects("user-a");
+
+    expect(loadVideoProject("run-1", "user-a")).toBeNull();
+    expect(loadVideoProject("run-1", "user-b")).toEqual(state);
+  });
 });

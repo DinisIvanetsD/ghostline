@@ -1207,6 +1207,61 @@ select option {
   color: var(--text);
   font-size: 11px;
 }
+.bike-service-log {
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+.bike-service-log summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.bike-service-log summary::-webkit-details-marker { display: none; }
+.bike-service-log summary span {
+  color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
+}
+.bike-service-log-content {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+.bike-service-log-content form {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.bike-service-log-content .field {
+  gap: 5px;
+  font-size: 9px;
+}
+.bike-service-log-content input {
+  min-height: 36px;
+  padding: 8px 9px;
+  font-size: 11px;
+}
+.bike-service-log-content .button {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 10px;
+}
+.bike-service-record {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 9px;
+  color: var(--text);
+  background: #111611;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+}
+.bike-service-record .mono { color: var(--muted); }
 .bike-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1257,7 +1312,7 @@ select option {
 }
 .bike-specs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 13px 0;
   border-top: 1px solid var(--border);
@@ -1283,6 +1338,59 @@ select option {
   overflow: hidden;
   color: var(--text);
   font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.service-due {
+  color: var(--lost) !important;
+}
+.bike-performance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 1px;
+}
+.bike-performance > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.bike-performance span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bike-performance strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bike-performance .trend-improving {
+  color: var(--gained);
+}
+.bike-performance .trend-slowing {
+  color: var(--lost);
+}
+.bike-performance .trend-stable,
+.bike-performance .trend-insufficient {
+  color: var(--muted);
+}
+.bike-setup-best {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.bike-setup-best > span:last-child {
+  overflow: hidden;
+  color: #bcc7b9;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1475,6 +1583,31 @@ td small {
 .import-quality-note.poor svg {
   color: var(--lost);
 }
+.import-trail-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 1px solid #4b613d;
+  border-radius: 5px;
+  background: #151b15;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.import-trail-note svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+.import-trail-note strong {
+  color: var(--text);
+}
+.import-trail-note span {
+  flex-basis: 100%;
+  padding-left: 22px;
+}
 .import-trim-toggle {
   display: flex;
   align-items: flex-start;
@@ -1485,6 +1618,39 @@ td small {
   border-radius: 5px;
   background: #141914;
   cursor: pointer;
+}
+.import-preview {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.import-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.import-preview-heading > div {
+  display: grid;
+  gap: 3px;
+}
+.import-preview-heading strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.import-preview-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.import-preview-heading > .mono {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.import-preview .map-panel {
+  min-height: 260px;
+  border-radius: 6px;
 }
 .import-trim-toggle input {
   width: 16px;
@@ -1516,6 +1682,13 @@ td small {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.3;
+}
+.run-share-button {
+  margin-left: 10px;
+}
+.run-share-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 .data-panel {
   margin-top: 24px;
@@ -2336,6 +2509,18 @@ td small {
   background: #2b3822;
   box-shadow: inset 0 0 0 1px #50653d;
 }
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  color: var(--muted);
+}
+.auth-forgot {
+  justify-self: start;
+  margin-top: -6px;
+  color: var(--accent);
+}
 .auth-form {
   display: grid;
   gap: 15px;
@@ -2384,6 +2569,16 @@ td small {
   color: var(--lost);
   background: #271917;
   border: 1px solid #70453d;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.auth-notice {
+  margin: -1px 0 0;
+  padding: 11px 12px;
+  color: var(--gained);
+  background: #172019;
+  border: 1px solid #3e644b;
   border-radius: 4px;
   font-size: 11px;
   line-height: 1.4;
@@ -3000,6 +3195,143 @@ td small {
   white-space: nowrap;
   font-size: 10px;
 }
+.video-cloud-status {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.video-cloud-status.saved {
+  color: var(--gained);
+}
+.video-cloud-progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+.shared-run-shell {
+  width: min(1180px, 100%);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top)) 28px max(24px, env(safe-area-inset-bottom));
+}
+.shared-run-header,
+.shared-run-title,
+.shared-run-clock span,
+.shared-run-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.shared-run-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.shared-run-label,
+.shared-run-clock span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font: 10px "IBM Plex Mono", monospace;
+  letter-spacing: 0.08em;
+}
+.shared-run-title {
+  gap: 22px;
+  padding: 27px 0 21px;
+}
+.shared-run-title h1 {
+  margin: 8px 0 4px;
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1;
+}
+.shared-run-title p { color: var(--muted); font-size: 12px; }
+.shared-run-clock {
+  min-width: 205px;
+  padding: 14px 17px;
+  background: #192017;
+  border: 1px solid #3a4b32;
+  border-radius: 5px;
+}
+.shared-run-clock strong {
+  display: block;
+  margin: 5px 0;
+  color: var(--accent);
+  font: 30px "IBM Plex Mono", monospace;
+}
+.shared-run-clock small { color: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+.shared-run-map { padding: 0; overflow: hidden; }
+.shared-run-map .map-panel { min-height: 490px; border: 0; border-radius: 5px 5px 0 0; }
+.shared-run-map .trail-map { min-height: 490px; }
+.shared-run-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+}
+.shared-run-stats > div { display: grid; gap: 6px; padding: 16px 19px; border-right: 1px solid var(--border); }
+.shared-run-stats > div:last-child { border-right: 0; }
+.shared-run-stats span { color: var(--muted); font-size: 10px; }
+.shared-run-stats strong { font: 23px "IBM Plex Mono", monospace; }
+.shared-run-stats small { color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+.shared-run-sectors { margin-top: 17px; }
+.shared-sector-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 100px 84px;
+  gap: 11px;
+  align-items: center;
+  width: 100%;
+  padding: 13px 5px;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.shared-sector-row > :first-child { color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+.shared-sector-row > :nth-child(3), .shared-sector-row > :nth-child(4) { text-align: right; }
+.shared-sector-row.selected { background: #20291b; }
+.shared-run-privacy { margin: 14px 0 0; color: var(--muted); font-size: 10px; }
+.shared-run-message {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: 540px;
+  margin: 12vh auto;
+  padding: 34px;
+  text-align: center;
+  color: var(--muted);
+}
+.shared-run-message strong { color: var(--text); }
+.shared-run-message .button { margin-top: 6px; }
+.shared-run-footer {
+  justify-content: flex-start;
+  gap: 9px;
+  margin-top: 22px;
+  padding-top: 16px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+.shared-run-footer a { color: var(--text); font: 600 12px "Barlow Condensed", sans-serif; }
+@media (max-width: 700px) {
+  .shared-run-shell { padding-right: 14px; padding-left: 14px; }
+  .shared-run-header .wordmark { font-size: 19px; }
+  .shared-run-title { align-items: stretch; flex-direction: column; gap: 13px; }
+  .shared-run-clock { min-width: 0; }
+  .shared-run-clock strong { font-size: 25px; }
+  .shared-run-map .map-panel, .shared-run-map .trail-map { min-height: 390px; }
+  .shared-run-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shared-run-stats > div { padding: 12px; }
+  .shared-run-stats > div:nth-child(2) { border-right: 0; }
+  .shared-run-stats > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .shared-run-stats strong { font-size: 20px; }
+  .shared-sector-row { grid-template-columns: 30px minmax(0, 1fr) 72px 62px; gap: 6px; font-size: 11px; }
+}
 @media (max-width: 700px) {
   .garage-overview {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3040,6 +3372,14 @@ td small {
     gap: 14px;
     padding: 15px;
   }
+  .bike-specs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 12px;
+  }
+  .bike-specs > div:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
   .bike-identity h3 {
     font-size: 23px;
   }
@@ -3049,6 +3389,12 @@ td small {
   .bike-card-footer > .muted {
     white-space: normal;
     line-height: 1.3;
+  }
+  .bike-service-log-content form {
+    grid-template-columns: 1fr;
+  }
+  .bike-service-log-content .button {
+    width: 100%;
   }
   .import-guide {
     display: block;

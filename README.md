@@ -13,7 +13,13 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173. No API keys, database, or external account-provider configuration is required for the local MVP.
+Open http://127.0.0.1:5173. Without Supabase settings the app remains local-first. To test hosted accounts and sync, copy `.env.example` to `.env.local` and fill in the public project URL and anon key.
+
+## Enable real accounts and cloud sync
+
+The app supports Supabase email/password accounts, email confirmation, password recovery, private rider workspaces, and private video storage. Create a Supabase project, run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor, and add the Vite variables from `.env.example` to `.env.local`. In Supabase Auth, allow the local URL and the deployed GitHub Pages URL (including its `/ghostline/` base path) as redirect URLs. For GitHub Pages, add repository Actions secrets named `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; the publish workflow injects them during the build. The anon key is intended for browser use; never add a service-role key to the frontend.
+
+When Supabase is not configured, the app visibly runs as a device-local preview. Account recovery and multi-device sync need the hosted configuration above. Cloud media uploads are private and limited to 250 MB per clip by the included bucket policy.
 
 ```sh
 npm run typecheck
@@ -54,7 +60,8 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - Automatic Personal Best, arbitrary same-trail comparisons, signed sector gains/losses, and theoretical best with source runs. Sector gates follow the physical trail route and are interpolated onto each run's GPS trace.
 - Run history, search, clickable progression, recent average/consistency snapshot, and immediate recomputation after edits/deletions.
 - **Bike garage** with linked-run coverage, PB counts, per-bike suspension/tyre/wheel setup, service date and notes.
-- **Video lab** with local video preview, FIT/GPX-to-video offset or two-point drift sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, riding-signal review, per-run project settings, a rendered WebM telemetry overlay, and a portable JSON edit plan.
+- **Video lab** with MP4/MOV/WebM preview, FIT/GPX-to-video offset or two-point drift sync, independent slow-motion preview, GPS stop detection, ride-window trimming, sector jump points, GPS riding-signal review, per-run project settings, a rendered WebM telemetry overlay, and a portable JSON edit plan. With Supabase configured, clips up to 250 MB and sync markers can be opened across devices.
+- **Unlisted run links** with a random bearer token, a seven-day expiry, hashed token storage, GPS snapshots, and a read-only trail/sector viewer. Sharing is available only with a configured cloud account.
 - Physical finish gates for known trails. Secret Spot Sameiro trims forgotten post-finish capture in future GPX/FIT imports and supports both marked uphill starts.
 - Responsive desktop/mobile interface, keyboard controls, self-hosted typography and reduced-motion support.
 - Versioned browser persistence, validated backups, quota errors and corrupt-storage recovery.
@@ -69,7 +76,8 @@ The seeded trail references follow the rider's Santa Marta das Cortiças setup. 
 - `src/lib/progressionInsights.ts`: trail-scoped progression, recent average, consistency and sector trend calculations.
 - `src/lib/gpx.ts` and `src/lib/fit.ts`: import boundaries; untrusted files become validated points.
 - `src/lib/routeMatch.ts`: bounded geometric compatibility checks plus explicit physical finish gates for trails whose GPS capture commonly continues after the run.
-- `src/lib/storage.ts`: versioned persistence and backup validation; replaceable with a server-backed repository later.
+- `src/lib/storage.ts`: versioned local persistence and backup validation.
+- `src/lib/cloudSync.ts`, `src/lib/supabase.ts`, `supabase/schema.sql`: optional Supabase authentication, row-level-secured workspace sync, and private video-storage policy.
 - `src/components/TrailMap.tsx`, `Charts.tsx`: geographic and telemetry inspection.
 - `src/components/Management.tsx`: rider, bike, trail and import flows.
 - `src/components/VideoLab.tsx` and `src/lib/videoSync.ts`: local video alignment, pause detection, sector windows and edit-plan export.
@@ -86,21 +94,22 @@ PB is the shortest total duration among the rider's runs assigned to the selecte
 
 ## Deliberate MVP limits
 
-- **Accounts are local to this device in the MVP.** The production build includes email/password registration and sign-in, with password hashes and each rider's workspace kept in browser storage. There is no cloud database, cross-device sync, password reset or recovery service yet; export backups before clearing browser data.
-- Local storage capacity varies by browser. Save failures retain the current workspace and show a message. Large libraries should move to IndexedDB/server storage next. Video blobs are previewed locally and are never copied into the workspace store.
+- **Hosted account features need configuration.** Without Supabase settings, the visible preview uses local browser accounts, has no password recovery or cross-device sync, and is not a secure identity service. With Supabase configured, auth and workspace sync are real; simultaneous offline edits across devices use a last-save-wins workspace model.
+- Local storage capacity varies by browser. Save failures retain the current workspace and show a message. Video clips stay out of the workspace JSON; they are held locally in the browser or stored privately in Supabase Storage when configured.
 - One complete track/segment or route per file, up to 10 MB and 25,000 points. Runs accept GPX or Garmin FIT timestamps; duplicate second-resolution samples are coalesced. TCX, multiple segments and sensor streams are not included; Video Lab ride-window trimming is available after import.
 - Missing elevation is represented as zero; elevation/descent then cannot be treated as measured telemetry. GPS speed is derived from geometry and isolated impossible spikes are removed before telemetry; unrecoverable gaps remain flagged for review.
 - Normalized distance alignment is approximate, especially where riders take different lines or GPS drifts. Corridor/end-point tolerance is 200 m, length tolerance 25%; no race timing precision is claimed.
 - Synthetic demo geometry is illustrative and is not trail navigation guidance. Secret Spot Sameiro's seeded route follows the rider-provided start/finish gates; Trailforks remains the source of truth for access and current trail conditions.
 - The basemap requires internet. GPS traces, timing and charts continue to work without tiles. Browser tile requests disclose the viewed map area to OpenStreetMap. No raw GPX is uploaded by the app.
-- The Video lab renders a browser-native WebM telemetry overlay when the device supports MediaRecorder; it does not render a new MP4 in the browser yet. GPS-based braking/jump signals are available today; camera-vision line analysis and AI feedback are future modules that can consume the same frame timestamps.
+- The Video lab renders a browser-native WebM telemetry overlay when the device supports MediaRecorder; it does not render a new MP4 in the browser yet. Riding-event labels are GPS-derived signals, not camera-vision detection or coaching. Automatic video/GPS alignment still needs the rider's start/finish anchors.
+- Friend comparisons, private leaderboards, iOS share-sheet receiving, and local notifications are not enabled yet. Friend and leaderboard flows need invite/consent controls and a configured live backend; browser notifications also need user opt-in.
 
 The default basemap uses [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/) with visible attribution and browser caching. A hosted production rollout should select a tile service appropriate to expected traffic.
 
 ## Next steps
 
-1. Move authentication and workspace storage to a hosted backend (Supabase, Firebase or Clerk + a database) for secure cross-device libraries, password recovery and team sharing.
-2. Introduce geographic timing gates, GPS quality reporting and run trimming.
-3. Add IndexedDB/offline app caching and a production map-provider configuration.
-4. Persist run-linked video assets in IndexedDB/object storage and add an FFmpeg/WebCodecs renderer for one-click MP4 export.
-5. Add an opt-in browser/server vision model for jumps, braking and line feedback, with model versioning and confidence scores.
+1. Configure the Supabase project and GitHub Actions secrets to turn on hosted login and private sync in the deployed site.
+2. Add consent-based rider connections and private leaderboards on top of the existing unlisted run links.
+3. Add incoming iOS Share Sheet support and improve offline map and media handling.
+4. Add an FFmpeg/WebCodecs renderer for one-click MP4 export and improve sync suggestions using video/GPS event timing.
+5. Add an opt-in vision model for camera-based line feedback, with model versioning and confidence scores.

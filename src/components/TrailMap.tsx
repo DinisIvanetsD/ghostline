@@ -46,6 +46,7 @@ export function TrailMap({
     observer.observe(el.current);
     return () => {
       observer.disconnect();
+      instance.stop();
       instance.remove();
       map.current = null;
     };
@@ -124,7 +125,7 @@ export function TrailMap({
   useEffect(() => {
     if (!map.current) return;
     const coords = current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple);
-    map.current.fitBounds(L.latLngBounds(coords), { padding: [48, 45] });
+    map.current.fitBounds(L.latLngBounds(coords), { padding: [48, 45], animate: false });
   }, [trail, current, ghost]);
   useEffect(() => {
     const p = current.samples.reduce((a, b) =>
@@ -186,7 +187,7 @@ export function TrailMap({
               L.latLngBounds(
                 current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple),
               ),
-              { padding: [48, 45] },
+              { padding: [48, 45], animate: false },
             )
           }
         >

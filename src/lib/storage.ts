@@ -103,6 +103,9 @@ export function validateData(input: unknown): AppData {
       ...(b.suspensionSetup !== undefined
         ? { suspensionSetup: optionalStr(b.suspensionSetup, `bikes[${i}].suspensionSetup`) }
         : {}),
+      ...(b.sag !== undefined ? { sag: optionalStr(b.sag, `bikes[${i}].sag`) } : {}),
+      ...(b.rebound !== undefined ? { rebound: optionalStr(b.rebound, `bikes[${i}].rebound`) } : {}),
+      ...(b.pressure !== undefined ? { pressure: optionalStr(b.pressure, `bikes[${i}].pressure`) } : {}),
       ...(b.tyres !== undefined
         ? { tyres: optionalStr(b.tyres, `bikes[${i}].tyres`) }
         : {}),
@@ -114,6 +117,23 @@ export function validateData(input: unknown): AppData {
         : {}),
       ...(b.lastService !== undefined
         ? { lastService: optionalStr(b.lastService, `bikes[${i}].lastService`) }
+        : {}),
+      ...(b.serviceHistory !== undefined
+        ? {
+            serviceHistory: Array.isArray(b.serviceHistory)
+              ? b.serviceHistory.map((entry, j) => {
+                  if (!entry || typeof entry !== "object") fail(`bikes[${i}].serviceHistory[${j}] is invalid`);
+                  const record = entry as Record<string, unknown>;
+                  const date = str(record.date, `bikes[${i}].serviceHistory[${j}].date`);
+                  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date))) fail(`bikes[${i}].serviceHistory[${j}].date is invalid`);
+                  return {
+                    id: str(record.id, `bikes[${i}].serviceHistory[${j}].id`),
+                    date,
+                    description: str(record.description, `bikes[${i}].serviceHistory[${j}].description`),
+                  };
+                })
+              : fail(`bikes[${i}].serviceHistory is invalid`),
+          }
         : {}),
     };
   });
@@ -204,6 +224,22 @@ export function validateData(input: unknown): AppData {
       date: str(r.date, `runs[${i}].date`),
       points: rp,
       notes: str(r.notes, `runs[${i}].notes`, false),
+      ...(r.bikeSetupSnapshot && typeof r.bikeSetupSnapshot === "object"
+        ? {
+            bikeSetupSnapshot: (() => {
+              const snapshot = r.bikeSetupSnapshot as Record<string, unknown>;
+              return {
+                suspensionSetup: optionalStr(snapshot.suspensionSetup, `runs[${i}].bikeSetupSnapshot.suspensionSetup`),
+                sag: optionalStr(snapshot.sag, `runs[${i}].bikeSetupSnapshot.sag`),
+                rebound: optionalStr(snapshot.rebound, `runs[${i}].bikeSetupSnapshot.rebound`),
+                pressure: optionalStr(snapshot.pressure, `runs[${i}].bikeSetupSnapshot.pressure`),
+                tyres: optionalStr(snapshot.tyres, `runs[${i}].bikeSetupSnapshot.tyres`),
+                wheels: optionalStr(snapshot.wheels, `runs[${i}].bikeSetupSnapshot.wheels`),
+                notes: optionalStr(snapshot.notes, `runs[${i}].bikeSetupSnapshot.notes`),
+              };
+            })(),
+          }
+        : {}),
       ...(typeof r.synthetic === "boolean" ? { synthetic: r.synthetic } : {}),
     } as Run;
   });

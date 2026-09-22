@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowDownRight,
@@ -18,6 +18,7 @@ import {
   Play,
   Pause,
   Settings,
+  Share2,
   Target,
   Timer,
   Trophy,
@@ -39,21 +40,26 @@ import {
   downloadData,
   parseBackup,
   readStorageWarning,
+  validateData,
 } from "./lib/storage";
 import { downloadGPX } from "./lib/export";
 import { progressionInsights } from "./lib/progressionInsights";
 import { cleanTrack, MAX_BELIEVABLE_SPEED_KMH } from "./lib/gpsQuality";
 import { TrailMap } from "./components/TrailMap";
 import { TelemetryChart, Progression } from "./components/Charts";
-import {
-  Garage,
-  ProfileSettings,
-  TrailManager,
-  ImportRun,
-} from "./components/Management";
-import { VideoLab } from "./components/VideoLab";
 import { AuthScreen } from "./components/AuthScreen";
 import { getSession, signOut, type AuthSession } from "./lib/auth";
+import { createWorkspaceCloudSync, mergeWorkspaceRecords } from "./lib/cloudSync";
+import { getSupabaseClient, supabaseConfigured } from "./lib/supabase";
+import { createPrivateRunShare } from "./lib/runSharing";
+import { SharedRunPage } from "./components/SharedRunPage";
+
+const Garage = lazy(() => import("./components/Management").then((module) => ({ default: module.Garage })));
+const ProfileSettings = lazy(() => import("./components/Management").then((module) => ({ default: module.ProfileSettings })));
+const TrailManager = lazy(() => import("./components/Management").then((module) => ({ default: module.TrailManager })));
+const ImportRun = lazy(() => import("./components/Management").then((module) => ({ default: module.ImportRun })));
+const VideoLab = lazy(() => import("./components/VideoLab").then((module) => ({ default: module.VideoLab })));
+const pageLoading = <div className="panel page-loading" role="status">Opening rider tools…</div>;
 
 type Page =
   | "analysis"
@@ -63,6 +69,12 @@ type Page =
   | "profile"
   | "import"
   | "video";
+
+function readSharedRunToken(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.hash.slice(1)).get("share") ?? "";
+}
+
 const nav = [
   { id: "analysis", label: "Run analysis", icon: Activity },
   { id: "history", label: "Run history", icon: History },
@@ -71,8 +83,12 @@ const nav = [
   { id: "garage", label: "Bike garage", icon: Bike },
 ] as const;
 export default function App() {
-  const requiresAuth = import.meta.env.PROD;
-  const [session, setSession] = useState<AuthSession | null>(() => getSession());
+  const requiresAuth = import.meta.env.PROD || supabaseConfigured;
+  const cloudSync = useMemo(() => createWorkspaceCloudSync<AppData>(), []);
+  const cloudWriteQueue = useRef<Promise<void>>(Promise.resolve());
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    supabaseConfigured ? null : getSession(),
+  );
   const [data, setData] = useState<AppData>(() => loadData(getSession()?.userId)),
     [page, setPage] = useState<Page>("analysis"),
     [trailId, setTrailId] = useState(data.trails[0]?.id ?? ""),
@@ -83,6 +99,7 @@ export default function App() {
     [notice, setNotice] = useState(readStorageWarning),
     [historyQuery, setHistoryQuery] = useState("");
   const [playing, setPlaying] = useState(false);
+  const [sharedToken, setSharedToken] = useState(readSharedRunToken);
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
@@ -99,6 +116,11 @@ export default function App() {
       window.removeEventListener("online", updateConnection);
       window.removeEventListener("offline", updateConnection);
     };
+  }, []);
+  useEffect(() => {
+    const updateShareRoute = () => setSharedToken(readSharedRunToken());
+    window.addEventListener("hashchange", updateShareRoute);
+    return () => window.removeEventListener("hashchange", updateShareRoute);
   }, []);
   const inspectProgress = useCallback((value: number) => {
     setPlaying(false);
@@ -179,7 +201,24 @@ export default function App() {
     try {
       saveData(next, session?.userId);
       setData(next);
-      setNotice("Changes saved on this device.");
+      if (session?.provider === "supabase" && supabaseConfigured) {
+        setNotice("Saved on this device · syncing to your account…");
+        cloudWriteQueue.current = cloudWriteQueue.current
+          .catch(() => undefined)
+          .then(async () => {
+            const client = await getSupabaseClient();
+            if (!client) throw new Error("Cloud sync is not configured.");
+            const { data: auth } = await client.auth.getSession();
+            if (!auth.session) throw new Error("Your cloud session expired. Sign in again to sync.");
+            await cloudSync.push(auth.session.access_token, session.userId, next);
+            setNotice("Saved on this device and synced to your account.");
+          })
+          .catch((error: unknown) => {
+            setNotice(error instanceof Error ? `Saved on this device · cloud sync failed: ${error.message}` : "Saved on this device · cloud sync failed.");
+          });
+      } else {
+        setNotice("Changes saved on this device.");
+      }
       return true;
     } catch (error) {
       setNotice(
@@ -190,32 +229,56 @@ export default function App() {
       return false;
     }
   };
-  const authenticate = (nextSession: AuthSession) => {
-    const loaded = loadData(nextSession.userId);
-    const nextData = loaded.demo
-      ? {
-          ...loaded,
-          demo: false,
-          profile: {
-            ...loaded.profile,
-            name: nextSession.name,
-            email: nextSession.email,
-          },
+  const authenticate = useCallback(async (nextSession: AuthSession) => {
+    let local = loadData(nextSession.userId);
+    if (local.demo) {
+      const previousDeviceWorkspace = loadData();
+      if (!previousDeviceWorkspace.demo) local = previousDeviceWorkspace;
+    }
+    let nextData = local.demo
+      ? { ...local, demo: false, profile: { ...local.profile, name: nextSession.name, email: nextSession.email } }
+      : { ...local, demo: false, profile: { ...local.profile, name: nextSession.name || local.profile.name, email: nextSession.email || local.profile.email } };
+    let cloudWarning = "";
+    try {
+      if (nextSession.provider === "supabase" && supabaseConfigured) {
+        const client = await getSupabaseClient();
+        if (!client) throw new Error("Cloud sync is not configured.");
+        const { data: auth } = await client.auth.getSession();
+        if (!auth.session) throw new Error("The account session is no longer available.");
+        const remote = await cloudSync.pull(auth.session.access_token, nextSession.userId);
+        if (remote) {
+          const checked = validateData(remote.data);
+          nextData = mergeWorkspaceRecords(nextData, checked);
         }
-      : loaded;
+        await cloudSync.push(auth.session.access_token, nextSession.userId, nextData);
+      }
+    } catch (error) {
+      cloudWarning = error instanceof Error ? `Signed in; cloud sync needs attention: ${error.message}` : "Signed in; cloud sync needs attention.";
+    }
     try {
       saveData(nextData, nextSession.userId);
       setData(nextData);
       setSession(nextSession);
       setPage("analysis");
-      setNotice("");
+      setNotice(cloudWarning || (nextSession.provider === "supabase" ? "Your workspace is synced with your account." : "Your local rider workspace is ready."));
     } catch {
       setNotice("Could not open your rider workspace on this device.");
     }
-  };
-  const logout = () => {
-    signOut();
-    setSession(null);
+  }, [cloudSync]);
+  const logout = async () => {
+    try {
+      if (session?.provider === "supabase" && supabaseConfigured) {
+        const client = await getSupabaseClient();
+        if (!client) throw new Error("Cloud sync is not configured.");
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? `Could not finish cloud sign-out: ${error.message}` : "Could not finish cloud sign-out.");
+    } finally {
+      signOut();
+      setSession(null);
+    }
   };
   const selectTrail = (id: string) => {
     setTrailId(id);
@@ -241,6 +304,25 @@ export default function App() {
         runs: data.runs.filter((x) => x.id !== r.id),
       });
   };
+  const shareRun = async (r: Run) => {
+    if (session?.provider !== "supabase") {
+      setNotice("Sign in with a configured cloud account to create a private run link.");
+      return;
+    }
+    const sharedTrail = data.trails.find((item) => item.id === r.trailId);
+    if (!sharedTrail) return setNotice("Could not find the trail for this run.");
+    if (!window.confirm("Anyone with this unlisted link can view the GPS trace. The link expires in 7 days. Create it?")) return;
+    try {
+      const best = personalBest(data.runs, r.trailId);
+      const ghostRun = best && best.id !== r.id ? best : null;
+      const url = await createPrivateRunShare(data.profile.name, sharedTrail, r, ghostRun);
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+      else window.prompt("Copy this private run link", url);
+      setNotice("Private run link copied. It expires in 7 days.");
+    } catch (error) {
+      setNotice(error instanceof Error ? `Could not create the private link: ${error.message}` : "Could not create the private link.");
+    }
+  };
   const names: Record<Page, string> = {
     analysis: "Run analysis",
     history: "Run history",
@@ -250,6 +332,7 @@ export default function App() {
     import: "Import a run",
     video: "Video lab",
   };
+  if (sharedToken) return <SharedRunPage token={sharedToken} />;
   if (requiresAuth && !session) {
     return <AuthScreen onAuthenticated={authenticate} />;
   }
@@ -323,7 +406,11 @@ export default function App() {
           <div className="top-actions">
             <span className={`device-state ${online ? "" : "offline"}`} role="status">
               <i />
-              {online ? "On-device workspace" : "Offline mode · maps may be unavailable"}
+              {!online
+                ? "Offline · changes stay on this device"
+                : session?.provider === "supabase"
+                  ? "Cloud account · synced workspace"
+                  : "On-device workspace"}
             </span>
             <button
               className="button primary"
@@ -806,11 +893,14 @@ export default function App() {
                                   {r.bikeSetupSnapshot &&
                                     [
                                       r.bikeSetupSnapshot.suspensionSetup,
+                                      r.bikeSetupSnapshot.sag,
+                                      r.bikeSetupSnapshot.rebound,
+                                      r.bikeSetupSnapshot.pressure,
                                       r.bikeSetupSnapshot.tyres,
                                       r.bikeSetupSnapshot.wheels,
                                     ].some(Boolean) && (
                                       <small>
-                                        {[r.bikeSetupSnapshot.suspensionSetup, r.bikeSetupSnapshot.tyres, r.bikeSetupSnapshot.wheels]
+                                        {[r.bikeSetupSnapshot.suspensionSetup, r.bikeSetupSnapshot.sag, r.bikeSetupSnapshot.rebound, r.bikeSetupSnapshot.pressure, r.bikeSetupSnapshot.tyres, r.bikeSetupSnapshot.wheels]
                                           .filter(Boolean)
                                           .join(" · ")}
                                       </small>
@@ -829,6 +919,15 @@ export default function App() {
                                   onClick={() => selectRun(r)}
                                 >
                                   Analyze <ArrowRight size={14} />
+                                </button>
+                                <button
+                                  className="text-button run-share-button"
+                                  type="button"
+                                  disabled={session?.provider !== "supabase"}
+                                  title={session?.provider === "supabase" ? "Create an unlisted 7-day run link" : "Configure cloud accounts to share run links"}
+                                  onClick={() => void shareRun(r)}
+                                >
+                                  <Share2 size={13} /> Share
                                 </button>
                                 <button
                                   className="delete-button"
@@ -885,30 +984,35 @@ export default function App() {
               )}
             </>
           )}
-          {page === "garage" && <Garage data={data} onChange={update} />}
+          {page === "garage" && <Suspense fallback={pageLoading}><Garage data={data} onChange={update} /></Suspense>}
           {page === "trails" && (
-            <TrailManager
-              data={data}
-              onChange={update}
-              onSelect={(id) => {
-                selectTrail(id);
-                setPage("analysis");
-              }}
-            />
+            <Suspense fallback={pageLoading}>
+              <TrailManager
+                data={data}
+                onChange={update}
+                onSelect={(id) => {
+                  selectTrail(id);
+                  setPage("analysis");
+                }}
+              />
+            </Suspense>
           )}
           {page === "profile" && (
-            <>
+            <Suspense fallback={pageLoading}>
+              <>
               <ProfileSettings
                 key={JSON.stringify(data.profile)}
                 data={data}
                 onChange={update}
                 onSignOut={session ? logout : undefined}
+                cloudSyncEnabled={session?.provider === "supabase"}
               />
               <section className="panel data-panel">
                 <h2>Your data stays yours.</h2>
                 <p>
-                  Profiles, bikes, trails and runs are stored in this browser.
-                  Export a backup before clearing browser data.
+                  {session?.provider === "supabase"
+                    ? "Profiles, bikes, trails and runs sync to your private account. Video clips can be uploaded separately from Video lab."
+                    : "Profiles, bikes, trails and runs are stored in this browser. Export a backup before clearing browser data."}
                 </p>
                 <div className="form-actions">
                   <button
@@ -959,10 +1063,12 @@ export default function App() {
                   }}
                 />
               </section>
-            </>
+              </>
+            </Suspense>
           )}
           {page === "import" && (
-            <>
+            <Suspense fallback={pageLoading}>
+              <>
               <div className="import-guide">
                 <div>
                   <h1>Your next Ghost starts here.</h1>
@@ -989,9 +1095,10 @@ export default function App() {
                   setPage("analysis");
                 }}
               />
-            </>
+              </>
+            </Suspense>
           )}
-          {page === "video" && <VideoLab data={data} />}
+          {page === "video" && <Suspense fallback={pageLoading}><VideoLab data={data} userId={session?.userId} cloudUserId={session?.provider === "supabase" ? session.userId : undefined} /></Suspense>}
           <footer className="app-footer">
             <span>
               GHOSTLINE<span className="accent">.</span>{" "}
@@ -1001,7 +1108,7 @@ export default function App() {
               {data.demo && data.runs.some((r) => r.synthetic)
                 ? "Includes synthetic demo GPS · Santa Marta das Cortiças"
                 : session
-                  ? "Signed-in workspace · saved on this device"
+                  ? session.provider === "supabase" ? "Private cloud workspace · video library available" : "Local account · saved on this device"
                   : "Local workspace"}{" "}
               <span className="footer-divider">/</span> RIDE → ANALYZE → SEND
               AGAIN

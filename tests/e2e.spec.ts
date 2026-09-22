@@ -112,6 +112,7 @@ test("history search, analyze, delete and PB recomputation work", async ({
   page,
 }) => {
   await open(page, "Run history");
+  await expect(page.getByRole("button", { name: "Share" }).first()).toBeDisabled();
   const search = page.getByRole("textbox", { name: "Search runs" });
   await search.fill("Personal best");
   await expect(
@@ -210,7 +211,7 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   expect(renderedDownload.suggestedFilename()).toMatch(/ghostline\.webm$/);
   const renderedPath = await renderedDownload.path();
   expect(renderedPath).toBeTruthy();
-  expect((await readFile(renderedPath!)).byteLength).toBeGreaterThan(100);
+  await expect.poll(async () => (await readFile(renderedPath!)).byteLength, { timeout: 10_000 }).toBeGreaterThan(100);
   await expect(page.getByText("Overlay clip downloaded")).toBeVisible();
 });
 
@@ -271,6 +272,14 @@ test("garage supports add edit delete and protects referenced bikes", async ({
   await page.getByLabel("Travel (mm)").fill("160");
   await page.getByRole("button", { name: "Add bike" }).click();
   await expect(page.getByText("Unused rig")).toBeVisible();
+  await page.getByRole("article").filter({ hasText: "Unused rig" }).locator("summary").click();
+  await page.getByLabel("Unused rig service description").fill("Fork lower service");
+  await page.getByRole("button", { name: "Log service" }).click();
+  await expect(page.getByText("Fork lower service")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+    return workspace.bikes.find((bike: { name?: string }) => bike.name === "Unused rig")?.serviceHistory?.length ?? 0;
+  })).toBe(1);
   await page.getByTitle("Edit Unused rig").click();
   await page.getByLabel("Name").fill("Edited rig");
   await page.getByRole("button", { name: "Update bike" }).click();
@@ -399,6 +408,26 @@ test("FIT activity imports through the run workflow", async ({ page }) => {
       }),
     )
     .toBe(false);
+});
+
+test("sample GPX download can be imported as a real practice run", async ({ page }) => {
+  await page.getByRole("button", { name: "Import run" }).click();
+  const downloadReady = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Try a sample GPX" }).click();
+  const download = await downloadReady;
+  expect(download.suggestedFilename()).toBe("ghostline-demo-run.gpx");
+  const filePath = await download.path();
+  expect(filePath).toBeTruthy();
+  await page.locator('input[type="file"]').setInputFiles(filePath!);
+  await expect(page.getByText(/points ·/)).toBeVisible();
+  await page.getByRole("button", { name: "Save run" }).click();
+  await expect(page.getByText("Against the Ghost")).toBeVisible();
+  const imported = await page.evaluate(() => {
+    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+    return workspace.runs?.at(-1) ?? null;
+  });
+  expect(imported?.points.length).toBeGreaterThan(100);
+  expect(imported?.synthetic).not.toBe(true);
 });
 
 test("Secret Spot imports stop at the marked physical finish", async ({ page }) => {
@@ -581,4 +610,10 @@ test("sector inspection pauses replay and progression resizes after an empty tra
         .evaluate((e) => Number(e.getAttribute("viewBox")!.split(" ")[2])),
     )
     .toBeLessThan(390);
+});
+
+test("invalid private run links show a useful return path", async ({ page }) => {
+  await page.goto("/#share=not-a-valid-share-token");
+  await expect(page.getByText(/expired or is not valid/i)).toBeVisible();
+  await expect(page.locator(".shared-run-message a")).toBeVisible();
 });

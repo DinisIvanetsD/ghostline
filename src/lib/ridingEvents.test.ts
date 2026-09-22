@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../types";
-import { detectRidingEvents, detectBrakingEvents, detectAccelerationEvents, detectJumpEvents, detectPauseEvents } from "./ridingEvents";
+import { detectRidingEvents, detectBrakingEvents, detectAccelerationEvents, detectJumpEvents, detectPauseEvents, detectCornerEvents } from "./ridingEvents";
 
 function track(speeds: number[], elevations: number[] = speeds.map(() => 500)): Point[] {
   let metres = 0;
@@ -35,5 +35,15 @@ describe("riding event analysis", () => {
     expect(pauses[0].endTime - pauses[0].startTime).toBeGreaterThanOrEqual(3);
     const events = detectRidingEvents(points);
     expect(events.map((event) => event.startTime)).toEqual([...events].map((event) => event.startTime).sort((a, b) => a - b));
+  });
+
+  it("flags meaningful direction changes as corners while moving", () => {
+    const points: Point[] = [
+      { lat: 41, lon: -8, ele: 500, time: 0 },
+      { lat: 41.0005, lon: -8, ele: 499, time: 1 },
+      { lat: 41.0005, lon: -7.9992, ele: 498, time: 2 },
+      { lat: 41.001, lon: -7.9992, ele: 497, time: 3 },
+    ];
+    expect(detectCornerEvents(points, { cornerAngle: 20 })).toHaveLength(1);
   });
 });
