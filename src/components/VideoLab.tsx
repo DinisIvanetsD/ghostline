@@ -37,6 +37,7 @@ import {
   type VideoSyncSettings,
 } from "../lib/videoSync";
 import { loadVideoProject, saveVideoProject } from "../lib/videoProjects";
+import { readVideoCaptureDate, suggestVideoOffset } from "../lib/videoMetadata";
 import { loadCloudVideoProject, saveCloudVideoProject, signedRideVideoUrl, uploadRideVideo } from "../lib/videoCloud";
 import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 import {
@@ -133,6 +134,8 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   const [runId, setRunId] = useState("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoName, setVideoName] = useState("");
+  const [videoCaptureDate, setVideoCaptureDate] = useState<Date | null>(null);
+  const [videoMetadataState, setVideoMetadataState] = useState<"idle" | "checking" | "found" | "missing">("idle");
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoTime, setVideoTime] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -155,6 +158,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   const overlayExportSupported = canRenderOverlayWebM();
   const renderAbort = useRef<AbortController | null>(null);
   const hydratedProjectRun = useRef<string | null>(null);
+  const videoSelectionId = useRef(0);
   const [projectReady, setProjectReady] = useState(false);
   const previousOffset = useRef(offsetSeconds);
 
@@ -168,6 +172,12 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   );
   const run = runs.find((item) => item.id === runId) ?? runs[0];
   const current = useMemo(() => (run ? analyze(run.points) : null), [run]);
+  const timestampOffsetSuggestion = useMemo(() => {
+    if (!run?.points.length || !videoCaptureDate || !current || !videoDuration) return null;
+    const suggestion = suggestVideoOffset(run.points[0].time, videoCaptureDate);
+    if (suggestion === null || suggestion >= videoDuration || suggestion + current.duration <= 0) return null;
+    return suggestion;
+  }, [run, videoCaptureDate, videoDuration, current]);
   const pb = useMemo(
     () => personalBest(data.runs, trail?.id ?? ""),
     [data.runs, trail],
@@ -342,6 +352,14 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   const selectVideo = async (file: File | undefined) => {
     if (!file) return;
     const isSavedClip = file.name === videoName;
+    const selectionId = ++videoSelectionId.current;
+    setVideoCaptureDate(null);
+    setVideoMetadataState("checking");
+    void readVideoCaptureDate(file).then((captureDate) => {
+      if (selectionId !== videoSelectionId.current) return;
+      setVideoCaptureDate(captureDate);
+      setVideoMetadataState(captureDate ? "found" : "missing");
+    });
     renderAbort.current?.abort();
     if (previousUrl.current) URL.revokeObjectURL(previousUrl.current);
     const nextUrl = URL.createObjectURL(file);
@@ -387,6 +405,17 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     onVideoTime();
   };
 
+  const applyTimestampSuggestion = () => {
+    if (timestampOffsetSuggestion === null || !current || !videoDuration) return;
+    const nextOffset = timestampOffsetSuggestion;
+    const nextVideoTime = Math.max(0, Math.min(videoDuration, nextOffset));
+    setAnchors([]);
+    setOffsetSeconds(nextOffset);
+    if (videoRef.current) videoRef.current.currentTime = nextVideoTime;
+    setVideoTime(nextVideoTime);
+    setProgress(fractionAtTime(current, Math.max(0, runTimeForVideo(nextVideoTime, { offsetSeconds: nextOffset }))));
+  };
+
   const setRunStartAtPlayhead = () => {
     const finish = anchors.find((anchor) => anchor.runTime > 0);
     if (finish && videoTime >= finish.videoTime) return;
@@ -408,8 +437,11 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   const resetAnchors = () => setAnchors([]);
 
   const changeOffset = (value: number) => {
-    const nextOffset = Math.max(0, Number.isFinite(value) ? value : 0);
+    const nextOffset = Number.isFinite(value) ? value : 0;
     setAnchors((currentAnchors) => {
+      // A negative offset means GPS recording started before the camera. A GPS
+      // start anchor cannot live before video time zero, so let the offset map it.
+      if (nextOffset < 0) return [];
       const start = currentAnchors.find((anchor) => anchor.runTime === 0);
       // A finish-only marker has no stable baseline for an offset edit. Clear
       // it so the newly entered offset becomes the active mapping instead of
@@ -710,10 +742,16 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
               <span className="sync-status"><Check size={13} /> Local sync</span>
             </div>
             <div className="sync-grid">
-              <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" min="0" step="0.1" value={offsetSeconds} onChange={(event) => changeOffset(Number(event.target.value))} /></label>
+              <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" step="0.1" value={offsetSeconds} onChange={(event) => changeOffset(Number(event.target.value))} /></label>
               <label className="field"><span>Preview speed</span><select aria-label="Video playback rate" value={previewRate} onChange={(event) => setPreviewRate(Number(event.target.value))}><option value="1">1× real time</option><option value="0.5">0.5× slow motion</option><option value="2">2× analysis</option></select></label>
               <button className="button secondary sync-action" onClick={setRunStartAtPlayhead}><Target size={15} /> Set run start at playhead</button>
             </div>
+            {videoMetadataState === "checking" && <p className="sync-metadata-note" role="status">Checking the clip for its recording timestamp…</p>}
+            {videoMetadataState === "missing" && videoUrl && <p className="sync-metadata-note" role="status">No recording timestamp found in this clip. You can still line it up with the start and finish markers below.</p>}
+            {videoCaptureDate && <div className="sync-suggestion" role="status">
+              <div><strong><Sparkles size={14} /> Recording timestamp found</strong><span>{videoCaptureDate.toLocaleString()} · compare it with the GPS start before applying.</span><small>Camera clock or time-zone differences can affect this estimate.</small></div>
+              {timestampOffsetSuggestion !== null ? <button className="button secondary" onClick={applyTimestampSuggestion}>Use {timestampOffsetSuggestion > 0 ? "+" : ""}{timestampOffsetSuggestion.toFixed(1)}s suggestion</button> : <span className="muted">No close timestamp match for this GPS run; align manually.</span>}
+            </div>}
             <div className="sync-anchors">
               <div><strong>Two point sync</strong><span className="muted">{anchors.length ? `${anchors.length} anchor${anchors.length === 1 ? "" : "s"} · ${anchors.map((anchor) => `${anchor.runTime === 0 ? "start" : "finish"} ${clock(anchor.videoTime)}`).join(" · ")}` : "Optional: lock both ends of the run to the video."}</span></div>
               <div className="sync-anchor-actions"><button className="button secondary" onClick={setRunStartAtPlayhead}><Target size={14} /> Mark start</button><button className="button secondary" disabled={!videoDuration} onClick={setRunFinishAtPlayhead}><Target size={14} /> Mark finish</button><button className="text-button" disabled={!anchors.length} onClick={resetAnchors}>Reset anchors</button></div>

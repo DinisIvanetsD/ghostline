@@ -34,6 +34,16 @@ function faster(
   }));
 }
 
+function quickTimeWithCaptureDate(captureDate: string): Buffer {
+  const box = (type: string, payload: Buffer) => {
+    const header = Buffer.alloc(8);
+    header.writeUInt32BE(header.length + payload.length, 0);
+    header.write(type, 4, 4, "latin1");
+    return Buffer.concat([header, payload]);
+  };
+  return box("moov", box("udta", box("©day", Buffer.from(captureDate, "utf8"))));
+}
+
 function fit(points: Array<{ lat: number; lon: number; ele: number; time: number }>) {
   const encoder = new Encoder();
   const write = (messageNumber: number, message: object) =>
@@ -213,6 +223,28 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   expect(renderedPath).toBeTruthy();
   await expect.poll(async () => (await readFile(renderedPath!)).byteLength, { timeout: 10_000 }).toBeGreaterThan(100);
   await expect(page.getByText("Overlay clip downloaded")).toBeVisible();
+});
+
+test("video lab offers a confirmable timestamp alignment for QuickTime clips", async ({ page }) => {
+  await open(page, "Video lab");
+  const captureDate = new Date(Date.parse("2026-09-13T09:00:00Z") + 20_000).toISOString();
+  await page.getByLabel("Choose video file").first().setInputFiles({
+    name: "timestamped-mimo-export.mp4",
+    mimeType: "video/mp4",
+    buffer: quickTimeWithCaptureDate(captureDate),
+  });
+  await expect(page.getByText("Recording timestamp found")).toBeVisible();
+  await expect(page.getByText(/Camera clock or time-zone differences/)).toBeVisible();
+  // The synthetic QuickTime container is metadata-only. Give the player a
+  // metadata event so this test can exercise the opt-in sync control itself.
+  await page.locator("video").evaluate((element) => {
+    Object.defineProperty(element, "duration", { configurable: true, value: 300 });
+    element.dispatchEvent(new Event("loadedmetadata"));
+  });
+  const suggestion = page.getByRole("button", { name: "Use -20.0s suggestion" });
+  await expect(suggestion).toBeVisible();
+  await suggestion.click();
+  await expect(page.getByLabel("GPS start offset")).toHaveValue("-20");
 });
 
 test("video lab reports an unsupported local clip", async ({ page }) => {

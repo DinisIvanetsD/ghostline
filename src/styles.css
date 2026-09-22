@@ -2870,6 +2870,41 @@ td small {
   font-size: 11px;
   margin-top: 13px;
 }
+.sync-metadata-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.sync-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+.sync-suggestion > div {
+  display: grid;
+  gap: 4px;
+}
+.sync-suggestion strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 12px;
+}
+.sync-suggestion span,
+.sync-suggestion small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sync-suggestion .button {
+  flex: 0 0 auto;
+}
 .sync-anchors {
   display: flex;
   align-items: center;
@@ -3430,6 +3465,13 @@ td small {
   .sync-grid {
     grid-template-columns: 1fr;
     gap: 13px;
+  }
+  .sync-suggestion {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .sync-suggestion .button {
+    width: 100%;
   }
   .video-run-facts {
     min-height: 0;

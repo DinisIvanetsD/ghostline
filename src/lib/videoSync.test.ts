@@ -37,6 +37,8 @@ describe("video synchronization", () => {
     const anchored = { ...settings, anchors: [{ runTime: 0, videoTime: 8 }, { runTime: 10, videoTime: 18 }] };
     expect(videoTimeForRun(5, anchored)).toBe(13);
     expect(runTimeForVideo(13, anchored)).toBe(5);
+    expect(videoTimeForRun(20, { offsetSeconds: -3 })).toBe(17);
+    expect(runTimeForVideo(17, { offsetSeconds: -3 })).toBe(20);
   });
 
   it("returns video windows aligned to the trail sectors", () => {
