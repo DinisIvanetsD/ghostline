@@ -118,6 +118,29 @@ export function timeAt(telemetry: Telemetry, fraction: number): number {
   return telemetry.duration;
 }
 
+/**
+ * Time gap to the Ghost at each sample of the current run, aligned by
+ * normalized distance: positive means behind the Ghost, negative ahead.
+ * Both sample lists are ordered by fraction, so one forward pass is enough.
+ */
+export function ghostGap(current: Telemetry, ghost: Telemetry): number[] {
+  const g = ghost.samples;
+  let j = 1;
+  return current.samples.map((s) => {
+    while (j < g.length - 1 && g[j].fraction < s.fraction) j += 1;
+    const a = g[j - 1] ?? g[0];
+    const b = g[j] ?? a;
+    const span = b.fraction - a.fraction;
+    const ghostTime =
+      s.fraction <= a.fraction
+        ? a.time
+        : s.fraction >= b.fraction
+          ? b.time
+          : a.time + ((b.time - a.time) * (s.fraction - a.fraction)) / span;
+    return s.time - ghostTime;
+  });
+}
+
 const LEAD_IN_GATE_METERS = 80;
 
 /**

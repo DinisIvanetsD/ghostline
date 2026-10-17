@@ -102,6 +102,11 @@ test("demo analysis has seven primary runs, stable PB, sector selection, referen
   await expect(
     page.getByRole("img", { name: /altitude ao longo da distância/i }),
   ).toBeVisible();
+  await page.locator(".segmented").getByRole("button", { name: "Δ Ghost" }).click();
+  await expect(
+    page.getByRole("img", { name: /Diferença para o Ghost/ }),
+  ).toBeVisible();
+  await expect(page.locator(".trace-meta b")).toContainText(/atrás|à frente/);
   const slider = page.locator('input[type="range"]');
   await slider.fill("800");
   await expect(slider).toHaveValue("800");

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../types";
-import { clipToFinish, clipToRouteFinish, detectTrail, matchRoute, scoreRouteMatch } from "./routeMatch";
+import { clipToFinish, clipToRouteFinish, detectTrail, matchRoute, routeFractionAt, scoreRouteMatch } from "./routeMatch";
 
 const route: Point[] = Array.from({ length: 20 }, (_, i) => ({
   lat: 38 + i * 0.001,
@@ -90,4 +90,13 @@ it("rejects reverse travel on a short two-point route", () => {
   const short = [route[0], { ...route[0], lat: route[0].lat + 0.001 }];
   expect(matchRoute([...short].reverse(), short).ok).toBe(false);
   expect(matchRoute(short, short).ok).toBe(true);
+});
+
+describe("routeFractionAt", () => {
+  const line: Point[] = [0, 1, 2, 3, 4].map((i) => ({ lat: 41 + i * 0.001, lon: -8.4, ele: 0, time: i }));
+  it("projects a tapped point onto the route", () => {
+    expect(routeFractionAt(line, { lat: 41.002, lon: -8.4001 })).toBeCloseTo(0.5, 2);
+    expect(routeFractionAt(line, { lat: 40.99, lon: -8.4 })).toBe(0);
+    expect(routeFractionAt(line, { lat: 41.01, lon: -8.4 })).toBeCloseTo(1, 6);
+  });
 });

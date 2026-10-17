@@ -3694,3 +3694,27 @@ td small {
   display: block;
   font-size: 10px;
 }
+
+.sector-picker-field {
+  grid-column: 1 / -1;
+}
+.sector-picker {
+  display: grid;
+  gap: 8px;
+}
+.sector-picker-map {
+  height: 320px;
+  border-radius: 4px;
+  border: 1px solid #414d39;
+  background: #111710;
+  cursor: crosshair;
+}
+.sector-picker-map .map-sector {
+  cursor: pointer;
+}
+.trace-meta b.lost {
+  color: var(--lost);
+}
+.trace-meta b.gained {
+  color: var(--gained);
+}

@@ -1,5 +1,5 @@
 import type { Telemetry } from "../types";
-import { timeAt } from "./analysis";
+import { ghostGap } from "./analysis";
 
 export type TraceMode = "plain" | "speed" | "ghost";
 export interface TraceSegment {
@@ -48,7 +48,7 @@ export function traceSegments(
     const high = percentile(values, 0.9);
     color = (v) => speedColor(high > low ? Math.max(0, Math.min(1, (v - low) / (high - low))) : 0.5);
   } else {
-    const delta = samples.map((s) => s.time - timeAt(ghost, s.fraction));
+    const delta = ghostGap(current, ghost);
     let back = 0;
     values = samples.map((s, i) => {
       while (back < i && s.distance - samples[back].distance > windowMeters) back += 1;

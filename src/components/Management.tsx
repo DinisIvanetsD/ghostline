@@ -22,6 +22,8 @@ import {
 import { parseGPX } from "../lib/gpx";
 import { loadStravaStreams, streamsToPoints, type StravaActivity } from "../lib/strava";
 import { StravaPicker } from "./StravaPicker";
+import { SectorPicker } from "./SectorPicker";
+import { addGate, removeGate } from "../lib/sectorEdit";
 import { DIFFICULTIES, difficultyLabel } from "../lib/labels";
 import { analyze, courseDuration, formatTime } from "../lib/analysis";
 import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
@@ -838,6 +840,34 @@ export function TrailManager({
               ))}
             </select>
           </label>
+          {(() => {
+            const route = data.trails.find((t) => t.id === selected)?.points ?? [];
+            if (!selected || route.length < 2) return null;
+            let gates: number[] | null = null;
+            try {
+              gates = parseBoundaries(boundaries);
+            } catch {
+              // An unfinished hand-typed list keeps the map hidden until it parses.
+            }
+            if (!gates) return null;
+            const names = sectorNames.split(",").map((v) => v.trim()).filter(Boolean);
+            const apply = (next: { boundaries: number[]; names: string[] } | null) => {
+              if (!next) return;
+              setBoundaries(next.boundaries.join(", "));
+              setSectorNames(next.names.join(", "));
+            };
+            return (
+              <div className="field sector-picker-field">
+                Setores no mapa
+                <SectorPicker
+                  points={route}
+                  boundaries={gates}
+                  onAdd={(fraction) => apply(addGate(gates, names, fraction, "Novo setor"))}
+                  onRemove={(index) => apply(removeGate(gates, names, index))}
+                />
+              </div>
+            );
+          })()}
           <label className="field">
             Limites dos setores{" "}
             <span className="muted">frações, separadas por vírgulas</span>

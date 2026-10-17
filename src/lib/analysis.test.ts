@@ -3,6 +3,7 @@ import type { Point, Run, Trail } from "../types";
 import {
   analyze,
   courseDuration,
+  ghostGap,
   splitLeadIn,
   formatDelta,
   formatTime,
@@ -195,4 +196,15 @@ it("times a Bonus Spot drop-in as sector 0 and keeps the course time comparable"
   expect(splits.reduce((a, b) => a + b, 0)).toBeCloseTo(courseDuration(bonusRun, secret), 6);
   // A run from the main gate has no lead-in.
   expect(splitLeadIn(data.runs.find((r) => r.id === "run-10")!, secret).leadIn).toBeNull();
+});
+
+it("ghost gap matches timeAt at every sample", async () => {
+  const { createDemoData } = await import("./demo");
+  const data = createDemoData();
+  const current = analyze(data.runs[0].points);
+  const ghost = analyze(data.runs[4].points);
+  const gaps = ghostGap(current, ghost);
+  expect(gaps).toHaveLength(current.samples.length);
+  current.samples.forEach((s, i) => expect(gaps[i]).toBeCloseTo(s.time - timeAt(ghost, s.fraction), 6));
+  expect(gaps.at(-1)).toBeCloseTo(current.duration - ghost.duration, 6);
 });

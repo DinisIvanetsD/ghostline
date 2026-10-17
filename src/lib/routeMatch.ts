@@ -91,6 +91,17 @@ function nearest(
   return best;
 }
 
+/** Fraction of the route's length at the route point closest to `point`. */
+export function routeFractionAt(
+  routePoints: Array<Pick<Point, "lat" | "lon">>,
+  point: Pick<Point, "lat" | "lon">,
+): number {
+  if (routePoints.length < 2) return 0;
+  const distances = cumulative(routePoints);
+  const total = distances.at(-1)!;
+  return total > 0 ? nearest(point, routePoints, distances).progress / total : 0;
+}
+
 /**
  * Trim at the last point that is still on the physical route when GPS drift
  * means no sample lands within the finish gate itself. This is deliberately
