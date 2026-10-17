@@ -1,5 +1,5 @@
 import type { Point, Run, Trail } from "../types";
-import { analyze, timeAt } from "./analysis";
+import { sectorTimes, splitLeadIn } from "./analysis";
 
 export interface StopDetectionOptions {
   speedThresholdKmh?: number;
@@ -122,11 +122,12 @@ export function runTimeForVideo(videoTime: number, settings: VideoSyncSettings):
 
 export function sectorVideoWindows(run: Run, trail: Trail, settings: VideoSyncSettings): SectorVideoWindow[] {
   if (run.trailId !== trail.id || run.points.length < 2) return [];
-  const telemetry = analyze(run.points);
-  const boundaries = [0, ...trail.boundaries.filter((b) => Number.isFinite(b) && b > 0 && b < 1).sort((a, b) => a - b), 1];
-  return boundaries.slice(1).map((end, index) => {
-    const runStartTime = timeAt(telemetry, boundaries[index]);
-    const runEndTime = timeAt(telemetry, end);
+  // Windows follow the same physical sector gates as the sector panel and
+  // start after any lead-in ridden from an alternate start (sector 0).
+  let runEndTime = splitLeadIn(run, trail).leadIn ?? 0;
+  return sectorTimes(run, trail).map((split, index) => {
+    const runStartTime = runEndTime;
+    runEndTime += split;
     return { index, name: trail.sectorNames[index] ?? `Sector ${index + 1}`, runStartTime, runEndTime, videoStartTime: videoTimeForRun(runStartTime, settings), videoEndTime: videoTimeForRun(runEndTime, settings), duration: Math.max(0, runEndTime - runStartTime) };
   });
 }

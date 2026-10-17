@@ -1,12 +1,12 @@
 {
-  "name": "GHOSTLINE — MTB telemetry",
+  "name": "GHOSTLINE — telemetria MTB",
   "short_name": "GHOSTLINE",
-  "description": "Chase yourself. Compare every downhill run against your Ghost.",
+  "description": "Compara cada descida com o teu Ghost.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#101311",
   "theme_color": "#101311",
-  "lang": "en",
+  "lang": "pt-PT",
   "categories": ["sports", "utilities"]
 }

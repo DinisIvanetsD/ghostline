@@ -43,10 +43,10 @@ describe("local rider accounts", () => {
         email: "RIDER@example.com",
         password: "downhill-456",
       }),
-    ).rejects.toThrow(/already exists/);
+    ).rejects.toThrow(/Já existe/);
     await expect(
       loginAccount({ email: registered.email, password: "wrong-pass" }),
-    ).rejects.toThrow(/incorrect/);
+    ).rejects.toThrow(/incorretos/);
 
     await expect(
       loginAccount({ email: "RIDER@example.com", password: "downhill-123" }),
@@ -56,9 +56,9 @@ describe("local rider accounts", () => {
   it("enforces useful registration fields", async () => {
     await expect(
       registerAccount({ name: "Rider", email: "rider@example.com", password: "short" }),
-    ).rejects.toThrow(/8 characters/);
+    ).rejects.toThrow(/8 caracteres/);
     await expect(
       registerAccount({ name: "Rider", email: "bad", password: "long-enough" }),
-    ).rejects.toThrow(/valid email/);
+    ).rejects.toThrow(/email válido/);
   });
 });

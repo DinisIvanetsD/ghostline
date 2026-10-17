@@ -21,6 +21,28 @@ The app supports Supabase email/password accounts, email confirmation, password 
 
 When Supabase is not configured, the app visibly runs as a device-local preview. Account recovery and multi-device sync need the hosted configuration above. Cloud media uploads are private and limited to 250 MB per clip by the included bucket policy.
 
+### Trail leaderboard
+
+`supabase/schema.sql` also creates `ghostline_leaderboard`: an opt-in board for the three shared Braga trails. Signed-in riders can read it; each rider can only publish, update or withdraw their own row. Only the display name, course time, sector splits and date are shared, never the GPS trace. Times are self-reported by the client.
+
+### Strava import
+
+1. Create an API application at <https://www.strava.com/settings/api> and set its Authorization Callback Domain to your app's domain (`127.0.0.1` locally, `dinisivanetsd.github.io` for Pages).
+2. Deploy the bridge function and its secrets (the client secret never reaches the browser):
+
+```sh
+supabase functions deploy strava
+supabase secrets set STRAVA_CLIENT_ID=12345 STRAVA_CLIENT_SECRET=...
+```
+
+3. Add `VITE_STRAVA_CLIENT_ID` to `.env.local` and to the repository Actions secrets.
+
+Garmin users can enable Garmin Connect → Strava sync; Garmin's own API is limited to approved business partners.
+
+### Trail geometry
+
+The three demo trails follow the public Trailforks routes (Secret Spot is its three consecutive segments, with Bonus Spot as an optional upper start timed as sector 0) with EU-DEM 25 m elevations. Regenerate `src/lib/trailRoutes.ts` with `node scripts/fetch-trail-routes.mjs <polylines.json>`.
+
 ```sh
 npm run typecheck
 npm run lint

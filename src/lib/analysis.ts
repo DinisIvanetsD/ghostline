@@ -44,7 +44,7 @@ export function analyze(points: Point[]): Telemetry {
     removeImpossible: points.some((point) => Math.abs(point.time) > 1e11),
   }).points;
   if (usablePoints.length < 2)
-    throw new Error("Track has too few usable points after GPS cleanup");
+    throw new Error("O traçado tem poucos pontos válidos depois da limpeza do GPS");
   const scale =
     usablePoints.map((p) => Math.abs(p.time)).reduce((a, b) => Math.max(a, b), 0) >
     1e11
@@ -53,7 +53,7 @@ export function analyze(points: Point[]): Telemetry {
   const start = usablePoints[0].time / scale;
   const duration = usablePoints[usablePoints.length - 1].time / scale - start;
   if (!(duration > 0))
-    throw new Error("Track duration must be greater than zero");
+    throw new Error("A duração do traçado tem de ser maior que zero");
   let distance = 0,
     ascent = 0,
     descent = 0;
@@ -77,7 +77,7 @@ export function analyze(points: Point[]): Telemetry {
     };
   });
   if (!(distance > 0))
-    throw new Error("Track distance must be greater than zero");
+    throw new Error("A distância do traçado tem de ser maior que zero");
   samples.forEach((s) => {
     s.fraction = s.distance / distance;
   });
@@ -118,9 +118,44 @@ export function timeAt(telemetry: Telemetry, fraction: number): number {
   return telemetry.duration;
 }
 
+const LEAD_IN_GATE_METERS = 80;
+
+/**
+ * Split a run that dropped in from one of the trail's alternate start gates
+ * (e.g. Bonus Spot above Secret Spot). The part before the trail's own start
+ * gate becomes an optional "sector 0" so course times stay comparable with
+ * runs that started at the main gate.
+ */
+export function splitLeadIn(run: Run, trail: Trail): { course: Run; leadIn: number | null } {
+  const gate = trail.points[0];
+  if (!trail.startPoints?.length || !gate || run.points.length < 4)
+    return { course: run, leadIn: null };
+  const first = run.points[0];
+  const fromGate = distanceBetween(first, gate);
+  const fromAlternate = Math.min(...trail.startPoints.map((p) => distanceBetween(first, p)));
+  if (fromGate <= LEAD_IN_GATE_METERS || fromAlternate >= fromGate) return { course: run, leadIn: null };
+  let index = -1;
+  let best = LEAD_IN_GATE_METERS;
+  run.points.forEach((point, i) => {
+    const gap = distanceBetween(point, gate);
+    if (gap < best) {
+      best = gap;
+      index = i;
+    }
+  });
+  if (index < 1 || run.points.length - index < 2) return { course: run, leadIn: null };
+  const lead = analyze(run.points.slice(0, index + 1)).duration;
+  return { course: { ...run, points: run.points.slice(index) }, leadIn: lead };
+}
+
+/** Course time from the trail's own start gate; lead-ins are excluded. */
+export function courseDuration(run: Run, trail?: Trail): number {
+  return analyze((trail ? splitLeadIn(run, trail).course : run).points).duration;
+}
+
 export function sectorTimes(run: Run, trail: Trail): number[] {
   if (run.trailId !== trail.id) return [];
-  const telemetry = analyze(run.points);
+  const telemetry = analyze(splitLeadIn(run, trail).course.points);
   const boundaries = [0, ...interiorBoundaries(trail.boundaries), 1];
   if (trail.points.length < 2)
     return boundaries
@@ -204,15 +239,14 @@ function timeAtNearestPosition(
   return bestTime;
 }
 
-export function personalBest(runs: Run[], trailId: string): Run | undefined {
-  return runs
+export function personalBest(runs: Run[], trailId: string, trail?: Trail): Run | undefined {
+  const timed = runs
     .filter((r) => r.trailId === trailId)
-    .reduce<Run | undefined>((best, run) => {
-      if (!best) return run;
-      return analyze(run.points).duration < analyze(best.points).duration
-        ? run
-        : best;
-    }, undefined);
+    .map((run) => ({ run, time: courseDuration(run, trail) }));
+  return timed.reduce<(typeof timed)[number] | undefined>(
+    (best, item) => (!best || item.time < best.time ? item : best),
+    undefined,
+  )?.run;
 }
 
 export function theoreticalBest(

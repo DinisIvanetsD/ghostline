@@ -87,14 +87,14 @@ export async function registerAccount(input: {
 }): Promise<AuthSession> {
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
-  if (name.length < 2) throw new Error("Enter your name to create an account.");
+  if (name.length < 2) throw new Error("Escreve o teu nome para criar a conta.");
   if (!/^\S+@\S+\.\S+$/.test(email))
-    throw new Error("Enter a valid email address.");
+    throw new Error("Escreve um email válido.");
   if (input.password.length < 8)
-    throw new Error("Use at least 8 characters for your password.");
+    throw new Error("Usa pelo menos 8 caracteres na palavra-passe.");
   const store = readStore();
   if (store.users.some((user) => user.email === email))
-    throw new Error("An account with this email already exists.");
+    throw new Error("Já existe uma conta com este email.");
   const user: StoredUser = {
     userId: `user-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     name,
@@ -113,7 +113,7 @@ export async function loginAccount(input: {
   const store = readStore();
   const user = store.users.find((item) => item.email === email);
   if (!user || user.passwordHash !== (await hashPassword(input.password)))
-    throw new Error("Email or password is incorrect.");
+    throw new Error("Email ou palavra-passe incorretos.");
   writeStore({ ...store, sessionUserId: user.userId });
   return sessionFrom(user);
 }

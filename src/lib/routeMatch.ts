@@ -139,7 +139,7 @@ export function matchRoute(
   options?: { startPoints?: Array<Pick<Point, "lat" | "lon">> },
 ): { ok: boolean; reason?: string } {
   if (runPoints.length < 2 || trailPoints.length < 2)
-    return { ok: false, reason: "Both routes need at least two points." };
+    return { ok: false, reason: "As duas rotas precisam de pelo menos dois pontos." };
   const baseRoute = simplify(trailPoints, 800),
     run = simplify(runPoints, 300);
   const startCandidates = [baseRoute[0], ...(options?.startPoints ?? [])];
@@ -154,15 +154,19 @@ export function matchRoute(
     distance(run[0], route[0]) > 200 ||
     distance(run.at(-1)!, route.at(-1)!) > 200
   )
-    return { ok: false, reason: "Route endpoints are too far apart." };
-  const fullRouteLength = cumulative(trailPoints).at(-1)!,
+    return { ok: false, reason: "A partida ou a chegada estão longe demais da pista." };
+  // An alternate start adds its approach to the expected length, so a run
+  // dropped in from higher up is not rejected as too long.
+  const fullRouteLength =
+      cumulative(trailPoints).at(-1)! +
+      (start === baseRoute[0] ? 0 : distance(start, baseRoute[0])),
     fullRunLength = cumulative(runPoints).at(-1)!;
   if (
     !fullRouteLength ||
     fullRunLength / fullRouteLength < 0.75 ||
     fullRunLength / fullRouteLength > 1.25
   )
-    return { ok: false, reason: "Route lengths do not match." };
+    return { ok: false, reason: "O comprimento da run não coincide com a pista." };
   const distances = cumulative(route),
     routeLength = distances.at(-1)!,
     closed = distance(route[0], route.at(-1)!) < 5;
@@ -175,17 +179,17 @@ export function matchRoute(
       (b.lat - a.lat) * (d.lat - c.lat) + (b.lon - a.lon) * (d.lon - c.lon) <=
       0
     )
-      return { ok: false, reason: "Run follows the trail in reverse." };
+      return { ok: false, reason: "A run segue a pista ao contrário." };
   }
   let previous = 0;
   for (let index = 0; index < run.length; index++) {
     const hit = nearest(run[index], route, distances);
     if (hit.distance > 200)
-      return { ok: false, reason: "Run leaves the trail corridor." };
+      return { ok: false, reason: "A run sai do corredor da pista." };
     const progress =
       closed && index === run.length - 1 ? routeLength : hit.progress;
     if (progress + Math.max(10, routeLength * 0.04) < previous)
-      return { ok: false, reason: "Run follows the trail in reverse." };
+      return { ok: false, reason: "A run segue a pista ao contrário." };
     previous = Math.max(previous, progress);
   }
   return { ok: true };

@@ -25,6 +25,10 @@ const retime = (run: Run, route: Point[]): Point[] => {
   }));
 };
 const LEGACY_SECRET_FINISH = { lat: 41.553, lon: -8.37221 } as const;
+const LEGACY_DEMO_SECTOR_NAMES = [
+  ["Start Gate", "Pines", "Rock Garden", "Finish"],
+  ["Drop In", "Jumps", "Finish"],
+];
 const fail = (m: string): never => {
   throw new Error(`Invalid GHOSTLINE data: ${m}`);
 };
@@ -194,6 +198,9 @@ export function validateData(input: unknown): AppData {
         boundaries: [...bs] as number[],
         sectorNames: [...ns] as string[],
         ...(startPoints?.length ? { startPoints } : {}),
+        ...(typeof t.leadInName === "string" && t.leadInName.trim()
+          ? { leadInName: t.leadInName.trim() }
+          : {}),
         ...(finishPoint ? { finishPoint } : {}),
       };
     },
@@ -254,6 +261,63 @@ export function validateData(input: unknown): AppData {
   });
   return { version: 1, profile, bikes, trails, runs, demo: v.demo === true };
 }
+// The Braga demo trails moved from synthetic curves to the real Trailforks
+// routes. Swap a stale route only while every run on that trail is synthetic,
+// so imported rides and their geometry are never touched.
+function refreshSyntheticDemoRoutes(data: AppData, key: string): AppData {
+  const canonical = createDemoData();
+  const sameRoute = (a: Point[], b: Point[]) =>
+    a.length === b.length && a.every((p, i) => p.lat === b[i].lat && p.lon === b[i].lon);
+  const stale = new Set(
+    canonical.trails
+      .filter((fresh) => {
+        const trail = data.trails.find((t) => t.id === fresh.id);
+        const runs = data.runs.filter((run) => run.trailId === fresh.id);
+        return (
+          trail &&
+          runs.length > 0 &&
+          runs.every((run) => run.synthetic) &&
+          !sameRoute(trail.points, fresh.points)
+        );
+      })
+      .map((fresh) => fresh.id),
+  );
+  if (!stale.size) return data;
+  const freshTrail = (id: string) => canonical.trails.find((t) => t.id === id)!;
+  const trails = data.trails.map((trail) => {
+    if (!stale.has(trail.id)) return trail;
+    const fresh = freshTrail(trail.id);
+    // Old demo sectors were equal cuts with placeholder names (and Secret
+    // Spot's four did not match its three segments). Replace them only while
+    // they are still those placeholders; renamed sectors stay the rider's.
+    const placeholderSectors =
+      trail.id === "secret-spot" ||
+      LEGACY_DEMO_SECTOR_NAMES.some(
+        (names) => JSON.stringify(names) === JSON.stringify(trail.sectorNames),
+      );
+    return {
+      ...trail,
+      points: fresh.points,
+      ...(placeholderSectors
+        ? { boundaries: fresh.boundaries, sectorNames: fresh.sectorNames }
+        : {}),
+      // The old demo graded every trail by guess; follow Trailforks unless
+      // the rider already picked something other than the old default.
+      difficulty: trail.difficulty === "Black" ? fresh.difficulty : trail.difficulty,
+      ...(fresh.startPoints ? { startPoints: fresh.startPoints } : {}),
+      ...(fresh.leadInName ? { leadInName: trail.leadInName ?? fresh.leadInName } : {}),
+      ...(fresh.finishPoint ? { finishPoint: fresh.finishPoint } : {}),
+    };
+  });
+  const runs = data.runs.map((run) => {
+    if (!stale.has(run.trailId)) return run;
+    const fresh = canonical.runs.find((r) => r.id === run.id && r.trailId === run.trailId);
+    return { ...run, points: fresh ? fresh.points : retime(run, freshTrail(run.trailId).points) };
+  });
+  const upgraded = validateData({ ...data, trails, runs });
+  localStorage.setItem(key, JSON.stringify(upgraded));
+  return upgraded;
+}
 export function readStorageWarning(): string {
   return storageWarning;
 }
@@ -265,7 +329,7 @@ export function loadData(scope?: string): AppData {
       storageWarning = "";
       return createDemoData();
     }
-    const data = validateData(JSON.parse(raw));
+    let data = validateData(JSON.parse(raw));
     // Replace the untouched Sintra demo on first load after the Braga content
     // upgrade. The shape check keeps edited or imported local workspaces safe.
     if (
@@ -283,39 +347,32 @@ export function loadData(scope?: string): AppData {
       storageWarning = "";
       return upgraded;
     }
-    // Keep an existing Braga demo aligned with the named local spots after a
-    // content-only update. The exact shape check avoids touching rider data.
+    // An untouched Braga demo follows the current demo content (names, real
+    // routes, sectors, gates and runs); the profile is kept. User edits and imported rides set
+    // demo=false, so this cannot overwrite rider work.
+    const canonicalDemo = createDemoData();
+    const sameIds = (a: Array<{ id: string }>, b: Array<{ id: string }>) =>
+      a.every((item) => b.some((other) => other.id === item.id));
     if (
       data.demo &&
       data.profile.home === "Braga, Portugal" &&
-      data.bikes.length === 2 &&
-      data.trails.length === 3 &&
-      data.runs.length === 11 &&
-      data.trails.every((trail) =>
-        ["Mundial", "Free Ride", "Secret Spot"].includes(trail.name),
-      )
+      data.runs.length > 0 &&
+      data.runs.every((run) => run.synthetic) &&
+      data.trails.length === canonicalDemo.trails.length &&
+      sameIds(data.trails, canonicalDemo.trails) &&
+      sameIds(data.runs, canonicalDemo.runs)
     ) {
-      const upgraded = createDemoData();
-      localStorage.setItem(key, JSON.stringify(upgraded));
-      storageWarning = "";
-      return upgraded;
+      const upgraded = { ...canonicalDemo, profile: data.profile };
+      if (
+        JSON.stringify([upgraded.trails, upgraded.runs]) !==
+        JSON.stringify([data.trails, data.runs])
+      ) {
+        localStorage.setItem(key, JSON.stringify(upgraded));
+        storageWarning = "";
+        return upgraded;
+      }
     }
-    // Refresh an untouched Braga demo created before the canonical Secret
-    // Spot geometry and physical finish gate were added. User edits and
-    // imported rides set demo=false, so this cannot overwrite rider work.
-    if (
-      data.demo &&
-      data.profile.home === "Braga, Portugal" &&
-      data.bikes.length === 2 &&
-      data.trails.length === 3 &&
-      data.runs.length === 11 &&
-      data.trails.some((trail) => trail.id === "secret-spot" && !trail.finishPoint)
-    ) {
-      const upgraded = createDemoData();
-      localStorage.setItem(key, JSON.stringify(upgraded));
-      storageWarning = "";
-      return upgraded;
-    }
+    data = refreshSyntheticDemoRoutes(data, key);
     // A rider may already have imported a Secret Spot file before the finish
     // gate existed. Add the canonical gate and trim only that trail's old
     // post-finish GPS tail; every other trail remains byte-for-byte intact.
@@ -401,7 +458,7 @@ export function loadData(scope?: string): AppData {
     storageWarning = "";
     return data;
   } catch (e) {
-    storageWarning = `Saved GHOSTLINE data could not be loaded (${e instanceof Error ? e.message : "storage unavailable"}). A demo workspace is shown; your original data remains until you explicitly save.`;
+    storageWarning = `Não foi possível carregar os dados guardados do GHOSTLINE (${e instanceof Error ? e.message : "armazenamento indisponível"}). Está a ser mostrado o espaço de demonstração; os teus dados originais ficam intactos até gravares de novo.`;
     return createDemoData();
   }
 }

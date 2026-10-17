@@ -16,12 +16,12 @@ type FitRecord = {
 /** Decode a Garmin FIT activity into the same GPS point contract used by GPX. */
 export function parseFIT(buffer: ArrayBuffer | Uint8Array): Point[] {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  if (bytes.byteLength < 14) throw new Error("Invalid FIT: file is too small");
+  if (bytes.byteLength < 14) throw new Error("FIT inválido: o ficheiro é demasiado pequeno");
   const stream = Stream.fromByteArray(bytes);
   const decoder = new Decoder(stream);
-  if (!decoder.isFIT()) throw new Error("Invalid FIT: FIT signature not found");
+  if (!decoder.isFIT()) throw new Error("FIT inválido: assinatura FIT não encontrada");
   if (!decoder.checkIntegrity())
-    throw new Error("Invalid FIT: file integrity check failed");
+    throw new Error("FIT inválido: o ficheiro está corrompido");
   const { messages, errors } = decoder.read({
     applyScaleAndOffset: true,
     convertDateTimesToDates: true,
@@ -31,12 +31,12 @@ export function parseFIT(buffer: ArrayBuffer | Uint8Array): Point[] {
     includeUnknownData: false,
   });
   if (errors.length) {
-    throw new Error(`Invalid FIT: ${errors[0]?.message ?? "decoder error"}`);
+    throw new Error(`FIT inválido: ${errors[0]?.message ?? "erro ao descodificar"}`);
   }
   const records = (messages.recordMesgs ?? []) as FitRecord[];
   if (records.length > MAX_POINTS)
     throw new Error(
-      `Invalid FIT: point limit is ${MAX_POINTS.toLocaleString()}`,
+      `FIT inválido: o limite é de ${MAX_POINTS} pontos`,
     );
 
   let previousTime = -Infinity;
@@ -56,22 +56,22 @@ export function parseFIT(buffer: ArrayBuffer | Uint8Array): Point[] {
     const lon = Number(lonRaw) * SEMICIRCLES_TO_DEGREES;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180)
       throw new Error(
-        `Invalid FIT record ${index + 1}: coordinates are out of range`,
+        `FIT inválido no registo ${index + 1}: coordenadas fora do intervalo`,
       );
     if (timestamp < previousTime)
-      throw new Error("Invalid FIT: timestamps must be strictly increasing");
+      throw new Error("FIT inválido: os tempos têm de ser sempre crescentes");
     // FIT records are second-resolution and some devices emit duplicate
     // records. Keep the first sample at that timestamp and continue.
     if (timestamp === previousTime) continue;
     previousTime = timestamp;
     const elevation = record.enhancedAltitude ?? record.altitude ?? 0;
     if (!Number.isFinite(elevation))
-      throw new Error(`Invalid FIT record ${index + 1}: invalid altitude`);
+      throw new Error(`FIT inválido no registo ${index + 1}: altitude inválida`);
     points.push({ lat, lon, ele: Number(elevation), time: timestamp });
   }
   if (points.length < 2)
     throw new Error(
-      "Invalid FIT: at least two GPS records with timestamps are required",
+      "FIT inválido: são precisos pelo menos dois registos GPS com tempos",
     );
   if (
     !points.some(
@@ -80,7 +80,7 @@ export function parseFIT(buffer: ArrayBuffer | Uint8Array): Point[] {
         (point.lat !== points[0].lat || point.lon !== points[0].lon),
     )
   )
-    throw new Error("Invalid FIT: track distance must be greater than zero");
+    throw new Error("FIT inválido: a distância tem de ser maior que zero");
   return points;
 }
 

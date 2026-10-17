@@ -60,7 +60,7 @@ describe("FIT parser", () => {
   });
 
   it("rejects non-FIT bytes, corrupt CRC and zero-distance tracks", () => {
-    expect(() => parseFIT(new Uint8Array(20))).toThrow(/signature/);
+    expect(() => parseFIT(new Uint8Array(20))).toThrow(/assinatura/);
     const valid = new Uint8Array(
       activity([
         {
@@ -78,7 +78,7 @@ describe("FIT parser", () => {
       ]),
     );
     valid[valid.length - 1] ^= 1;
-    expect(() => parseFIT(valid)).toThrow(/integrity/);
+    expect(() => parseFIT(valid)).toThrow(/corrompido/);
     expect(() =>
       parseFIT(
         activity([
@@ -96,7 +96,7 @@ describe("FIT parser", () => {
           },
         ]),
       ),
-    ).toThrow(/distance/);
+    ).toThrow(/distância/);
   });
 
   it("ignores records without coordinates but requires two usable timed records", () => {
@@ -127,7 +127,7 @@ describe("FIT parser", () => {
       altitude: 400,
     });
     expect(() => parseFIT(new Uint8Array(encoder.close()))).toThrow(
-      /two GPS records/,
+      /dois registos GPS/,
     );
   });
 

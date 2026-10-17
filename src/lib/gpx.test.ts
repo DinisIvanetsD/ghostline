@@ -11,11 +11,11 @@ describe("GPX parser", () => {
     expect(points[0].time).toBe(Date.parse("2026-09-01T09:00:00Z"));
   });
   it("handles missing times only when allowed", () => {
-    expect(() => parseGPX(gpx(false), true)).toThrow(/timestamp is required/);
+    expect(() => parseGPX(gpx(false), true)).toThrow(/falta o tempo/);
     expect(parseGPX(gpx(false))).toHaveLength(2);
   });
   it("rejects malformed or insufficient tracks", () => {
-    expect(() => parseGPX("<gpx/>")).toThrow(/track points/);
+    expect(() => parseGPX("<gpx/>")).toThrow(/pontos/);
     expect(() =>
       parseGPX(
         '<gpx><trk><trkseg><trkpt lat="bad" lon="-9"/><trkpt lat="38.1" lon="-9"/></trkseg></trk></gpx>',
@@ -32,12 +32,12 @@ describe("GPX parser", () => {
   it("rejects malformed XML and mixed track and route", () => {
     expect(() =>
       parseGPX('<gpx><trk><trkseg><trkpt lat="0" lon="0"></gpx>'),
-    ).toThrow(/malformed/);
+    ).toThrow(/mal formado/);
     expect(() =>
       parseGPX(
         '<gpx><trk><trkseg><trkpt lat="0" lon="0"/><trkpt lat="1" lon="1"/></trkseg></trk><rte><rtept lat="0" lon="0"/><rtept lat="1" lon="1"/></rte></gpx>',
       ),
-    ).toThrow(/both/);
+    ).toThrow(/os dois/);
   });
   it("joins multiple track segments in recorded order", () => {
     const points = parseGPX(
@@ -51,12 +51,12 @@ describe("GPX parser", () => {
       parseGPX(
         '<gpx><rte><rtept lat="91" lon="0"/><rtept lat="0" lon="0"/></rte></gpx>',
       ),
-    ).toThrow(/range/);
+    ).toThrow(/fora do intervalo/);
     expect(() =>
       parseGPX(
         '<gpx><rte><rtept lat="0" lon="0"><time>2026-01-01T00:00:01Z</time></rtept><rtept lat="1" lon="1"><time>2026-01-01T00:00:00Z</time></rtept></rte></gpx>',
       ),
-    ).toThrow(/increasing/);
+    ).toThrow(/crescentes/);
   });
   it("coalesces duplicate second-resolution timestamps", () => {
     const points = parseGPX(
@@ -70,6 +70,6 @@ describe("GPX parser", () => {
       { length: 25_001 },
       (_, i) => `<rtept lat="${i / 100000}" lon="0"/>`,
     ).join("");
-    expect(() => parseGPX(`<gpx><rte>${body}</rte></gpx>`)).toThrow(/25,000/);
+    expect(() => parseGPX(`<gpx><rte>${body}</rte></gpx>`)).toThrow(/25000/);
   });
 });

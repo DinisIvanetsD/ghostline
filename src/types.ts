@@ -50,6 +50,8 @@ export interface Trail {
   sectorNames: string[];
   /** Optional alternate start gates for trails with more than one access point. */
   startPoints?: Array<Pick<Point, "lat" | "lon">>;
+  /** Name of the optional section ridden from an alternate start, timed as sector 0. */
+  leadInName?: string;
   /** Optional physical finish gate used to trim GPS captures after the run. */
   finishPoint?: Pick<Point, "lat" | "lon">;
 }

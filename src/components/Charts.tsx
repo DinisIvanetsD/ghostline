@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Telemetry, Trail, Run } from "../types";
-import { analyze, formatTime } from "../lib/analysis";
+import { courseDuration, formatTime } from "../lib/analysis";
 import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 function useChartWidth() {
   const [element, ref] = useState<SVGSVGElement | null>(null);
@@ -66,34 +66,34 @@ export function TelemetryChart({
   return (
     <section className="panel telemetry">
       <div className="section-heading">
-        <h2>Read the run.</h2>
+        <h2>Lê a run.</h2>
         <div className="segmented">
           <button
             className={metric === "speed" ? "active" : ""}
             onClick={() => setMetric("speed")}
           >
-            Speed
+            Velocidade
           </button>
           <button
             className={metric === "elevation" ? "active" : ""}
             onClick={() => setMetric("elevation")}
           >
-            Elevation
+            Altitude
           </button>
         </div>
       </div>
       <div className="trace-meta">
         <span>
           <i className="dot current" />
-          Current{" "}
+          Atual{" "}
           <b>
             {metric === "speed" && sample.speed > MAX_BELIEVABLE_SPEED_KMH
-              ? "GPS review"
+              ? "Rever GPS"
               : `${sampleValue.toFixed(1)} ${metric === "speed" ? "km/h" : "m"}`}
           </b>
         </span>
         <span className="muted">
-          {(sample.distance / 1000).toFixed(2)} km into run ·{" "}
+          {(sample.distance / 1000).toFixed(2)} km de run ·{" "}
           {formatTime(sample.time)}
         </span>
       </div>
@@ -102,7 +102,7 @@ export function TelemetryChart({
         className="telemetry-svg"
         viewBox={`0 0 ${width} 185`}
         role="img"
-        aria-label={`${metric} over distance. Use the trail progress slider to inspect telemetry.`}
+        aria-label={`${metric === "speed" ? "Velocidade" : "Altitude"} ao longo da distância. Usa o cursor de progresso para inspecionar a telemetria.`}
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           onProgress(
@@ -159,7 +159,7 @@ export function TelemetryChart({
         <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#d5f55a" />
       </svg>
       <label className="scrubber">
-        <span>Trail progress</span>
+        <span>Progresso na pista</span>
         <input
           type="range"
           min="0"
@@ -174,19 +174,21 @@ export function TelemetryChart({
 }
 export function Progression({
   runs,
+  trail,
   onSelect,
 }: {
   runs: Run[];
+  trail?: Trail;
   onSelect: (run: Run) => void;
 }) {
   const { ref, width } = useChartWidth();
   const sorted = [...runs].sort((a, b) => a.date.localeCompare(b.date));
-  const values = sorted.map((r) => analyze(r.points).duration);
+  const values = sorted.map((r) => courseDuration(r, trail));
   const min = Math.min(...values) - 3,
     max = Math.max(...values) + 3;
   if (!runs.length)
     return (
-      <div className="empty-state">Import a run to start your progression.</div>
+      <div className="empty-state">Importa uma run para começares a tua progressão.</div>
     );
   const x = (i: number) =>
     40 + (i * (width - 80)) / Math.max(1, values.length - 1);
@@ -194,14 +196,14 @@ export function Progression({
   return (
     <section className="panel progression">
       <div className="section-heading">
-        <h2>Every run counts.</h2>
-        <span className="muted">Run time · lower is faster</span>
+        <h2>Cada run conta.</h2>
+        <span className="muted">Tempo da run · menos é mais rápido</span>
       </div>
       <svg
         ref={ref}
         viewBox={`0 0 ${width} 170`}
         role="group"
-        aria-label="Run time progression"
+        aria-label="Progressão do tempo das runs"
       >
         <path
           d={values.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")}
@@ -215,7 +217,7 @@ export function Progression({
             className="progress-point"
             role="button"
             tabIndex={0}
-            aria-label={`Analyze ${r.name}`}
+            aria-label={`Analisar ${r.name}`}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -234,7 +236,7 @@ export function Progression({
                   {formatTime(values[i])}
                 </text>
                 <text x={x(i)} y="158" textAnchor="middle">
-                  {new Date(r.date).toLocaleDateString("en-GB", {
+                  {new Date(r.date).toLocaleDateString("pt-PT", {
                     day: "numeric",
                     month: "short",
                   })}

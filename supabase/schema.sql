@@ -116,3 +116,56 @@ drop policy if exists "Riders can upload their GHOSTLINE videos" on storage.obje
 create policy "Riders can upload their GHOSTLINE videos"
   on storage.objects for insert to authenticated
   with check (bucket_id = 'ghostline-videos' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- Opt-in trail leaderboard. Riders publish only a display name, their best
+-- course time and sector splits for the shared Braga trails; GPS traces stay
+-- in the private workspace. Times are self-reported by the rider's client.
+create table if not exists public.ghostline_leaderboard (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  trail_key text not null,
+  rider_name text not null,
+  best_seconds numeric(8, 2) not null,
+  sectors numeric(8, 2)[] not null default '{}',
+  run_date date not null,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, trail_key),
+  constraint ghostline_leaderboard_trail check (trail_key in ('mundial', 'free-ride', 'secret-spot')),
+  constraint ghostline_leaderboard_name check (char_length(rider_name) between 1 and 40),
+  constraint ghostline_leaderboard_time check (best_seconds between 10 and 3600),
+  constraint ghostline_leaderboard_sectors check (cardinality(sectors) <= 12)
+);
+create index if not exists ghostline_leaderboard_by_trail
+  on public.ghostline_leaderboard (trail_key, best_seconds);
+
+alter table public.ghostline_leaderboard enable row level security;
+drop policy if exists "Signed-in riders can read the GHOSTLINE leaderboard" on public.ghostline_leaderboard;
+create policy "Signed-in riders can read the GHOSTLINE leaderboard"
+  on public.ghostline_leaderboard for select to authenticated
+  using (true);
+drop policy if exists "Riders can publish their GHOSTLINE times" on public.ghostline_leaderboard;
+create policy "Riders can publish their GHOSTLINE times"
+  on public.ghostline_leaderboard for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+drop policy if exists "Riders can update their GHOSTLINE times" on public.ghostline_leaderboard;
+create policy "Riders can update their GHOSTLINE times"
+  on public.ghostline_leaderboard for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+drop policy if exists "Riders can withdraw their GHOSTLINE times" on public.ghostline_leaderboard;
+create policy "Riders can withdraw their GHOSTLINE times"
+  on public.ghostline_leaderboard for delete to authenticated
+  using ((select auth.uid()) = user_id);
+grant select, insert, update, delete on public.ghostline_leaderboard to authenticated;
+
+-- Strava connections. Tokens are only ever read or written by the `strava`
+-- Edge Function with the service role; riders' browsers never see them.
+create table if not exists public.ghostline_strava_tokens (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  athlete_id bigint not null,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at timestamptz not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.ghostline_strava_tokens enable row level security;
+revoke all on public.ghostline_strava_tokens from anon, authenticated;

@@ -45,7 +45,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
       });
       unsubscribe = () => subscription.unsubscribe();
     }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : "Cloud account could not be opened.");
+      if (active) setError(reason instanceof Error ? reason.message : "Não foi possível abrir a conta na nuvem.");
     });
     return () => {
       active = false;
@@ -58,24 +58,24 @@ export function AuthScreen({ onAuthenticated }: Props) {
     setError("");
     setNotice("");
     if ((mode === "register" || mode === "reset-password") && password !== confirm) {
-      setError("Passwords do not match.");
+      setError("As palavras-passe não coincidem.");
       return;
     }
     setBusy(true);
     try {
       if (cloudAuth) {
         const client = await getSupabaseClient();
-        if (!client) throw new Error("Cloud account is not configured.");
+        if (!client) throw new Error("A conta na nuvem não está configurada.");
         if (mode === "reset-request") {
           const { error: resetError } = await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: cloudRedirectUrl() });
           if (resetError) throw resetError;
-          setNotice("Check your email for a secure password reset link.");
+          setNotice("Vê o teu email: enviámos um link seguro para repor a palavra-passe.");
           return;
         }
         if (mode === "reset-password") {
           const { error: updateError } = await client.auth.updateUser({ password });
           if (updateError) throw updateError;
-          setNotice("Password updated. Opening your rider workspace…");
+          setNotice("Palavra-passe atualizada. A abrir o teu espaço…");
           const { data } = await client.auth.getSession();
           if (data.session) onAuthenticated(cloudSession(data.session));
           return;
@@ -88,7 +88,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
           });
           if (signupError) throw signupError;
           if (data.session) onAuthenticated(cloudSession(data.session));
-          else setNotice("Check your email to confirm your account, then sign in here.");
+          else setNotice("Confirma a conta no link que enviámos por email e depois entra aqui.");
           return;
         }
         const { data, error: loginError } = await client.auth.signInWithPassword({ email: email.trim(), password });
@@ -102,7 +102,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
           : await loginAccount({ email, password });
       onAuthenticated(session);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not sign in.");
+      setError(reason instanceof Error ? reason.message : "Não foi possível entrar.");
     } finally {
       setBusy(false);
     }
@@ -116,12 +116,12 @@ export function AuthScreen({ onAuthenticated }: Props) {
         </div>
         <p className="auth-kicker">GHOSTLINE.</p>
         <h1 id="auth-title">
-          {mode === "register" ? "Create your rider account." : mode === "login" ? "Welcome back, rider." : mode === "reset-request" ? "Recover your account." : "Set a new password."}
+          {mode === "register" ? "Cria a tua conta de rider." : mode === "login" ? "Bem-vindo de volta, rider." : mode === "reset-request" ? "Recupera a tua conta." : "Define uma nova palavra-passe."}
         </h1>
         <p className="auth-intro">
-          Your runs, Ghost and bike setup in one private workspace.
+          As tuas runs, o teu Ghost e a afinação da bike num espaço privado.
         </p>
-        {mode === "login" || mode === "register" ? <div className="auth-tabs" role="tablist" aria-label="Account access">
+        {mode === "login" || mode === "register" ? <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
           <button
             className={mode === "register" ? "active" : ""}
             role="tab"
@@ -131,7 +131,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
               setError(""); setNotice("");
             }}
           >
-            Create account
+            Criar conta
           </button>
           <button
             className={mode === "login" ? "active" : ""}
@@ -142,13 +142,13 @@ export function AuthScreen({ onAuthenticated }: Props) {
               setError(""); setNotice("");
             }}
           >
-            Sign in
+            Entrar
           </button>
-        </div> : <button className="text-button auth-back" type="button" onClick={() => { setMode("login"); setError(""); setNotice(""); }}><ArrowLeft size={14} /> Back to sign in</button>}
+        </div> : <button className="text-button auth-back" type="button" onClick={() => { setMode("login"); setError(""); setNotice(""); }}><ArrowLeft size={14} /> Voltar a entrar</button>}
         <form className="auth-form" onSubmit={submit}>
           {mode === "register" && (
             <label className="field">
-              <span>Name</span>
+              <span>Nome</span>
               <div className="auth-input">
                 <UserRound size={16} />
                 <input
@@ -176,7 +176,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
             </div>
           </label>}
           {mode !== "reset-request" && <label className="field">
-            <span>Password</span>
+            <span>Palavra-passe</span>
             <div className="auth-input">
               <LockKeyhole size={16} />
               <input
@@ -184,14 +184,14 @@ export function AuthScreen({ onAuthenticated }: Props) {
                 autoComplete={mode === "register" || mode === "reset-password" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="8 characters minimum"
+                placeholder="Mínimo 8 caracteres"
                 required
               />
             </div>
           </label>}
           {(mode === "register" || mode === "reset-password") && (
             <label className="field">
-              <span>Confirm password</span>
+              <span>Confirmar palavra-passe</span>
               <div className="auth-input">
                 <LockKeyhole size={16} />
                 <input
@@ -199,7 +199,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(event) => setConfirm(event.target.value)}
-                  placeholder="Repeat your password"
+                  placeholder="Repete a palavra-passe"
                   required
                 />
               </div>
@@ -207,14 +207,14 @@ export function AuthScreen({ onAuthenticated }: Props) {
           )}
           {error && <p className="auth-error" role="alert">{error}</p>}
           {notice && <p className="auth-notice" role="status">{notice}</p>}
-          {mode === "login" && cloudAuth && <button className="text-button auth-forgot" type="button" onClick={() => { setMode("reset-request"); setError(""); setNotice(""); }}>Forgot password?</button>}
+          {mode === "login" && cloudAuth && <button className="text-button auth-forgot" type="button" onClick={() => { setMode("reset-request"); setError(""); setNotice(""); }}>Esqueceste a palavra-passe?</button>}
           <button className="button primary auth-submit" disabled={busy} type="submit">
-            {busy ? "Opening workspace…" : mode === "register" ? "Create account" : mode === "login" ? "Sign in" : mode === "reset-request" ? "Send reset link" : "Update password"}
+            {busy ? "A abrir…" : mode === "register" ? "Criar conta" : mode === "login" ? "Entrar" : mode === "reset-request" ? "Enviar link" : "Atualizar palavra-passe"}
             <ArrowRight size={16} />
           </button>
         </form>
         <p className="auth-footnote">
-          {cloudAuth ? "Secure account, password recovery and multi-device workspace powered by Supabase." : "This preview stores accounts and rides on this device. Configure Supabase to enable real accounts, password recovery and cloud sync."}
+          {cloudAuth ? "Conta segura, recuperação de palavra-passe e espaço em vários dispositivos com Supabase." : "Esta versão guarda contas e runs neste dispositivo. Configura o Supabase para teres contas reais, recuperação de palavra-passe e sincronização na nuvem."}
         </p>
       </section>
     </main>
