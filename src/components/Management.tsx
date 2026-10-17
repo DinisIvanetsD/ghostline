@@ -10,6 +10,7 @@ import {
   Check,
   CircleAlert,
   FileUp,
+  LockKeyhole,
   LogOut,
   MapPin,
   Pencil,
@@ -22,22 +23,26 @@ import {
 import { parseGPX } from "../lib/gpx";
 import { loadStravaStreams, streamsToPoints, type StravaActivity } from "../lib/strava";
 import { StravaPicker } from "./StravaPicker";
+import { RunRecorder } from "./RunRecorder";
 import { SectorPicker } from "./SectorPicker";
 import { addGate, removeGate } from "../lib/sectorEdit";
-import { DIFFICULTIES, difficultyLabel } from "../lib/labels";
+import { CONDITION_LABELS, CONDITIONS, DIFFICULTIES, difficultyLabel } from "../lib/labels";
+import { changePassword } from "../lib/auth";
 import { analyze, courseDuration, formatTime } from "../lib/analysis";
 import { cleanTrack, type GpsQualityResult } from "../lib/gpsQuality";
 import { clipToRouteFinish, detectTrail, matchRoute } from "../lib/routeMatch";
 import { clipToRideWindow, detectStops, type StopAnalysis } from "../lib/videoSync";
 import { progressionInsights } from "../lib/progressionInsights";
 import { TrailMap } from "./TrailMap";
-import type { AppData, Bike, Point, Profile, Trail } from "../types";
+import type { AppData, Bike, Point, Profile, RunConditions, Trail } from "../types";
 
 type Props = {
   data: AppData;
   onChange: (data: AppData) => boolean | void;
   onSignOut?: () => void;
   cloudSyncEnabled?: boolean;
+  /** Set for device-local accounts, which can change their password here. */
+  localUserId?: string;
 };
 const uid = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -542,7 +547,7 @@ export function Garage({ data, onChange }: Props) {
   );
 }
 
-export function ProfileSettings({ data, onChange, onSignOut, cloudSyncEnabled }: Props) {
+export function ProfileSettings({ data, onChange, onSignOut, cloudSyncEnabled, localUserId }: Props) {
   const [profile, setProfile] = useState<Profile>(data.profile);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -609,7 +614,53 @@ export function ProfileSettings({ data, onChange, onSignOut, cloudSyncEnabled }:
         </div>
       </form>
       <ErrorLine message={error} />
+      {localUserId && <PasswordForm userId={localUserId} />}
     </Section>
+  );
+}
+
+function PasswordForm({ userId }: { userId: string }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (next !== confirm) return setStatus({ ok: false, text: "As palavras-passe novas não coincidem." });
+    try {
+      await changePassword({ userId, current, next });
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      setStatus({ ok: true, text: "Palavra-passe alterada." });
+    } catch (err) {
+      setStatus({ ok: false, text: err instanceof Error ? err.message : "Não foi possível mudar a palavra-passe." });
+    }
+  };
+  return (
+    <form className="form-grid password-form" onSubmit={submit}>
+      <h3>Mudar palavra-passe</h3>
+      <label className="field">
+        Palavra-passe atual
+        <input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+      </label>
+      <label className="field">
+        Nova palavra-passe
+        <input type="password" autoComplete="new-password" minLength={8} value={next} onChange={(e) => setNext(e.target.value)} required />
+      </label>
+      <label className="field">
+        Confirmar nova palavra-passe
+        <input type="password" autoComplete="new-password" minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+      </label>
+      <div className="form-actions">
+        <button className="button secondary" type="submit">
+          <LockKeyhole size={16} />
+          Mudar palavra-passe
+        </button>
+        {status?.ok && <span className="muted" role="status"><Check size={15} /> {status.text}</span>}
+      </div>
+      {status && !status.ok && <ErrorLine message={status.text} />}
+    </form>
   );
 }
 
@@ -948,6 +999,7 @@ export function ImportRun({
   const [bikeId, setBikeId] = useState(data.bikes[0]?.id ?? "");
   const [name, setName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [conditions, setConditions] = useState<RunConditions | "">("");
   const [error, setError] = useState("");
   const [gpsQuality, setGpsQuality] = useState<GpsQualityResult | null>(null);
   const [rideWindow, setRideWindow] = useState<StopAnalysis | null>(null);
@@ -1097,6 +1149,7 @@ export function ImportRun({
           date,
           points: importedPoints,
           notes: "",
+          ...(conditions ? { conditions } : {}),
           bikeSetupSnapshot: (() => {
             const bike = data.bikes.find((item) => item.id === bikeId);
             return bike
@@ -1165,6 +1218,13 @@ export function ImportRun({
         type="file"
         accept=".gpx,.fit,application/gpx+xml,application/octet-stream"
         onChange={choose}
+      />
+      <RunRecorder
+        disabled={loading}
+        onFinish={(track, label) => {
+          reset();
+          ingest(track, label);
+        }}
       />
       <StravaPicker cloud={cloud} disabled={loading} onPick={(activity) => void importStrava(activity)} />
       {file && points && (
@@ -1252,6 +1312,15 @@ export function ImportRun({
         <label className="field">
           Nome da run
           <input value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="field">
+          Piso
+          <select value={conditions} onChange={(e) => setConditions(e.target.value as RunConditions | "")}>
+            <option value="">Não indicado</option>
+            {CONDITIONS.map((value) => (
+              <option key={value} value={value}>{CONDITION_LABELS[value]}</option>
+            ))}
+          </select>
         </label>
         <label className="field">
           Data

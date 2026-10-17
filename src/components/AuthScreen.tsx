@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowRight, Ghost, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Ghost, LockKeyhole, Mail, UserRound } from "lucide-react";
 import {
   loginAccount,
   registerAccount,
@@ -7,9 +7,13 @@ import {
 } from "../lib/auth";
 import { cloudRedirectUrl, cloudSession, getSupabaseClient, supabaseConfigured } from "../lib/supabase";
 
-type Props = { onAuthenticated: (session: AuthSession) => void };
+type Props = {
+  onAuthenticated: (session: AuthSession) => void;
+  /** Browse the demo workspace without an account. */
+  onGuest?: () => void;
+};
 
-export function AuthScreen({ onAuthenticated }: Props) {
+export function AuthScreen({ onAuthenticated, onGuest }: Props) {
   const [mode, setMode] = useState<"login" | "register" | "reset-request" | "reset-password">(() =>
     typeof window !== "undefined" && /(?:type=recovery|recovery_token)/i.test(`${window.location.hash}${window.location.search}`)
       ? "reset-password"
@@ -22,6 +26,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const cloudAuth = supabaseConfigured;
 
   useEffect(() => {
@@ -155,7 +160,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
                   autoComplete="name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="Dinis Ivanets"
+                  placeholder="O teu nome"
                   required
                 />
               </div>
@@ -180,13 +185,23 @@ export function AuthScreen({ onAuthenticated }: Props) {
             <div className="auth-input">
               <LockKeyhole size={16} />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete={mode === "register" || mode === "reset-password" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Mínimo 8 caracteres"
+                minLength={8}
                 required
               />
+              <button
+                type="button"
+                className="auth-reveal"
+                aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </label>}
           {(mode === "register" || mode === "reset-password") && (
@@ -195,7 +210,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
               <div className="auth-input">
                 <LockKeyhole size={16} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(event) => setConfirm(event.target.value)}
@@ -213,6 +228,11 @@ export function AuthScreen({ onAuthenticated }: Props) {
             <ArrowRight size={16} />
           </button>
         </form>
+        {onGuest && (mode === "login" || mode === "register") && (
+          <button className="text-button auth-guest" type="button" onClick={onGuest}>
+            Ver a demonstração sem conta <ArrowRight size={14} />
+          </button>
+        )}
         <p className="auth-footnote">
           {cloudAuth ? "Conta segura, recuperação de palavra-passe e espaço em vários dispositivos com Supabase." : "Esta versão guarda contas e runs neste dispositivo. Configura o Supabase para teres contas reais, recuperação de palavra-passe e sincronização na nuvem."}
         </p>

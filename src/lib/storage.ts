@@ -5,6 +5,7 @@ import {
   SECRET_SPOT_STARTS,
 } from "./demo";
 import { clipToRouteFinish } from "./routeMatch";
+import { CONDITIONS } from "./labels";
 import type { AppData, Bike, Point, Profile, Run, Trail } from "../types";
 const KEY = "ghostline.data.v1";
 const storageKey = (scope?: string) => (scope ? `${KEY}.${scope}` : KEY);
@@ -246,6 +247,9 @@ export function validateData(input: unknown): AppData {
               };
             })(),
           }
+        : {}),
+      ...(typeof r.conditions === "string" && (CONDITIONS as string[]).includes(r.conditions)
+        ? { conditions: r.conditions }
         : {}),
       ...(typeof r.synthetic === "boolean" ? { synthetic: r.synthetic } : {}),
     } as Run;

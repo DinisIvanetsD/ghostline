@@ -12,6 +12,7 @@ import {
   Flag,
   Ghost,
   History,
+  LogIn,
   Map,
   Mountain,
   Plus,
@@ -24,7 +25,7 @@ import {
   Trophy,
   X,
 } from "lucide-react";
-import type { AppData, Run } from "./types";
+import type { AppData, Run, RunConditions } from "./types";
 import {
   analyze,
   courseDuration,
@@ -46,7 +47,7 @@ import {
 } from "./lib/storage";
 import { downloadGPX } from "./lib/export";
 import { progressionInsights } from "./lib/progressionInsights";
-import { difficultyLabel } from "./lib/labels";
+import { CONDITION_LABELS, CONDITIONS, difficultyLabel } from "./lib/labels";
 import { cleanTrack, MAX_BELIEVABLE_SPEED_KMH } from "./lib/gpsQuality";
 import { TrailMap } from "./components/TrailMap";
 import { TelemetryChart, Progression } from "./components/Charts";
@@ -80,15 +81,33 @@ function readSharedRunToken(): string {
   return new URLSearchParams(window.location.hash.slice(1)).get("share") ?? "";
 }
 
+// A guest browses the demo for this tab only; closing it returns to sign-in.
+const GUEST_KEY = "ghostline.guest";
+function readGuest(): boolean {
+  try {
+    return sessionStorage.getItem(GUEST_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function setGuestMode(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(GUEST_KEY, "1");
+    else sessionStorage.removeItem(GUEST_KEY);
+  } catch {
+    // Without sessionStorage the guest choice simply lasts until reload.
+  }
+}
+
 const nav = [
-  { id: "analysis", label: "Análise da run", icon: Activity },
+  { id: "analysis", label: "Análise", icon: Activity },
   { id: "history", label: "Histórico", icon: History },
-  { id: "video", label: "Laboratório de vídeo", icon: Clapperboard },
+  { id: "video", label: "Vídeo", icon: Clapperboard },
   { id: "trails", label: "Pistas", icon: Map },
   { id: "garage", label: "Garagem", icon: Bike },
 ] as const;
 export default function App() {
-  const requiresAuth = import.meta.env.PROD || supabaseConfigured;
+  const [guest, setGuest] = useState(readGuest);
   const cloudSync = useMemo(() => createWorkspaceCloudSync<AppData>(), []);
   const cloudWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const [session, setSession] = useState<AuthSession | null>(() =>
@@ -102,7 +121,8 @@ export default function App() {
     [progress, setProgress] = useState(0.43),
     [sector, setSector] = useState<number | null>(null),
     [notice, setNotice] = useState(readStorageWarning),
-    [historyQuery, setHistoryQuery] = useState("");
+    [historyQuery, setHistoryQuery] = useState(""),
+    [historyConditions, setHistoryConditions] = useState<RunConditions | "">("");
   const [playing, setPlaying] = useState(false);
   const [sharedToken, setSharedToken] = useState(readSharedRunToken);
   const [online, setOnline] = useState(() =>
@@ -163,8 +183,20 @@ export default function App() {
     () => personalBest(data.runs, trail?.id ?? "", trail),
     [data.runs, trail],
   );
+  // Best run on the same surface: a wet run is chased against a wet Ghost.
+  const surfacePb = useMemo(
+    () =>
+      run?.conditions
+        ? personalBest(runs.filter((r) => r.conditions === run.conditions), trail?.id ?? "", trail)
+        : undefined,
+    [runs, run, trail],
+  );
   const compare =
-    compareId === "pb" ? pb : (runs.find((r) => r.id === compareId) ?? pb);
+    compareId === "pb"
+      ? pb
+      : compareId === "pb-surface"
+        ? (surfacePb ?? pb)
+        : (runs.find((r) => r.id === compareId) ?? pb);
   // Runs dropped in from an alternate start (Bonus Spot) are analyzed from the
   // trail's own start gate; the lead-in is shown separately as sector 0.
   const runSplit = useMemo(() => (run && trail ? splitLeadIn(run, trail) : null), [run, trail]);
@@ -220,8 +252,13 @@ export default function App() {
     [runs, trail],
   );
   const historyRuns = useMemo(
-    () => runs.filter((item) => item.name.toLowerCase().includes(historyQuery.toLowerCase())),
-    [runs, historyQuery],
+    () =>
+      runs.filter(
+        (item) =>
+          item.name.toLowerCase().includes(historyQuery.toLowerCase()) &&
+          (!historyConditions || item.conditions === historyConditions),
+      ),
+    [runs, historyQuery, historyConditions],
   );
   const boundaries = trail ? [0, ...trail.boundaries, 1] : [0, 1];
   const deltas = splits.map((s, i) => s - ghostSplits[i]);
@@ -288,6 +325,8 @@ export default function App() {
       saveData(nextData, nextSession.userId);
       setData(nextData);
       setSession(nextSession);
+      setGuestMode(false);
+      setGuest(false);
       setPage("analysis");
       setNotice(cloudWarning || (nextSession.provider === "supabase" ? "O teu espaço está sincronizado com a tua conta." : "O teu espaço local está pronto."));
     } catch {
@@ -307,6 +346,7 @@ export default function App() {
     } finally {
       signOut();
       setSession(null);
+      setPage("analysis");
     }
   };
   const selectTrail = (id: string) => {
@@ -362,8 +402,19 @@ export default function App() {
     video: "Laboratório de vídeo",
   };
   if (sharedToken) return <SharedRunPage token={sharedToken} />;
-  if (requiresAuth && !session) {
-    return <AuthScreen onAuthenticated={authenticate} />;
+  if (!session && !guest) {
+    return (
+      <AuthScreen
+        onAuthenticated={authenticate}
+        onGuest={() => {
+          // Never show the last signed-in rider's workspace to a guest.
+          setData(loadData());
+          setTrailId(loadData().trails[0]?.id ?? "");
+          setGuestMode(true);
+          setGuest(true);
+        }}
+      />
+    );
   }
   return (
     <div className="app-shell">
@@ -421,7 +472,7 @@ export default function App() {
             </span>
             <span>
               <strong>{data.profile.name}</strong>
-              <small>{session ? "Rider com sessão" : data.demo ? "Rider de demonstração" : "Rider local"}</small>
+              <small>{session ? (session.provider === "supabase" ? "Conta na nuvem" : "Conta neste dispositivo") : "Sem conta · demonstração"}</small>
             </span>
             <Settings size={16} />
           </button>
@@ -433,6 +484,18 @@ export default function App() {
             Espaço <span>/</span> <strong>{names[page]}</strong>
           </div>
           <div className="top-actions">
+            {!session && (
+              <button
+                className="button secondary compact"
+                onClick={() => {
+                  setGuestMode(false);
+                  setGuest(false);
+                }}
+              >
+                <LogIn size={15} />
+                Entrar
+              </button>
+            )}
             <span className={`device-state ${online ? "" : "offline"}`} role="status">
               <i />
               {!online
@@ -578,6 +641,11 @@ export default function App() {
                       onChange={(e) => setCompareId(e.target.value)}
                     >
                       <option value="pb">O teu Ghost · Melhor tempo</option>
+                      {run.conditions && surfacePb && (
+                        <option value="pb-surface">
+                          Ghost com piso {CONDITION_LABELS[run.conditions].toLowerCase()} · {formatTime(durations.get(surfacePb.id) ?? 0)}
+                        </option>
+                      )}
                       {runs.map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.name} · {formatTime(durations.get(r.id) ?? 0)}
@@ -678,6 +746,36 @@ export default function App() {
                         </span>
                         <strong>{formatTime(ghost.duration)}</strong>
                       </div>
+                      <button
+                        className="button secondary compact share-result"
+                        onClick={async () => {
+                          try {
+                            const { renderResultCard, shareOrDownload } = await import("./lib/resultCard");
+                            const blob = await renderResultCard({
+                              trailName: trail.name,
+                              location: trail.location,
+                              runName: run.name,
+                              date: new Date(run.date).toLocaleDateString("pt-PT", { day: "numeric", month: "long", year: "numeric" }),
+                              current,
+                              ghost,
+                              delta: current.duration - ghost.duration,
+                              isPersonalBest: run.id === pb.id,
+                              sectors: splits.map((time, i) => ({
+                                name: trail.sectorNames[i] ?? `Setor ${i + 1}`,
+                                time,
+                                delta: deltas[i],
+                              })),
+                            });
+                            const slug = `${trail.name}-${run.name}`.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
+                            const result = await shareOrDownload(blob, `${slug}.png`, `${trail.name} · ${formatTime(current.duration)}`);
+                            if (result === "downloaded") setNotice("Imagem do resultado descarregada.");
+                          } catch (error) {
+                            setNotice(error instanceof Error ? error.message : "Não foi possível criar a imagem.");
+                          }
+                        }}
+                      >
+                        <Share2 size={14} /> Partilhar resultado
+                      </button>
                     </section>
                     <section className="sector-panel">
                       <div className="section-heading">
@@ -894,12 +992,24 @@ export default function App() {
               <section className="panel history-panel">
                 <div className="section-heading">
                   <h2>Registo de runs</h2>
-                  <input
-                    aria-label="Procurar runs"
-                    placeholder="Procurar runs…"
-                    value={historyQuery}
-                    onChange={(e) => setHistoryQuery(e.target.value)}
-                  />
+                  <div className="history-filters">
+                    <select
+                      aria-label="Filtrar por piso"
+                      value={historyConditions}
+                      onChange={(e) => setHistoryConditions(e.target.value as RunConditions | "")}
+                    >
+                      <option value="">Todos os pisos</option>
+                      {CONDITIONS.map((value) => (
+                        <option key={value} value={value}>{CONDITION_LABELS[value]}</option>
+                      ))}
+                    </select>
+                    <input
+                      aria-label="Procurar runs"
+                      placeholder="Procurar runs…"
+                      value={historyQuery}
+                      onChange={(e) => setHistoryQuery(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="table-wrap">
                   <table>
@@ -908,6 +1018,7 @@ export default function App() {
                         <th>Run</th>
                         <th>Data</th>
                         <th>Bike</th>
+                        <th>Piso</th>
                         <th>Tempo</th>
                         <th>Para o Ghost</th>
                         <th>Ações</th>
@@ -956,6 +1067,28 @@ export default function App() {
                                       </small>
                                     )}
                                 </span>
+                              </td>
+                              <td>
+                                <select
+                                  className="conditions-select"
+                                  aria-label={`Piso de ${r.name}`}
+                                  value={r.conditions ?? ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value as RunConditions | "";
+                                    update({
+                                      ...data,
+                                      demo: false,
+                                      runs: data.runs.map((item) =>
+                                        item.id === r.id ? { ...item, conditions: value || undefined } : item,
+                                      ),
+                                    });
+                                  }}
+                                >
+                                  <option value="">—</option>
+                                  {CONDITIONS.map((value) => (
+                                    <option key={value} value={value}>{CONDITION_LABELS[value]}</option>
+                                  ))}
+                                </select>
                               </td>
                               <td className="mono">{formatTime(t)}</td>
                               <td
@@ -1061,6 +1194,7 @@ export default function App() {
                 data={data}
                 onChange={update}
                 onSignOut={session ? logout : undefined}
+                localUserId={session?.provider === "local" ? session.userId : undefined}
                 cloudSyncEnabled={session?.provider === "supabase"}
               />
               <section className="panel data-panel">

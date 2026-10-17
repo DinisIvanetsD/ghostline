@@ -166,6 +166,14 @@ describe("storage validation", () => {
     expect(loadedMundial.finishPoint).toEqual(fresh.trails[0].finishPoint);
     expect(loaded.trails.find((trail) => trail.id === "free-ride")!.points).toEqual(importedRoute);
   });
+  it("keeps known run surfaces and drops unknown ones", () => {
+    const data = createDemoData();
+    data.runs[0].conditions = "wet";
+    (data.runs[1] as unknown as { conditions: string }).conditions = "snow";
+    const parsed = parseBackup(JSON.stringify(data));
+    expect(parsed.runs[0].conditions).toBe("wet");
+    expect(parsed.runs[1].conditions).toBeUndefined();
+  });
   it("validates backups and rejects duplicate IDs", () => {
     const data = createDemoData();
     expect(parseBackup(JSON.stringify(data))).toEqual(data);

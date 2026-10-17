@@ -68,12 +68,39 @@ function fit(points: Array<{ lat: number; lon: number; ele: number; time: number
   return Buffer.from(encoder.close());
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
   await blockTiles(page);
   await page.goto("/");
-  await page.evaluate(() => localStorage.clear());
-  await page.evaluate(() => localStorage.removeItem("ghostline.video-projects.v1"));
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
   await page.reload();
+  if (testInfo.title.startsWith("account:")) return;
+  await page.getByRole("button", { name: /Ver a demonstração sem conta/ }).click();
+});
+
+test("account: register, sign out, wrong password and sign back in", async ({ page }) => {
+  await page.getByLabel("Nome").fill("Rider Teste");
+  await page.getByLabel("Email").fill("rider@teste.pt");
+  await page.getByLabel("Palavra-passe", { exact: true }).fill("descida-123");
+  await page.getByLabel("Confirmar palavra-passe").fill("descida-123");
+  await page.getByRole("button", { name: "Criar conta" }).last().click();
+  await expect(page.getByText("Conta neste dispositivo")).toBeVisible();
+  await page.getByRole("button", { name: /Rider Teste/ }).click();
+  await page.getByRole("button", { name: "Terminar sessão" }).click();
+  await expect(page.getByRole("heading", { name: /Cria a tua conta/ })).toBeVisible();
+  await page.getByRole("tab", { name: "Entrar" }).click();
+  await page.getByLabel("Email").fill("rider@teste.pt");
+  await page.getByLabel("Palavra-passe", { exact: true }).fill("errada-123");
+  await page.getByRole("button", { name: "Entrar" }).last().click();
+  await expect(page.getByRole("alert")).toContainText("incorretos");
+  await page.getByLabel("Palavra-passe", { exact: true }).fill("descida-123");
+  await page.getByRole("button", { name: "Entrar" }).last().click();
+  await expect(page.getByText("Conta neste dispositivo")).toBeVisible();
+  const stored = await page.evaluate(() => localStorage.getItem("ghostline.auth.v1") ?? "");
+  expect(stored).not.toContain("descida-123");
+  expect(stored).toContain("pbkdf2$");
 });
 
 test("demo analysis has seven primary runs, stable PB, sector selection, reference, progress and elevation", async ({
@@ -148,14 +175,14 @@ test("history search, analyze, delete and PB recomputation work", async ({
   await expect(
     page.getByRole("row", { name: /Run 06 · Raízes rápidas/ }),
   ).toContainText("PB");
-  await open(page, "Análise da run");
+  await open(page, "Análise");
   await expect(page.locator(".reference-time")).toContainText("3:04.00");
 });
 
 test("video lab keeps the sync workflow focused on a selected ride", async ({
   page,
 }) => {
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   await expect(page.getByText("Alinha a run.")).toBeVisible();
   await expect(page.getByLabel("Pista do vídeo")).toHaveValue("mundial");
   await expect(page.getByLabel("Run do vídeo")).toContainText(
@@ -176,7 +203,7 @@ test("video lab keeps the sync workflow focused on a selected ride", async ({
 test("video lab loads a playable DJI Mimo clip and exports its sync plan", async ({
   page,
 }) => {
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   const video = await readFile(new URL("./fixtures/dji-mimo-sample.webm", import.meta.url));
   await page.getByLabel("Escolher ficheiro de vídeo").first().setInputFiles({
     name: "dji-mimo-run.webm",
@@ -231,7 +258,7 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
 });
 
 test("video lab offers a confirmable timestamp alignment for QuickTime clips", async ({ page }) => {
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   const captureDate = new Date(Date.parse("2026-09-13T09:00:00Z") + 20_000).toISOString();
   await page.getByLabel("Escolher ficheiro de vídeo").first().setInputFiles({
     name: "timestamped-mimo-export.mp4",
@@ -253,7 +280,7 @@ test("video lab offers a confirmable timestamp alignment for QuickTime clips", a
 });
 
 test("video lab reports an unsupported local clip", async ({ page }) => {
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   await page.getByLabel("Escolher ficheiro de vídeo").first().setInputFiles({
     name: "broken-dji-export.mp4",
     mimeType: "video/mp4",
@@ -265,7 +292,7 @@ test("video lab reports an unsupported local clip", async ({ page }) => {
 });
 
 test("video lab restores two point sync when the same clip is reattached", async ({ page }) => {
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   const video = await readFile(new URL("./fixtures/dji-mimo-sample.webm", import.meta.url));
   await page.getByLabel("Escolher ficheiro de vídeo").first().setInputFiles({
     name: "dji-mimo-anchors.webm",
@@ -286,7 +313,7 @@ test("video lab restores two point sync when the same clip is reattached", async
     return projects["run-07"]?.videoName ?? "";
   })).toBe("dji-mimo-anchors.webm");
   await page.reload();
-  await open(page, "Laboratório de vídeo");
+  await open(page, "Vídeo");
   await expect.poll(() => page.evaluate(() => {
     const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1") ?? "{}");
     return projects["run-07"]?.videoName ?? "";
@@ -653,4 +680,47 @@ test("invalid private run links show a useful return path", async ({ page }) => 
   await page.goto("/#share=not-a-valid-share-token");
   await expect(page.getByText(/expirou ou não é válido/i)).toBeVisible();
   await expect(page.locator(".shared-run-message a")).toBeVisible();
+});
+
+test("records a run live with the phone GPS and keeps it after a reload", async ({ page, context }) => {
+  await context.grantPermissions(["geolocation"]);
+  const at = (step: number) => ({ latitude: 41.51818 + step * 0.00003, longitude: -8.39571, accuracy: 6 });
+  await context.setGeolocation(at(0));
+  await open(page, "Importar run");
+  await page.getByRole("button", { name: /Começar a gravar/ }).click();
+  for (const step of [1, 2, 3]) {
+    await page.waitForTimeout(1100);
+    await context.setGeolocation(at(step));
+  }
+  await expect(page.locator(".run-recorder-live")).toContainText(/[3-9] ?pontos|\d{2} ?pontos/);
+  await page.reload();
+  await open(page, "Importar run");
+  await expect(page.getByText(/gravação interrompida/)).toBeVisible();
+  await page.getByRole("button", { name: "Recuperar" }).click();
+  await expect(page.locator(".file-preview")).toContainText("Gravação");
+});
+
+test("shares a run result as an image card", async ({ page }) => {
+  // Desktop Chrome may expose a share sheet; force the download path.
+  await page.evaluate(() => Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }));
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Partilhar resultado" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^mundial-da-santa-marta-run-07.*\.png$/);
+  const path = await file.path();
+  expect((await readFile(path!)).subarray(1, 4).toString()).toBe("PNG");
+});
+
+test("tags a run as wet, filters by surface and chases a same-surface Ghost", async ({ page }) => {
+  await open(page, "Histórico");
+  await page.getByLabel("Piso de Run 07 · A fundo").selectOption("wet");
+  await page.getByLabel("Piso de Run 03 · A fundo").selectOption("wet");
+  await page.getByLabel("Filtrar por piso").selectOption("wet");
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await open(page, "Análise");
+  await page.getByLabel("Run de referência").selectOption("pb-surface");
+  await expect(page.locator(".reference-time")).toContainText("3:05.00");
+  await page.reload();
+  await open(page, "Histórico");
+  await expect(page.getByLabel("Piso de Run 07 · A fundo")).toHaveValue("wet");
 });

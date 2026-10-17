@@ -2146,8 +2146,9 @@ td small {
     width: 38px;
   }
   .trail-select select {
-    font-size: 23px;
-    max-width: 195px;
+    font-size: 21px;
+    max-width: 205px;
+    text-overflow: ellipsis;
   }
   .trail-location {
     font-size: 10px;
@@ -2624,6 +2625,28 @@ td small {
   font-size: 14px;
 }
 .auth-input input::placeholder { color: #6f7a6b; }
+.auth-reveal {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.auth-reveal:hover,
+.auth-reveal:focus-visible {
+  color: var(--accent);
+}
+.auth-guest {
+  margin: 14px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .auth-submit {
   width: 100%;
   justify-content: center;
@@ -3641,6 +3664,7 @@ td small {
   font-size: 10px;
 }
 
+.run-recorder,
 .strava-picker {
   margin-top: 16px;
   padding: 14px;
@@ -3649,6 +3673,7 @@ td small {
   display: grid;
   gap: 10px;
 }
+.run-recorder-head,
 .strava-picker-head {
   display: flex;
   flex-wrap: wrap;
@@ -3717,4 +3742,85 @@ td small {
 }
 .trace-meta b.gained {
   color: var(--gained);
+}
+
+.password-form {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #2d3529;
+}
+.password-form h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.run-recorder {
+  display: grid;
+  gap: 10px;
+}
+.run-recorder-head strong {
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.run-recorder .recording svg {
+  fill: currentColor;
+}
+.run-recorder-live {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.run-recorder-live span {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  background: #151b14;
+  border-radius: 3px;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.run-recorder-live b {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  text-transform: none;
+}
+@media (max-width: 480px) {
+  .run-recorder-live {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.share-result {
+  width: 100%;
+  justify-content: center;
+  margin-top: 14px;
+}
+.history-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.history-filters select,
+.conditions-select {
+  min-height: 40px;
+  padding: 8px 10px;
+  background: #111710;
+  color: var(--text);
+  border: 1px solid #414d39;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+}
+.conditions-select {
+  min-height: 34px;
+  padding: 4px 8px;
+}
+@media (max-width: 700px) {
+  /* Legend and trace toggle share the top edge on desktop; stack them here. */
+  .trace-modes {
+    top: 98px;
+    right: auto;
+    left: 16px;
+  }
 }
