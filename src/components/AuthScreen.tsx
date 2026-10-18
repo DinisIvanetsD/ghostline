@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Ghost, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
 import {
   loginAccount,
   registerAccount,
@@ -116,16 +116,16 @@ export function AuthScreen({ onAuthenticated, onGuest }: Props) {
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
-        <div className="auth-mark" aria-hidden="true">
-          <Ghost size={27} />
-        </div>
-        <p className="auth-kicker">GHOSTLINE.</p>
-        <h1 id="auth-title">
-          {mode === "register" ? "Cria a tua conta de rider." : mode === "login" ? "Bem-vindo de volta, rider." : mode === "reset-request" ? "Recupera a tua conta." : "Define uma nova palavra-passe."}
-        </h1>
-        <p className="auth-intro">
-          As tuas runs, o teu Ghost e a afinação da bike num espaço privado.
+        <p className="wordmark auth-wordmark" aria-hidden="true">
+          <svg viewBox="0 0 30 30">
+            <path d="M5 24V11L15 4l10 7v13l-5-4-5 4-5-4z" />
+            <path d="M11 12v4m8-4v4" />
+          </svg>
+          GHOSTLINE
         </p>
+        <h1 id="auth-title">
+          {mode === "register" ? "Criar conta" : mode === "login" ? "Entrar" : mode === "reset-request" ? "Recuperar conta" : "Nova palavra-passe"}
+        </h1>
         {mode === "login" || mode === "register" ? <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
           <button
             className={mode === "register" ? "active" : ""}
@@ -190,7 +190,7 @@ export function AuthScreen({ onAuthenticated, onGuest }: Props) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                minLength={8}
+                minLength={mode === "register" || mode === "reset-password" ? 8 : undefined}
                 required
               />
               <button
@@ -234,7 +234,7 @@ export function AuthScreen({ onAuthenticated, onGuest }: Props) {
           </button>
         )}
         <p className="auth-footnote">
-          {cloudAuth ? "Conta segura, recuperação de palavra-passe e espaço em vários dispositivos com Supabase." : "Esta versão guarda contas e runs neste dispositivo. Configura o Supabase para teres contas reais, recuperação de palavra-passe e sincronização na nuvem."}
+          {cloudAuth ? "Conta sincronizada entre dispositivos." : "Conta e runs guardadas só neste dispositivo."}
         </p>
       </section>
     </main>

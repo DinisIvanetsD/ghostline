@@ -231,8 +231,8 @@ export function createDemoData(): AppData {
   return {
     version: 1,
     profile: {
-      name: "Alex Morgan",
-      email: "alex.morgan@example.com",
+      name: "Rider Demo",
+      email: "demo@example.com",
       home: "Braga, Portugal",
     },
     bikes,

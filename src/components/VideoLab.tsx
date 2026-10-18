@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Check,
-  Clapperboard,
   Download,
   Film,
   Gauge,
@@ -10,12 +9,10 @@ import {
   Pause,
   Play,
   Scissors,
-  SlidersHorizontal,
   Sparkles,
   Target,
   Timer,
   Upload,
-  Zap,
 } from "lucide-react";
 import type { AppData } from "../types";
 import {
@@ -675,23 +672,13 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
 
   return (
     <>
-      <div className="page-heading video-heading">
-        <div>
-          <h1>Alinha a run.</h1>
-          <p>Sincroniza o vídeo do DJI Mimo com o teu Ghost e vê onde os segundos fugiram.</p>
-        </div>
-        <span className="demo-label">
-          <Clapperboard size={13} />
-          LABORATÓRIO DE VÍDEO <i />
-        </span>
-      </div>
+      <h1 className="visually-hidden">Vídeo</h1>
 
       <section className="video-setup panel">
         <div className="video-setup-head">
           <div>
-            <span className="eyebrow"><Sparkles size={13} /> {cloudUserId ? "NUVEM PRIVADA" : "NESTE DISPOSITIVO"}</span>
-            <h2>Escolhe a run a sincronizar</h2>
-            <p>{cloudUserId ? "Envia vídeos privados e os marcadores para a tua conta e abre-os noutro dispositivo." : "Escolhe um vídeo das Fotos ou dos Ficheiros. O original e a sincronização ficam neste dispositivo."}</p>
+            <h2>Vídeo e run</h2>
+            <p>{cloudUserId ? "O vídeo e os marcadores ficam na tua conta." : "O vídeo e a sincronização ficam neste dispositivo."}</p>
           </div>
           <label className="button secondary video-file-button">
             <Upload size={16} />
@@ -732,8 +719,8 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
         <section className="video-empty panel">
           <div className="video-empty-icon"><Film size={29} /></div>
           <div>
-            <h2>{videoName ? "Continua a tua run sincronizada." : "Junta o vídeo da tua run."}</h2>
-            <p>{videoName ? cloudPath ? `O teu vídeo privado ${videoName} está pronto a abrir neste dispositivo.` : `A sincronização de ${videoName} está guardada neste dispositivo. Escolhe outra vez o ficheiro original para continuar.` : "MP4, MOV ou WebM funcionam no browser. Importa o vídeo do DJI Mimo e marca uma vez a partida do GPS."}</p>
+            <h2>{videoName ? `Sincronização guardada: ${videoName}` : "Sem vídeo"}</h2>
+            <p>{videoName ? cloudPath ? "Pronto a abrir a partir da tua conta." : "Escolhe outra vez o ficheiro original para continuar." : "MP4, MOV ou WebM. Depois marca a partida do GPS no vídeo."}</p>
           </div>
           <label className="button primary video-file-button">
             <Camera size={16} /> Escolher vídeo
@@ -793,7 +780,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
 
           <section className="sync-controls panel">
             <div className="section-heading">
-              <div><span className="eyebrow"><SlidersHorizontal size={13} /> ALINHAMENTO</span><h2>Acerta os relógios</h2></div>
+              <div><h2>Sincronização</h2></div>
               <span className="sync-status"><Check size={13} /> Sincronização local</span>
             </div>
             <div className="sync-grid">
@@ -811,21 +798,21 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
               <div><strong>Sincronização em dois pontos</strong><span className="muted">{anchors.length ? `${anchors.length} ${anchors.length === 1 ? "marcador" : "marcadores"} · ${anchors.map((anchor) => `${anchor.runTime === 0 ? "partida" : "chegada"} ${clock(anchor.videoTime)}`).join(" · ")}` : "Opcional: prende as duas pontas da run ao vídeo."}</span></div>
               <div className="sync-anchor-actions"><button className="button secondary" onClick={setRunStartAtPlayhead}><Target size={14} /> Marcar partida</button><button className="button secondary" disabled={!videoDuration} onClick={setRunFinishAtPlayhead}><Target size={14} /> Marcar chegada</button><button className="text-button" disabled={!anchors.length} onClick={resetAnchors}>Limpar marcadores</button></div>
             </div>
-            <p className="sync-help">Anda com o vídeo até ao momento em que a bike sai da partida e marca-o como partida do GPS. Com dois marcadores, mudar o desfasamento move os dois juntos.</p>
+            <p className="sync-help">Põe o vídeo no instante da partida e marca-o. Com dois marcadores, o desfasamento move os dois.</p>
           </section>
 
           <div className="video-tools-grid">
             <section className="panel trim-panel">
-              <div className="section-heading"><div><span className="eyebrow"><Scissors size={13} /> LIMPA O TAKE</span><h2>Corta as paragens</h2></div><span className="muted">Com ajuda do GPS</span></div>
-              <p>Encontra as pausas no sinal FIT/GPX, mantém só a descida e leva cada corte para o plano de edição.</p>
+              <div className="section-heading"><div><h2>Paragens</h2></div><span className="muted">Detetadas no GPS</span></div>
+              <p>Pausas no sinal FIT/GPX; os cortes passam para o plano de edição.</p>
               <div className="trim-actions"><button className="button secondary" onClick={scanStops}><Gauge size={15} /> Procurar paragens no GPS</button><button className="button secondary" disabled={!stopAnalysis} onClick={() => setSkipStops(!skipStops)}><Scissors size={15} /> {skipStops ? "Paragens saltadas na pré-visualização" : "Mostrar paragens na pré-visualização"}</button><button className="button primary" disabled={!stopAnalysis || !videoDuration} onClick={applyRideWindow}>Aplicar janela da run</button></div>
               <div className="trim-readout"><span>Janela da run</span><strong className="mono">{rideWindowLabel(stopAnalysis?.rideWindow ?? null)}</strong></div>
               {stopAnalysis && <div className="stop-list">{stopAnalysis.stops.length ? stopAnalysis.stops.map((stop) => <div key={`${stop.startTime}-${stop.endTime}`}><span className="mono">{clock(stop.startTime)}–{clock(stop.endTime)}</span><strong>{stop.duration.toFixed(1)}s parado</strong></div>) : <span className="muted">Não há pausas com mais de 3 segundos.</span>}</div>}
               {trim && <div className="trim-applied"><Check size={14} /> Janela final {clock(trim.start)} → {clock(trim.end)}</div>}
             </section>
             <section className="panel export-panel">
-              <div className="section-heading"><div><span className="eyebrow"><Download size={13} /> LEVA MAIS LONGE</span><h2>Exportar</h2></div></div>
-              <p>Cria um vídeo curto com os teus melhores setores e o Ghost ao lado, a run completa com a telemetria, ou envia os cortes para o teu editor.</p>
+              <div className="section-heading"><div><h2>Exportar</h2></div></div>
+              <p>Destaques: setores onde bateste o Ghost ou fizeste o melhor tempo. Tudo é gerado neste dispositivo.</p>
               {reelCuts.length > 0 && (
                 <p className="muted reel-summary">
                   Destaques: {reelCuts.map((cut) => `S${cut.index + 1} ${formatDelta(cut.delta)}`).join(" · ")} ·{" "}
@@ -845,7 +832,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           </div>
 
           <section className="panel sector-video-panel">
-            <div className="section-heading"><div><span className="eyebrow"><MapPin size={13} /> CORTES POR TELEMETRIA</span><h2>Salta para os segundos que importam</h2></div><span className="muted">{windows.length} setores · alinhado com o Ghost</span></div>
+            <div className="section-heading"><div><h2>Setores no vídeo</h2></div><span className="muted">{windows.length} setores</span></div>
             <div className="sector-video-grid">
               {windows.map((window, index) => {
                 const delta = splits[index] - (ghostSplits[index] ?? splits[index]);
@@ -857,10 +844,10 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
 
           <section className="panel riding-events-panel">
             <div className="section-heading">
-              <div><span className="eyebrow"><Zap size={13} /> LEITURA DA RUN</span><h2>Sinais a rever</h2></div>
+              <div><h2>Eventos no GPS</h2></div>
               <span className="muted">Com ajuda do GPS · {ridingEvents.length} encontrados</span>
             </div>
-            <p className="riding-events-help">A telemetria destaca travagens, acelerações, pausas e quedas de altitude parecidas com drops. Salta para um sinal para o comparares com o Ghost.</p>
+            <p className="riding-events-help">Travagens, acelerações, pausas e quedas de altitude detetadas no GPS.</p>
             {highlightedEvents.length ? (
               <div className="riding-events-list">
                 {highlightedEvents.map((event) => (
@@ -878,17 +865,12 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
                 ))}
               </div>
             ) : (
-              <div className="riding-events-empty">Não há sinais fortes nesta run. Os dados GPS ficam intactos e privados.</div>
+              <div className="riding-events-empty">Sem eventos fortes nesta run.</div>
             )}
           </section>
         </>
       )}
 
-      <section className="video-ai-note panel">
-        <div className="video-ai-icon"><Sparkles size={18} /></div>
-        <div><h2>Destaques automáticos.</h2><p>O vídeo de destaques escolhe sozinho os setores em que bateste o Ghost ou fizeste o teu melhor tempo, a partir da telemetria. Tudo é feito neste dispositivo, sem enviar o vídeo para lado nenhum.</p></div>
-        <span className="muted"><Check size={13} /> FIT + GPX alinhados</span>
-      </section>
     </>
   );
 }

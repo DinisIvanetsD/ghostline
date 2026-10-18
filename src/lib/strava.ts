@@ -93,7 +93,8 @@ export function streamsToPoints(streams: StravaStreams): Point[] {
   if (latlng.length < 2) throw new Error("Esta atividade do Strava não tem traçado GPS.");
   if (latlng.length > 25000) throw new Error("Esta atividade do Strava é demasiado longa para importar.");
   const elevations = Array.isArray(altitude) && altitude.length === latlng.length ? altitude : null;
-  return latlng.map((pair, index) => {
+  const points: Point[] = [];
+  latlng.forEach((pair, index) => {
     const [lat, lon] = Array.isArray(pair) ? pair : [];
     const offset = time[index];
     if (
@@ -101,7 +102,16 @@ export function streamsToPoints(streams: StravaStreams): Point[] {
       Math.abs(lat) > 90 || Math.abs(lon) > 180 || !Number.isFinite(offset)
     )
       throw new Error("Esta atividade do Strava tem pontos GPS inválidos.");
+    const at = start + offset * 1000;
+    const previous = points.at(-1)?.time;
+    // Same rule as the GPX and FIT parsers: keep the first sample of a
+    // repeated second, refuse a clock that runs backwards.
+    if (previous !== undefined && at === previous) return;
+    if (previous !== undefined && at < previous)
+      throw new Error("Esta atividade do Strava tem tempos fora de ordem.");
     const ele = elevations ? Number(elevations[index]) : 0;
-    return { lat, lon, ele: Number.isFinite(ele) ? ele : 0, time: start + offset * 1000 };
+    points.push({ lat, lon, ele: Number.isFinite(ele) ? ele : 0, time: at });
   });
+  if (points.length < 2) throw new Error("Esta atividade do Strava não tem traçado GPS.");
+  return points;
 }

@@ -89,7 +89,7 @@ test("account: register, sign out, wrong password and sign back in", async ({ pa
   await expect(page.getByText("Conta neste dispositivo")).toBeVisible();
   await page.getByRole("button", { name: /Rider Teste/ }).click();
   await page.getByRole("button", { name: "Terminar sessão" }).click();
-  await expect(page.getByRole("heading", { name: /Cria a tua conta/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Criar conta" })).toBeVisible();
   await page.getByRole("tab", { name: "Entrar" }).click();
   await page.getByLabel("Email").fill("rider@teste.pt");
   await page.getByLabel("Palavra-passe", { exact: true }).fill("errada-123");
@@ -106,7 +106,7 @@ test("account: register, sign out, wrong password and sign back in", async ({ pa
 test("demo analysis has seven primary runs, stable PB, sector selection, reference, progress and elevation", async ({
   page,
 }) => {
-  await expect(page.getByText("SESSÃO DE DEMONSTRAÇÃO")).toBeVisible();
+  await expect(page.getByText("dados de demonstração")).toBeVisible();
   await expect(page.locator('select[aria-label="Pista selecionada"]')).toHaveValue(
     "mundial",
   );
@@ -164,7 +164,7 @@ test("history search, analyze, delete and PB recomputation work", async ({
     0,
   );
   await page.getByRole("button", { name: "Analisar", exact: true }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   await open(page, "Histórico");
   page.once("dialog", (dialog) => dialog.accept());
   await page
@@ -183,13 +183,12 @@ test("video lab keeps the sync workflow focused on a selected ride", async ({
   page,
 }) => {
   await open(page, "Vídeo");
-  await expect(page.getByText("Alinha a run.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vídeo e run" })).toBeVisible();
   await expect(page.getByLabel("Pista do vídeo")).toHaveValue("mundial");
   await expect(page.getByLabel("Run do vídeo")).toContainText(
     "Run 05 · Melhor pessoal",
   );
-  await expect(page.getByText("Junta o vídeo da tua run.")).toBeVisible();
-  await expect(page.getByText("Destaques automáticos.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sem vídeo" })).toBeVisible();
   await page.getByLabel("Pista do vídeo").selectOption("free-ride");
   await expect(page.getByLabel("Run do vídeo")).toContainText("Run 09 · Sprint no vale");
   await expect(page.locator("body")).not.toContainText("NaN");
@@ -212,7 +211,7 @@ test("video lab loads a playable DJI Mimo clip and exports its sync plan", async
   });
   await expect(page.getByText("dji-mimo-run.webm")).toBeVisible();
   await expect.poll(() => page.locator("video").evaluate((element) => element.duration)).toBeGreaterThan(0);
-  await expect(page.getByText("Acerta os relógios")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sincronização" })).toBeVisible();
   await expect(page.getByLabel("Linha do tempo do vídeo")).toBeEnabled();
   const mapPane = page.locator(".leaflet-map-pane");
   await page.locator(".leaflet-control-zoom-in").click();
@@ -309,16 +308,16 @@ test("video lab restores two point sync when the same clip is reattached", async
   await page.getByRole("button", { name: "Marcar chegada", exact: true }).click();
   await expect(page.locator(".sync-anchors")).toContainText("2 marcadores");
   await expect.poll(() => page.evaluate(() => {
-    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1") ?? "{}");
+    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1.guest") ?? "{}");
     return projects["run-07"]?.videoName ?? "";
   })).toBe("dji-mimo-anchors.webm");
   await page.reload();
   await open(page, "Vídeo");
   await expect.poll(() => page.evaluate(() => {
-    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1") ?? "{}");
+    const projects = JSON.parse(localStorage.getItem("ghostline.video-projects.v1.guest") ?? "{}");
     return projects["run-07"]?.videoName ?? "";
   })).toBe("dji-mimo-anchors.webm");
-  await expect(page.getByText("Continua a tua run sincronizada.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Sincronização guardada/ })).toBeVisible();
   await page.getByLabel("Escolher ficheiro de vídeo").first().setInputFiles({
     name: "dji-mimo-anchors.webm",
     mimeType: "video/webm",
@@ -341,7 +340,7 @@ test("garage supports add edit delete and protects referenced bikes", async ({
   await page.getByRole("button", { name: "Registar manutenção" }).click();
   await expect(page.getByText("Fork lower service")).toBeVisible();
   await expect.poll(() => page.evaluate(() => {
-    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1.guest") ?? "{}");
     return workspace.bikes.find((bike: { name?: string }) => bike.name === "Unused rig")?.serviceHistory?.length ?? 0;
   })).toBe(1);
   await page.getByTitle("Editar Unused rig").click();
@@ -358,7 +357,7 @@ test("garage supports add edit delete and protects referenced bikes", async ({
 });
 
 test("profile save persists across reload", async ({ page }) => {
-  await page.getByRole("button", { name: /Alex Morgan/ }).click();
+  await page.getByRole("button", { name: /Rider Demo/ }).click();
   await page.getByLabel("Nome do rider").fill("Rider Persisted");
   await page.getByLabel("Email").fill("persisted@example.com");
   await page.getByRole("button", { name: "Guardar perfil" }).click();
@@ -366,7 +365,7 @@ test("profile save persists across reload", async ({ page }) => {
     .poll(() =>
       page.evaluate(
         () =>
-          JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}").profile
+          JSON.parse(localStorage.getItem("ghostline.data.v1.guest") ?? "{}").profile
             ?.name,
       ),
     )
@@ -414,7 +413,7 @@ test("manual trail, timestamped route imports, PB change, sector edit and compar
     buffer: Buffer.from(slow),
   });
   await page.getByRole("button", { name: "Guardar run" }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Importar run" }).click();
   await page
     .locator("label.field")
@@ -460,11 +459,11 @@ test("FIT activity imports through the run workflow", async ({ page }) => {
   });
   await expect(page.getByText(/pontos ·/)).toBeVisible();
   await page.getByRole("button", { name: "Guardar run" }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => {
-        const saved = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+        const saved = JSON.parse(localStorage.getItem("ghostline.data.v1.guest") ?? "{}");
         return saved.runs?.some(
           (run: { trailId?: string; synthetic?: boolean }) =>
             run.trailId === "mundial" && run.synthetic,
@@ -485,9 +484,9 @@ test("sample GPX download can be imported as a real practice run", async ({ page
   await page.locator('input[type="file"]').setInputFiles(filePath!);
   await expect(page.getByText(/pontos ·/)).toBeVisible();
   await page.getByRole("button", { name: "Guardar run" }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   const imported = await page.evaluate(() => {
-    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+    const workspace = JSON.parse(localStorage.getItem("ghostline.data.v1.guest") ?? "{}");
     return workspace.runs?.at(-1) ?? null;
   });
   expect(imported?.points.length).toBeGreaterThan(100);
@@ -521,10 +520,10 @@ test("Secret Spot imports stop at the marked physical finish", async ({ page }) 
     buffer: Buffer.from(gpx(withForgottenTail)),
   });
   await page.getByRole("button", { name: "Guardar run" }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => {
-      const saved = JSON.parse(localStorage.getItem("ghostline.data.v1") ?? "{}");
+      const saved = JSON.parse(localStorage.getItem("ghostline.data.v1.guest") ?? "{}");
       const run = saved.runs?.at(-1);
       return { count: run?.points?.length ?? 0, last: run?.points?.at(-1) ?? null };
     }))
@@ -546,7 +545,7 @@ test("first real ride can replace a demo trail route", async ({ page }) => {
     buffer: Buffer.from(gpx(shifted)),
   });
   await page.getByRole("button", { name: "Guardar run" }).click();
-  await expect(page.getByText("Contra o Ghost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tempo", exact: true })).toBeVisible();
   await expect(page.getByLabel("Run atual")).toContainText(
     "secret-spot-sameiro",
   );
@@ -585,7 +584,7 @@ test("backup restore updates profile draft and keeps restored data after saving"
     email: "restore@example.com",
     home: "Restored valley",
   };
-  await page.getByRole("button", { name: /Alex Morgan/ }).click();
+  await page.getByRole("button", { name: /Rider Demo/ }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator('input[type="file"]').setInputFiles({
     name: "backup.json",
@@ -598,7 +597,7 @@ test("backup restore updates profile draft and keeps restored data after saving"
     .poll(() =>
       page.evaluate(
         () =>
-          JSON.parse(localStorage.getItem("ghostline.data.v1")!).profile.name,
+          JSON.parse(localStorage.getItem("ghostline.data.v1.guest")!).profile.name,
       ),
     )
     .toBe("Restored rider");
@@ -626,20 +625,20 @@ test("mobile analysis, replay, empty state and corrupt storage recover without r
   data.trails = [];
   data.bikes = [];
   await page.evaluate(
-    (value) => localStorage.setItem("ghostline.data.v1", JSON.stringify(value)),
+    (value) => localStorage.setItem("ghostline.data.v1.guest", JSON.stringify(value)),
     data,
   );
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "O teu Ghost começa com uma run." }),
+    page.getByRole("heading", { name: "Sem runs nesta pista" }),
   ).toBeVisible();
   await page.evaluate(() =>
-    localStorage.setItem("ghostline.data.v1", "broken"),
+    localStorage.setItem("ghostline.data.v1.guest", "broken"),
   );
   await page.reload();
   await expect(page.getByRole("status")).toContainText("possível carregar");
   await expect(
-    page.getByRole("heading", { name: "Encontra os segundos que te faltam." }),
+    page.getByRole("heading", { name: "Análise da run", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -656,7 +655,7 @@ test("sector inspection pauses replay and progression resizes after an empty tra
   const data = await demo(page);
   data.trails.push({ ...data.trails[0], id: "empty", name: "Empty trail" });
   await page.evaluate(
-    (value) => localStorage.setItem("ghostline.data.v1", JSON.stringify(value)),
+    (value) => localStorage.setItem("ghostline.data.v1.guest", JSON.stringify(value)),
     data,
   );
   await page.reload();
@@ -698,6 +697,24 @@ test("records a run live with the phone GPS and keeps it after a reload", async 
   await expect(page.getByText(/gravação interrompida/)).toBeVisible();
   await page.getByRole("button", { name: "Recuperar" }).click();
   await expect(page.locator(".file-preview")).toContainText("Gravação");
+  // Not saved yet: the crash copy must survive another reload.
+  await page.reload();
+  await open(page, "Importar run");
+  await expect(page.getByText(/gravação interrompida/)).toBeVisible();
+});
+
+test("a guest's edits never reach the next account on this browser", async ({ page }) => {
+  await open(page, "Histórico");
+  await page.getByLabel("Piso de Run 07 · A fundo").selectOption("mud");
+  await page.getByRole("button", { name: "Entrar" }).first().click();
+  await page.getByLabel("Nome").fill("Outra Pessoa");
+  await page.getByLabel("Email").fill("outra@teste.pt");
+  await page.getByLabel("Palavra-passe", { exact: true }).fill("outra-pass-1");
+  await page.getByLabel("Confirmar palavra-passe").fill("outra-pass-1");
+  await page.getByRole("button", { name: "Criar conta" }).last().click();
+  await expect(page.getByText("Conta neste dispositivo")).toBeVisible();
+  await open(page, "Histórico");
+  await expect(page.getByLabel("Piso de Run 07 · A fundo")).toHaveValue("");
 });
 
 test("shares a run result as an image card", async ({ page }) => {

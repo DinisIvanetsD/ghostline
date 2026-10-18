@@ -26,4 +26,14 @@ describe("Strava streams", () => {
     expect(() => streamsToPoints({ ...base, time: [0] })).toThrow(/não tem traçado GPS/);
     expect(() => streamsToPoints({ ...base, latlng: [[95, 0], [41, -8]] })).toThrow(/inválidos/);
   });
+
+  it("drops repeated seconds and refuses a clock that runs backwards", () => {
+    const three = {
+      ...base,
+      latlng: [[41.518, -8.395], [41.5181, -8.395], [41.5182, -8.395]],
+      altitude: [494, 493, 492],
+    };
+    expect(streamsToPoints({ ...three, time: [0, 0, 2] }).map((p) => p.ele)).toEqual([494, 492]);
+    expect(() => streamsToPoints({ ...three, time: [0, 3, 2] })).toThrow(/fora de ordem/);
+  });
 });

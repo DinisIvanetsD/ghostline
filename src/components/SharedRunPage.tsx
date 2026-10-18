@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CircleAlert, Ghost, Mountain, Timer } from "lucide-react";
+import { ArrowLeft, CircleAlert, Ghost, Timer } from "lucide-react";
 import { analyze, formatDelta, formatTime, sectorTimes, splitLeadIn } from "../lib/analysis";
 import { loadPrivateRunShare, type SharedRunSnapshot } from "../lib/runSharing";
 import { TrailMap } from "./TrailMap";
@@ -54,9 +54,8 @@ export function SharedRunPage({ token }: { token: string }) {
         <>
           <section className="shared-run-title">
             <div>
-              <span className="eyebrow"><Mountain size={13} /> {share.trail.location || "SESSÃO NA PISTA"}</span>
               <h1>{share.trail.name}</h1>
-              <p>{share.run.name} · {share.riderName} · {share.run.date}</p>
+              <p>{share.trail.location ? `${share.trail.location} · ` : ""}{share.run.name} · {share.riderName} · {share.run.date}</p>
             </div>
             <div className="shared-run-clock">
               <span><Timer size={15} /> TEMPO DA RUN</span>

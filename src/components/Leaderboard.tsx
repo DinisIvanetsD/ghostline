@@ -93,14 +93,12 @@ export function Leaderboard({ trail, personalBest, riderName, cloudUserId }: Pro
       </div>
       {!enabled ? (
         <p className="muted">
-          Entra com uma conta na nuvem para veres quem é mais rápido nesta pista
-          e publicares o teu melhor tempo.
+          Disponível com conta na nuvem.
         </p>
       ) : (
         <>
           <p className="muted">
-            Opcional e declarado por ti. Só o teu nome, o tempo e os tempos por
-            setor são partilhados — nunca o teu traçado GPS.
+            Opcional. Partilha o nome, o tempo e os setores; o traçado GPS não é partilhado.
           </p>
           {status && <p className="leaderboard-status" role="status">{status}</p>}
           {rows === null ? (

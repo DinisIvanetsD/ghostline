@@ -83,6 +83,10 @@ function readSharedRunToken(): string {
 
 // A guest browses the demo for this tab only; closing it returns to sign-in.
 const GUEST_KEY = "ghostline.guest";
+// Guests get their own storage scope so nothing they do is adopted by the
+// next account that signs in on this browser (authenticate migrates only the
+// legacy unscoped workspace).
+const GUEST_SCOPE = "guest";
 function readGuest(): boolean {
   try {
     return sessionStorage.getItem(GUEST_KEY) === "1";
@@ -108,12 +112,15 @@ const nav = [
 ] as const;
 export default function App() {
   const [guest, setGuest] = useState(readGuest);
+  // Bumped when a Strava connection completes so the picker re-reads its status.
+  const [stravaVersion, setStravaVersion] = useState(0);
   const cloudSync = useMemo(() => createWorkspaceCloudSync<AppData>(), []);
   const cloudWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const [session, setSession] = useState<AuthSession | null>(() =>
     supabaseConfigured ? null : getSession(),
   );
-  const [data, setData] = useState<AppData>(() => loadData(getSession()?.userId)),
+  const scope = session?.userId ?? GUEST_SCOPE;
+  const [data, setData] = useState<AppData>(() => loadData(getSession()?.userId ?? GUEST_SCOPE)),
     [page, setPage] = useState<Page>("analysis"),
     [trailId, setTrailId] = useState(data.trails[0]?.id ?? ""),
     [runId, setRunId] = useState(""),
@@ -156,7 +163,10 @@ export default function App() {
     setPage("import");
     if (callback.error) return setNotice(callback.error);
     finishStravaConnect(callback.code!)
-      .then(() => setNotice("Strava ligado. Escolhe uma atividade recente para importar."))
+      .then(() => {
+        setStravaVersion((value) => value + 1);
+        setNotice("Strava ligado. Escolhe uma atividade recente para importar.");
+      })
       .catch((error: unknown) =>
         setNotice(error instanceof Error ? `A ligação ao Strava falhou: ${error.message}` : "A ligação ao Strava falhou."),
       );
@@ -181,6 +191,11 @@ export default function App() {
   const run = runs.find((r) => r.id === runId) ?? runs[0];
   const pb = useMemo(
     () => personalBest(data.runs, trail?.id ?? "", trail),
+    [data.runs, trail],
+  );
+  // Only real rides can be published, so the leaderboard ignores demo runs.
+  const realPb = useMemo(
+    () => personalBest(data.runs.filter((r) => !r.synthetic), trail?.id ?? "", trail),
     [data.runs, trail],
   );
   // Best run on the same surface: a wet run is chased against a wet Ghost.
@@ -265,7 +280,7 @@ export default function App() {
   const worst = deltas.length ? deltas.indexOf(Math.max(...deltas)) : 0;
   const update = (next: AppData) => {
     try {
-      saveData(next, session?.userId);
+      saveData(next, scope);
       setData(next);
       if (session?.provider === "supabase" && supabaseConfigured) {
         setNotice("Guardado neste dispositivo · a sincronizar com a tua conta…");
@@ -408,8 +423,9 @@ export default function App() {
         onAuthenticated={authenticate}
         onGuest={() => {
           // Never show the last signed-in rider's workspace to a guest.
-          setData(loadData());
-          setTrailId(loadData().trails[0]?.id ?? "");
+          const guestData = loadData(GUEST_SCOPE);
+          setData(guestData);
+          setTrailId(guestData.trails[0]?.id ?? "");
           setGuestMode(true);
           setGuest(true);
         }}
@@ -431,8 +447,6 @@ export default function App() {
           </svg>
           GHOSTLINE<span className="brand-period">.</span>
         </a>
-        <p className="brand-tagline">Chase yourself.</p>
-        <div className="nav-caption">O TEU ESPAÇO</div>
         <nav aria-label="Navegação principal">
           {nav.map((n) => (
             <button
@@ -442,21 +456,10 @@ export default function App() {
             >
               <n.icon size={19} />
               <span>{n.label}</span>
-              {n.id === "analysis" && <span className="nav-dot" />}
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="ride-loop">
-            <Mountain size={31} />
-            <p>
-              {data.trails.length === 1
-                ? "Uma pista."
-                : `${data.trails.length} pistas.`}
-              <br />Mais rápido.
-            </p>
-            <span>DESCE. ANALISA. REPETE.</span>
-          </div>
           <button
             className={
               page === "profile" ? "profile-link active" : "profile-link"
@@ -472,7 +475,7 @@ export default function App() {
             </span>
             <span>
               <strong>{data.profile.name}</strong>
-              <small>{session ? (session.provider === "supabase" ? "Conta na nuvem" : "Conta neste dispositivo") : "Sem conta · demonstração"}</small>
+              <small>{session ? (session.provider === "supabase" ? "Conta na nuvem" : "Conta neste dispositivo") : "Sem conta"}</small>
             </span>
             <Settings size={16} />
           </button>
@@ -481,7 +484,7 @@ export default function App() {
       <div className="main-shell">
         <header className="topbar">
           <div className="breadcrumb">
-            Espaço <span>/</span> <strong>{names[page]}</strong>
+            <strong>{names[page]}</strong>
           </div>
           <div className="top-actions">
             {!session && (
@@ -528,25 +531,7 @@ export default function App() {
           )}
           {(page === "analysis" || page === "history") && (
             <>
-              <div className="page-heading">
-                <div>
-                  <h1>
-                    {page === "analysis"
-                      ? "Encontra os segundos que te faltam."
-                      : "Evoluir é um padrão."}
-                  </h1>
-                  <p>
-                    {page === "analysis"
-                      ? "A tua última run. O teu melhor tu. O tempo entre os dois."
-                      : "Cada tentativa, cada melhoria. Tudo num só sítio."}
-                  </p>
-                </div>
-                {data.demo && run?.synthetic && (
-                  <span className="demo-label">
-                    SESSÃO DE DEMONSTRAÇÃO <i />
-                  </span>
-                )}
-              </div>
+              <h1 className="visually-hidden">{names[page]}</h1>
               <div className="trail-toolbar">
                 <div className="trail-identity">
                   <span className="trail-symbol">
@@ -568,9 +553,15 @@ export default function App() {
                       <ChevronDown size={18} />
                     </label>
                     <span className="trail-location">
-                      {trail?.location ?? "Cria a tua primeira pista"}{" "}
+                      {trail?.location ?? "Sem pistas"}{" "}
                       <span>•</span> {difficultyLabel(trail?.difficulty)} <span>•</span>{" "}
                       {runs.length} runs
+                      {data.demo && run?.synthetic && (
+                        <>
+                          {" "}
+                          <span>•</span> dados de demonstração
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -593,16 +584,13 @@ export default function App() {
             !theory ? (
               <section className="panel empty-state">
                 <Ghost size={40} />
-                <h2>O teu Ghost começa com uma run.</h2>
-                <p>
-                  Cria uma pista e importa um GPX com tempos para começares a
-                  encontrar segundos.
-                </p>
+                <h2>Sem runs nesta pista</h2>
+                <p>Importa um GPX ou FIT com tempos.</p>
                 <button
                   className="button primary"
                   onClick={() => setPage("import")}
                 >
-                  Importar a primeira run
+                  Importar run
                 </button>
               </section>
             ) : (
@@ -711,7 +699,7 @@ export default function App() {
                   <div className="timing-column">
                     <section className="timing-panel">
                       <div className="timing-title">
-                        <h2>Contra o Ghost</h2>
+                        <h2>Tempo</h2>
                         <Ghost size={20} />
                       </div>
                       <div className="run-time">
@@ -840,28 +828,21 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="sector-footnote">
-                        Escolhe um setor para o veres no mapa.
-                      </div>
                     </section>
                     <section className="theory-panel">
                       <div>
                         <span>
                           <Target size={15} />
-                          MELHOR TEÓRICO
+                          Melhor teórico
                         </span>
                         <strong>{formatTime(theory.total)}</strong>
                       </div>
                       <p>
-                        Os teus setores mais rápidos. Uma run possível.
-                        <br />
+                        Soma dos setores mais rápidos ·{" "}
                         <b>
-                          {Math.max(0, current.duration - theory.total).toFixed(
-                            2,
-                          )}
-                          s
+                          −{Math.max(0, current.duration - theory.total).toFixed(2)}s
                         </b>{" "}
-                        por encontrar.
+                        face a esta run
                       </p>
                     </section>
                   </div>
@@ -873,15 +854,13 @@ export default function App() {
                   <div>
                     <strong>
                       {Math.max(...deltas) > 0.01
-                        ? `É em ${trail.sectorNames[worst] ?? `Setor ${worst + 1}`} que tens de olhar.`
-                        : run.id === pb.id
-                          ? "Esta é a run a perseguir."
-                          : "Igualaste a tua referência."}
+                        ? `Maior perda: S${worst + 1} · ${trail.sectorNames[worst] ?? `Setor ${worst + 1}`}`
+                        : "Sem perdas face à referência"}
                     </strong>
                     <p>
                       {Math.max(...deltas) > 0.01
-                        ? `Perdeste ${deltas[worst].toFixed(2)}s no setor ${worst + 1} contra esta referência. Vê a velocidade neste troço antes da próxima run.`
-                        : `O teu melhor teórico é ${formatTime(theory.total)}. Compara setor a setor para veres o que ainda é possível.`}
+                        ? `${formatDelta(deltas[worst])} face à referência neste setor.`
+                        : `Melhor teórico: ${formatTime(theory.total)}.`}
                     </p>
                   </div>
                   <button
@@ -897,7 +876,7 @@ export default function App() {
                   </button>
                 </div>
                 <div className="replay-toolbar">
-                  <span>Dois riders. Um relógio.</span>
+                  <span>Repetição com o Ghost</span>
                   <button
                     className="text-button"
                     onClick={() => {
@@ -991,7 +970,7 @@ export default function App() {
               <Progression runs={runs} trail={trail} onSelect={selectRun} />
               <section className="panel history-panel">
                 <div className="section-heading">
-                  <h2>Registo de runs</h2>
+                  <h2>Runs</h2>
                   <div className="history-filters">
                     <select
                       aria-label="Filtrar por piso"
@@ -1135,7 +1114,7 @@ export default function App() {
               {theory && runs.length > 0 && (
                 <section className="panel best-sectors">
                   <div className="section-heading">
-                    <h2>A tua run perfeita, montada.</h2>
+                    <h2>Melhor teórico por setor</h2>
                     <span className="mono accent">
                       {formatTime(theory.total)}
                     </span>
@@ -1166,8 +1145,9 @@ export default function App() {
                 </section>
               )}
               <Leaderboard
+                key={trail?.id}
                 trail={trail}
-                personalBest={pb}
+                personalBest={realPb}
                 riderName={data.profile.name}
                 cloudUserId={session?.provider === "supabase" ? session.userId : undefined}
               />
@@ -1198,11 +1178,11 @@ export default function App() {
                 cloudSyncEnabled={session?.provider === "supabase"}
               />
               <section className="panel data-panel">
-                <h2>Os teus dados são teus.</h2>
+                <h2>Dados</h2>
                 <p>
                   {session?.provider === "supabase"
-                    ? "Perfil, bikes, pistas e runs sincronizam com a tua conta privada. Os vídeos podem ser enviados à parte no Laboratório de vídeo."
-                    : "Perfil, bikes, pistas e runs ficam guardados neste browser. Exporta uma cópia de segurança antes de limpar os dados do browser."}
+                    ? "Sincronizados com a tua conta. Os vídeos enviam-se à parte, em Vídeo."
+                    : "Guardados neste browser. Exporta uma cópia antes de limpar os dados do browser."}
                 </p>
                 <div className="form-actions">
                   <button
@@ -1261,8 +1241,8 @@ export default function App() {
               <>
               <div className="import-guide">
                 <div>
-                  <h1>O teu próximo Ghost começa aqui.</h1>
-                  <p>Uma descida completa por ficheiro. Sem pausas, sem subidas.</p>
+                  <h1>Importar run</h1>
+                  <p>Uma descida por ficheiro.</p>
                 </div>
                 {data.runs.some((r) => r.synthetic) && (
                   <button
@@ -1280,6 +1260,8 @@ export default function App() {
                 data={data}
                 onChange={update}
                 cloud={session?.provider === "supabase"}
+                scope={scope}
+                stravaVersion={stravaVersion}
                 onImported={(tid, rid) => {
                   selectTrail(tid);
                   setRunId(rid);
@@ -1289,21 +1271,10 @@ export default function App() {
               </>
             </Suspense>
           )}
-          {page === "video" && <Suspense fallback={pageLoading}><VideoLab data={data} userId={session?.userId} cloudUserId={session?.provider === "supabase" ? session.userId : undefined} /></Suspense>}
+          {page === "video" && <Suspense fallback={pageLoading}><VideoLab data={data} userId={scope} cloudUserId={session?.provider === "supabase" ? session.userId : undefined} /></Suspense>}
           <footer className="app-footer">
-            <span>
-              GHOSTLINE<span className="accent">.</span>{" "}
-              <span>Chase yourself.</span>
-            </span>
-            <span>
-              {data.demo && data.runs.some((r) => r.synthetic)
-                ? "Inclui GPS de demonstração · Santa Marta das Cortiças"
-                : session
-                  ? session.provider === "supabase" ? "Espaço privado na nuvem · biblioteca de vídeo disponível" : "Conta local · guardado neste dispositivo"
-                  : "Espaço local"}{" "}
-              <span className="footer-divider">/</span> DESCE → ANALISA → VOLTA
-              A DESCER
-            </span>
+            <span>GHOSTLINE</span>
+            <span>Rotas Trailforks · altitude EU-DEM · mapa © OpenStreetMap</span>
           </footer>
         </main>
       </div>

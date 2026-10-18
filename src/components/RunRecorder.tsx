@@ -5,6 +5,8 @@ import { formatTime } from "../lib/analysis";
 import { acceptFix, clearRecording, loadRecording, saveRecording } from "../lib/recorder";
 
 interface Props {
+  /** Storage scope of the signed-in rider or guest. */
+  scope: string;
   disabled: boolean;
   /** Receives the finished recording; throws to report a problem. */
   onFinish: (points: Point[], label: string) => void;
@@ -19,13 +21,13 @@ const metersBetween = (a: Point, b: Point) => {
 };
 
 /** Record a descent with the phone's GPS, straight into the import flow. */
-export function RunRecorder({ disabled, onFinish }: Props) {
+export function RunRecorder({ scope, disabled, onFinish }: Props) {
   const [points, setPoints] = useState<Point[]>([]);
   const [recording, setRecording] = useState(false);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
-  const [recovered, setRecovered] = useState<Point[]>(() => loadRecording());
+  const [recovered, setRecovered] = useState<Point[]>(() => loadRecording(scope));
   const watchId = useRef<number | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
   const supported = typeof navigator !== "undefined" && "geolocation" in navigator;
@@ -67,7 +69,7 @@ export function RunRecorder({ disabled, onFinish }: Props) {
   const start = () => {
     setError("");
     setPoints([]);
-    clearRecording();
+    clearRecording(scope);
     setRecovered([]);
     void requestWakeLock();
     watchId.current = navigator.geolocation.watchPosition(
@@ -86,7 +88,7 @@ export function RunRecorder({ disabled, onFinish }: Props) {
           );
           if (!point) return current;
           const next = [...current, point];
-          saveRecording(next);
+          saveRecording(scope, next);
           return next;
         });
       },
@@ -104,8 +106,9 @@ export function RunRecorder({ disabled, onFinish }: Props) {
   const finish = (track: Point[]) => {
     try {
       const label = `Gravação ${new Date(track[0]?.time ?? Date.now()).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+      // The stored copy stays until the run is saved, so a reload while
+      // reviewing does not lose the descent.
       onFinish(track, label);
-      clearRecording();
       setRecovered([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível usar esta gravação.");
@@ -152,15 +155,14 @@ export function RunRecorder({ disabled, onFinish }: Props) {
         </div>
       ) : (
         <small className="muted">
-          Carrega em começar no topo da pista e em parar na chegada. Mantém o ecrã
-          ligado e a app aberta enquanto desces.
+          Começa na partida, para na chegada. O ecrã tem de ficar ligado.
         </small>
       )}
       {!recording && recovered.length > 1 && (
         <p className="import-trail-note" role="status">
           Há uma gravação interrompida com {recovered.length} pontos.
           <button className="text-button" onClick={() => finish(recovered)}>Recuperar</button>
-          <button className="text-button" onClick={() => { clearRecording(); setRecovered([]); }}>Descartar</button>
+          <button className="text-button" onClick={() => { clearRecording(scope); setRecovered([]); }}>Descartar</button>
         </p>
       )}
       {error && <p className="import-quality-note poor" role="alert">{error}</p>}

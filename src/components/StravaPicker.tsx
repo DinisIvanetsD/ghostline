@@ -12,12 +12,14 @@ import {
 
 interface Props {
   cloud: boolean;
+  /** Changes when a connection finishes elsewhere, forcing a status refresh. */
+  version?: number;
   disabled: boolean;
   onPick: (activity: StravaActivity) => void;
 }
 
 /** Import a ride straight from Strava instead of exporting a GPX file. */
-export function StravaPicker({ cloud, disabled, onPick }: Props) {
+export function StravaPicker({ cloud, version = 0, disabled, onPick }: Props) {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [activities, setActivities] = useState<StravaActivity[] | null>(null);
   const [error, setError] = useState("");
@@ -26,6 +28,7 @@ export function StravaPicker({ cloud, disabled, onPick }: Props) {
   useEffect(() => {
     if (!available) return;
     let active = true;
+    setConnected(null);
     stravaStatus()
       .then((status) => active && setConnected(status.connected))
       .catch((reason: unknown) => {
@@ -34,7 +37,7 @@ export function StravaPicker({ cloud, disabled, onPick }: Props) {
     return () => {
       active = false;
     };
-  }, [available]);
+  }, [available, version]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");

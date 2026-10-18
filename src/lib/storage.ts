@@ -29,6 +29,7 @@ const LEGACY_SECRET_FINISH = { lat: 41.553, lon: -8.37221 } as const;
 const LEGACY_DEMO_SECTOR_NAMES = [
   ["Start Gate", "Pines", "Rock Garden", "Finish"],
   ["Drop In", "Jumps", "Finish"],
+  ["Top Woods", "Technical", "Flow", "Finish"],
 ];
 const fail = (m: string): never => {
   throw new Error(`Invalid GHOSTLINE data: ${m}`);
@@ -293,9 +294,8 @@ function refreshSyntheticDemoRoutes(data: AppData, key: string): AppData {
     const fresh = freshTrail(trail.id);
     // Old demo sectors were equal cuts with placeholder names (and Secret
     // Spot's four did not match its three segments). Replace them only while
-    // they are still those placeholders; renamed sectors stay the rider's.
+    // they still carry those names; renamed sectors stay the rider's.
     const placeholderSectors =
-      trail.id === "secret-spot" ||
       LEGACY_DEMO_SECTOR_NAMES.some(
         (names) => JSON.stringify(names) === JSON.stringify(trail.sectorNames),
       );
@@ -366,10 +366,15 @@ export function loadData(scope?: string): AppData {
       sameIds(data.trails, canonicalDemo.trails) &&
       sameIds(data.runs, canonicalDemo.runs)
     ) {
-      const upgraded = { ...canonicalDemo, profile: data.profile };
+      // The demo rider used to be a made-up person; keep any other edited profile.
+      const upgraded = {
+        ...canonicalDemo,
+        profile: data.profile.name === "Alex Morgan" ? canonicalDemo.profile : data.profile,
+      };
       if (
+        upgraded.profile !== data.profile ||
         JSON.stringify([upgraded.trails, upgraded.runs]) !==
-        JSON.stringify([data.trails, data.runs])
+          JSON.stringify([data.trails, data.runs])
       ) {
         localStorage.setItem(key, JSON.stringify(upgraded));
         storageWarning = "";

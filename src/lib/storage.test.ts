@@ -166,6 +166,18 @@ describe("storage validation", () => {
     expect(loadedMundial.finishPoint).toEqual(fresh.trails[0].finishPoint);
     expect(loaded.trails.find((trail) => trail.id === "free-ride")!.points).toEqual(importedRoute);
   });
+  it("keeps Secret Spot sectors the rider renamed on an old synthetic route", () => {
+    const previous = createDemoData();
+    const secret = previous.trails.find((trail) => trail.id === "secret-spot")!;
+    secret.points = secret.points.slice(0, 40);
+    secret.boundaries = [0.4];
+    secret.sectorNames = ["Topo", "Fundo"];
+    previous.demo = false;
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+    const loaded = loadData().trails.find((trail) => trail.id === "secret-spot")!;
+    expect(loaded.sectorNames).toEqual(["Topo", "Fundo"]);
+    expect(loaded.boundaries).toEqual([0.4]);
+  });
   it("keeps known run surfaces and drops unknown ones", () => {
     const data = createDemoData();
     data.runs[0].conditions = "wet";

@@ -2,7 +2,8 @@ import type { Point } from "../types";
 
 /** Fixes worse than this are dropped; phone GPS under trees often reports 30–60 m. */
 export const MAX_ACCURACY_METERS = 30;
-const RECORDING_KEY = "ghostline.recording.v1";
+// Scoped per rider so an interrupted trace is never offered to someone else.
+const recordingKey = (scope: string) => `ghostline.recording.v1.${encodeURIComponent(scope)}`;
 
 export interface GpsFix {
   latitude: number;
@@ -33,17 +34,17 @@ export function acceptFix(fix: GpsFix, previous?: Point): Point | null {
 }
 
 /** Keep an in-progress recording so a reload or a closed tab does not lose the run. */
-export function saveRecording(points: Point[]): void {
+export function saveRecording(scope: string, points: Point[]): void {
   try {
-    localStorage.setItem(RECORDING_KEY, JSON.stringify(points));
+    localStorage.setItem(recordingKey(scope), JSON.stringify(points));
   } catch {
     // Storage full or blocked: the recording continues in memory.
   }
 }
 
-export function loadRecording(): Point[] {
+export function loadRecording(scope: string): Point[] {
   try {
-    const parsed = JSON.parse(localStorage.getItem(RECORDING_KEY) ?? "[]");
+    const parsed = JSON.parse(localStorage.getItem(recordingKey(scope)) ?? "[]");
     return Array.isArray(parsed)
       ? parsed.filter(
           (p): p is Point =>
@@ -55,9 +56,9 @@ export function loadRecording(): Point[] {
   }
 }
 
-export function clearRecording(): void {
+export function clearRecording(scope: string): void {
   try {
-    localStorage.removeItem(RECORDING_KEY);
+    localStorage.removeItem(recordingKey(scope));
   } catch {
     // Nothing to clear.
   }

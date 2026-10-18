@@ -26,6 +26,7 @@ import { StravaPicker } from "./StravaPicker";
 import { RunRecorder } from "./RunRecorder";
 import { SectorPicker } from "./SectorPicker";
 import { addGate, removeGate } from "../lib/sectorEdit";
+import { clearRecording } from "../lib/recorder";
 import { CONDITION_LABELS, CONDITIONS, DIFFICULTIES, difficultyLabel } from "../lib/labels";
 import { changePassword } from "../lib/auth";
 import { analyze, courseDuration, formatTime } from "../lib/analysis";
@@ -202,10 +203,6 @@ export function Garage({ data, onChange }: Props) {
           </span>
         }
       >
-        <p className="muted">
-          As máquinas por trás de cada tempo. O curso é registado em
-          milímetros.
-        </p>
         <div className="garage-overview" aria-label="Resumo da garagem">
           <div className="garage-stat">
             <span>Máquinas</span>
@@ -229,8 +226,8 @@ export function Garage({ data, onChange }: Props) {
               <h3>{editing ? "Editar bike" : "Adicionar bike"}</h3>
               <p className="muted">
                 {editing
-                  ? "Atualiza a afinação usada no teu histórico de runs."
-                  : "Dá a cada run uma afinação de bike para as comparações serem justas."}
+                  ? "A afinação fica registada nas runs novas."
+                  : "A afinação fica registada em cada run importada."}
               </p>
             </div>
             {editing && <span className="garage-form-state">A editar</span>}
@@ -364,8 +361,8 @@ export function Garage({ data, onChange }: Props) {
         {data.bikes.length === 0 ? (
           <div className="empty-state garage-empty">
             <BikeIcon size={24} />
-            <strong>Ainda não há bikes na garagem</strong>
-            <span>Adiciona a bike que usas para as runs serem comparáveis.</span>
+            <strong>Sem bikes</strong>
+            <span>Adiciona uma bike para a associar às runs.</span>
           </div>
         ) : (
           <div className="bike-grid">
@@ -819,8 +816,7 @@ export function TrailManager({
       }
     >
       <p className="muted">
-        Cria uma rota a partir de um ficheiro GPX ou FIT e depois ajusta os
-        setores à tua maneira de cronometrar.
+        Rota a partir de um GPX ou FIT. Setores editáveis no mapa.
       </p>
       <div className="trail-list">
         {data.trails.map((t) => (
@@ -860,8 +856,8 @@ export function TrailManager({
       {data.trails.length === 0 && (
         <div className="empty-state">
           <MapPin size={24} />
-          <strong>Ainda não há pistas</strong>
-          <span>Importa uma rota para começares a comparar runs.</span>
+          <strong>Sem pistas</strong>
+          <span>Importa uma rota GPX ou FIT.</span>
         </div>
       )}
       <div className="trail-editor">
@@ -991,9 +987,16 @@ export function ImportRun({
   onChange,
   onImported,
   cloud = false,
-}: Props & { onImported: (trailId: string, runId: string) => void; cloud?: boolean }) {
+  scope = "guest",
+  stravaVersion = 0,
+}: Props & {
+  onImported: (trailId: string, runId: string) => void;
+  cloud?: boolean;
+  scope?: string;
+  stravaVersion?: number;
+}) {
   /** Label of the loaded source: a file name or a Strava activity name. */
-  const [file, setFile] = useState<{ name: string } | null>(null);
+  const [file, setFile] = useState<{ name: string; recorded?: boolean } | null>(null);
   const [points, setPoints] = useState<Point[] | null>(null);
   const [trailId, setTrailId] = useState(data.trails[0]?.id ?? "");
   const [bikeId, setBikeId] = useState(data.bikes[0]?.id ?? "");
@@ -1169,6 +1172,8 @@ export function ImportRun({
       demo: false,
     };
     if (onChange(next) === false) return;
+    // A live recording's crash copy is only dropped once the run is saved.
+    if (file.recorded) clearRecording(scope);
     onImported(trailId, runId);
     setFile(null);
     setPoints(null);
@@ -1192,8 +1197,7 @@ export function ImportRun({
   return (
     <Section title="Importar run">
       <p className="muted">
-        Escolhe uma exportação GPX ou FIT com tempos, até 10 MB. O GHOSTLINE
-        confirma a rota com a pista escolhida antes de guardar.
+        GPX ou FIT com tempos, até 10 MB. A rota é comparada com a pista antes de guardar.
       </p>
       {trail?.finishPoint && (
         <p className="muted import-finish-note">
@@ -1220,13 +1224,15 @@ export function ImportRun({
         onChange={choose}
       />
       <RunRecorder
+        scope={scope}
         disabled={loading}
         onFinish={(track, label) => {
           reset();
           ingest(track, label);
+          setFile({ name: label, recorded: true });
         }}
       />
-      <StravaPicker cloud={cloud} disabled={loading} onPick={(activity) => void importStrava(activity)} />
+      <StravaPicker cloud={cloud} version={stravaVersion} disabled={loading} onPick={(activity) => void importStrava(activity)} />
       {file && points && (
         <div className="file-preview">
           <strong>{file.name}</strong>
@@ -1256,8 +1262,8 @@ export function ImportRun({
         <section className="import-preview" aria-label="Revisão da rota importada">
           <div className="import-preview-heading">
             <div>
-              <strong>Confirma a linha antes de guardar</strong>
-              <span>Vê se a partida e a chegada do GPS correspondem à run que queres perseguir.</span>
+              <strong>Pré-visualização</strong>
+              <span>Confirma a partida e a chegada antes de guardar.</span>
             </div>
             <span className="mono">{points.length.toLocaleString("pt-PT")} pontos</span>
           </div>

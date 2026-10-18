@@ -28,12 +28,15 @@ describe("live GPS recorder", () => {
     expect(acceptFix(fix({ accuracy: Number.NaN }))).toBeNull();
   });
 
-  it("survives a reload and ignores broken storage", () => {
-    saveRecording([{ lat: 1, lon: 2, ele: 3, time: 4 }]);
-    expect(loadRecording()).toHaveLength(1);
-    localStorage.setItem("ghostline.recording.v1", "{broken");
-    expect(loadRecording()).toEqual([]);
-    clearRecording();
-    expect(loadRecording()).toEqual([]);
+  it("survives a reload, stays with its rider and ignores broken storage", () => {
+    saveRecording("rider-a", [{ lat: 1, lon: 2, ele: 3, time: 4 }]);
+    expect(loadRecording("rider-a")).toHaveLength(1);
+    expect(loadRecording("rider-b")).toEqual([]);
+    expect(loadRecording("guest")).toEqual([]);
+    localStorage.setItem("ghostline.recording.v1.rider-a", "{broken");
+    expect(loadRecording("rider-a")).toEqual([]);
+    saveRecording("rider-a", [{ lat: 1, lon: 2, ele: 3, time: 4 }]);
+    clearRecording("rider-a");
+    expect(loadRecording("rider-a")).toEqual([]);
   });
 });

@@ -54,12 +54,15 @@ Deno.serve(async (req) => {
     if (!data) throw new Error("Connect Strava first.");
     if (Date.parse(data.expires_at) - Date.now() > 60_000) return data.access_token;
     const fresh = await exchange({ grant_type: "refresh_token", refresh_token: data.refresh_token });
-    await save({
+    // Strava rotates refresh tokens; failing to store the new one would
+    // silently break the connection once this access token expires.
+    const { error: saveError } = await save({
       athlete_id: data.athlete_id,
       access_token: fresh.access_token,
       refresh_token: fresh.refresh_token,
       expires_at: new Date(fresh.expires_at * 1000).toISOString(),
     });
+    if (saveError) throw saveError;
     return fresh.access_token;
   };
   const api = async (path: string) => {
@@ -128,7 +131,8 @@ Deno.serve(async (req) => {
         } catch {
           // Removing our copy of the tokens is what matters to the rider.
         }
-        await tokens.delete().eq("user_id", user.id);
+        const { error: deleteError } = await tokens.delete().eq("user_id", user.id);
+        if (deleteError) throw deleteError;
         return json({ connected: false });
       }
       default:
