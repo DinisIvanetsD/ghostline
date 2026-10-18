@@ -4277,3 +4277,187 @@ h1 { text-transform: uppercase; }
 .bike-card:hover { border-color: var(--accent); }
 .bike-grid { gap: 16px; }
 .run-recorder-head > strong { font: 800 20px "Big Shoulders Display", "Public Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text); }
+
+/* Tablets: the run table becomes the phone's run cards instead of scrolling sideways. */
+@media (min-width: 701px) and (max-width: 1180px) {
+  .history-panel .section-heading {
+      align-items: flex-start;
+      flex-direction: column;
+  }
+  .history-panel .section-heading input {
+      max-width: none;
+  }
+  .history-panel .table-wrap {
+      overflow: visible;
+  }
+  .history-panel table,
+    .history-panel tbody {
+      display: block;
+      width: 100%;
+      white-space: normal;
+  }
+  .history-panel thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+  }
+  .history-panel tbody {
+      display: grid;
+      gap: 10px;
+  }
+  .history-panel tbody tr {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "run run delta"
+        "date bike time"
+        "actions actions actions";
+      gap: 13px 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #1d212a;
+  }
+  .history-panel tbody td {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      padding: 0;
+      border: 0;
+  }
+  .history-panel tbody td:first-child {
+      grid-area: run;
+  }
+  .history-panel tbody td:nth-child(2) {
+      grid-area: date;
+  }
+  .history-panel tbody td:nth-child(3) {
+      grid-area: bike;
+  }
+  .history-panel tbody td:nth-child(4) {
+      grid-area: time;
+  }
+  .history-panel tbody td:nth-child(5) {
+      grid-area: delta;
+      justify-content: flex-end;
+      font-size: 12px;
+  }
+  .history-panel tbody td:nth-child(2),
+    .history-panel tbody td:nth-child(3),
+    .history-panel tbody td:nth-child(4) {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+  }
+  .history-panel tbody td:nth-child(2)::before {
+      content: "Data";
+  }
+  .history-panel tbody td:nth-child(3)::before {
+      content: "Bike";
+  }
+  .history-panel tbody td:nth-child(4)::before {
+      content: "Tempo";
+  }
+  .history-panel tbody td:nth-child(2)::before,
+    .history-panel tbody td:nth-child(3)::before,
+    .history-panel tbody td:nth-child(4)::before {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+  }
+  .history-panel tbody td:last-child {
+      grid-area: actions;
+      align-items: center;
+      gap: 12px;
+      padding-top: 11px;
+      border-top: 1px solid var(--border);
+  }
+  .history-panel tbody td:last-child .text-button {
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid #414859;
+      border-radius: 6px;
+      font-size: 11px;
+  }
+  .history-panel tbody td:last-child .delete-button {
+      margin-left: 0;
+  }
+  /* History cards: Run + gap, then time, date, bike; piso; actions. */
+    .history-panel tbody tr {
+      grid-template-areas:
+        "run run delta"
+        "time date bike"
+        "piso piso piso"
+        "actions actions actions";
+      background: #151922;
+  }
+  .history-panel tbody td:nth-child(4) {
+      grid-area: piso;
+  }
+  .history-panel tbody td:nth-child(5) {
+      grid-area: time;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+  }
+  .history-panel tbody td:nth-child(5)::before {
+      content: "Tempo";
+      color: var(--muted);
+      font-size: 11px;
+  }
+  .history-panel tbody td:nth-child(6) {
+      grid-area: delta;
+      justify-content: flex-end;
+      font-size: 12px;
+  }
+  .history-panel tbody td:nth-child(2)::before,
+    .history-panel tbody td:nth-child(3)::before {
+      font-size: 11px;
+      letter-spacing: 0;
+  }
+  .history-panel tbody td:nth-child(4)::before {
+      content: none;
+  }
+  .history-panel tbody td:has(> .conditions-select) { gap: 10px;
+  }
+  .history-panel tbody td:has(> .conditions-select)::before { content: "Piso"; color: var(--muted); font-size: 9px; letter-spacing: 0.08em;
+  }
+  .history-panel tbody td > .conditions-select { flex: 1; min-height: 36px;
+  }
+}
+@media (min-width: 1000px) and (max-width: 1180px) { .history-panel tbody { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .comparison-toolbar .versus { display: none; } }
+
+/* Long trail names shrink with the viewport instead of being cut. */
+.trail-hero .trail-select { min-width: 0; max-width: 100%; }
+.trail-hero .trail-select select { max-width: 100%; font-size: clamp(30px, 4.6vw, 64px); }
+.trail-hero .trail-identity, .trail-hero .trail-identity > div { min-width: 0; max-width: 100%; }
+.trail-hero .trail-select { width: auto; min-width: 0; max-width: 100%; }
+.trail-hero .trail-select select { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.trail-hero .trail-select svg { flex: none; }
+.comparison-toolbar { flex-wrap: wrap; }
+.map-view-switch button { white-space: nowrap; }
+.video-run-facts { flex-wrap: wrap; min-width: 0; }
+@media (max-width: 1100px) { .video-select-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .video-run-facts { grid-column: 1 / -1; } }
+.trail-row .row-actions { margin-top: auto; }
+
+/* One-tap trail switch: a catalogue row of posters under the hero. */
+.trail-rail { display: flex; gap: 12px; margin: 4px 0 10px; padding: 6px 2px 10px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.trail-chip { flex: 0 0 200px; display: flex; flex-direction: column; gap: 8px; padding: 0 0 10px; overflow: hidden; border: 1px solid #1f2430; border-radius: 8px; background: #151922; color: var(--muted); text-align: left; cursor: pointer; scroll-snap-align: start; transition: transform .3s cubic-bezier(.2,.7,.2,1), opacity .3s, border-color .3s, color .3s; }
+.trail-chip .trail-chip-poster { aspect-ratio: 16 / 9; }
+.trail-chip > span { padding: 0 12px; overflow: hidden; font: 800 17px "Big Shoulders Display", "Public Sans", sans-serif; letter-spacing: 0.02em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
+.trail-chip:hover, .trail-chip:focus-visible { color: var(--text); border-color: #3a4254; transform: translateY(-3px); }
+.trail-chip.active { color: var(--accent); border-color: var(--accent); }
+.trail-rail:has(.trail-chip:hover) .trail-chip:not(:hover) { opacity: .6; }
+@media (max-width: 700px) { .trail-chip { flex-basis: 150px; } .trail-chip > span { font-size: 15px; } }
+@media (prefers-reduced-motion: reduce) { .trail-chip { transition: none; } .trail-chip:hover { transform: none; } }

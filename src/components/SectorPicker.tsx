@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import type { Point } from "../types";
 import { routePositionAt } from "../lib/analysis";
 import { routeFractionAt } from "../lib/routeMatch";
+import { DGT_WMS, IMAGERY_ATTRIBUTION } from "../lib/imagery";
 import "leaflet/dist/leaflet.css";
 
 interface Props {
@@ -30,6 +31,9 @@ export function SectorPicker({ points, boundaries, onAdd, onRemove }: Props) {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(instance);
+    L.tileLayer
+      .wms(DGT_WMS, { layers: "Ortos2018-RGB", format: "image/png", maxZoom: 19, attribution: IMAGERY_ATTRIBUTION })
+      .addTo(instance);
     layers.current = L.layerGroup().addTo(instance);
     instance.on("click", (event: L.LeafletMouseEvent) =>
       handlers.current.onAdd(

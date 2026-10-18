@@ -612,6 +612,24 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              {data.trails.length > 1 && (
+                <div className="trail-rail" role="group" aria-label="Trocar de pista">
+                  {data.trails.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`trail-chip${t.id === trail?.id ? " active" : ""}`}
+                      aria-pressed={t.id === trail?.id}
+                      onClick={() => selectTrail(t.id)}
+                    >
+                      {t.points.length > 1 && (
+                        <TrailPoster trail={t} width={320} height={180} className="trail-chip-poster" decorative />
+                      )}
+                      <span>{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
           {page === "analysis" &&
