@@ -1,5 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import "@fontsource/big-shoulders-display/700";
+import "@fontsource/big-shoulders-display/800";
 import "@fontsource/public-sans/latin-400.css";
 import "@fontsource/public-sans/latin-600.css";
 import "@fontsource/public-sans/latin-800.css";

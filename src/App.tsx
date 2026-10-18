@@ -14,7 +14,6 @@ import {
   History,
   LogIn,
   Map,
-  Mountain,
   Plus,
   Play,
   Pause,
@@ -58,6 +57,7 @@ import { getSupabaseClient, supabaseConfigured } from "./lib/supabase";
 import { createPrivateRunShare } from "./lib/runSharing";
 import { SharedRunPage } from "./components/SharedRunPage";
 import { Leaderboard } from "./components/Leaderboard";
+import { TrailPoster } from "./components/TrailPoster";
 import { finishStravaConnect, readStravaCallback } from "./lib/strava";
 
 const Garage = lazy(() => import("./components/Management").then((module) => ({ default: module.Garage })));
@@ -65,6 +65,8 @@ const ProfileSettings = lazy(() => import("./components/Management").then((modul
 const TrailManager = lazy(() => import("./components/Management").then((module) => ({ default: module.TrailManager })));
 const ImportRun = lazy(() => import("./components/Management").then((module) => ({ default: module.ImportRun })));
 const VideoLab = lazy(() => import("./components/VideoLab").then((module) => ({ default: module.VideoLab })));
+// MapLibre is large; it loads only when the analysis page shows the 3D stage.
+const Terrain3D = lazy(() => import("./components/Terrain3D").then((module) => ({ default: module.Terrain3D })));
 const pageLoading = <div className="panel page-loading" role="status">A abrir ferramentas…</div>;
 
 type Page =
@@ -532,11 +534,11 @@ export default function App() {
           {(page === "analysis" || page === "history") && (
             <>
               <h1 className="visually-hidden">{names[page]}</h1>
-              <div className="trail-toolbar">
+              <div className="trail-toolbar trail-hero">
+                {trail && trail.points.length > 1 && (
+                  <TrailPoster trail={trail} width={1600} height={560} className="trail-hero-photo" decorative />
+                )}
                 <div className="trail-identity">
-                  <span className="trail-symbol">
-                    <Mountain size={23} />
-                  </span>
                   <div>
                     <label className="trail-select">
                       <select
@@ -565,12 +567,26 @@ export default function App() {
                     </span>
                   </div>
                 </div>
-                <button
-                  className="button secondary compact"
-                  onClick={() => setPage("trails")}
-                >
-                  Gerir setores <ArrowRight size={15} />
-                </button>
+                <div className="trail-hero-actions">
+                  {page === "analysis" && run && (
+                    <button
+                      className="button primary"
+                      onClick={() => {
+                        if (progress >= 1) setProgress(0);
+                        setPlaying(!playing || progress >= 1);
+                      }}
+                    >
+                      {playing && progress < 1 ? <Pause size={16} /> : <Play size={16} />}
+                      {playing && progress < 1 ? "Pausar voo" : "Ver em 3D"}
+                    </button>
+                  )}
+                  <button
+                    className="button secondary compact"
+                    onClick={() => setPage("trails")}
+                  >
+                    Gerir setores <ArrowRight size={15} />
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -651,14 +667,27 @@ export default function App() {
                 </div>
                 <div className="analysis-grid">
                   <div className="map-column">
-                    <TrailMap
-                      trail={trail}
-                      current={current}
-                      ghost={ghost}
-                      progress={progress}
-                      sector={sector}
-                      onProgress={inspectProgress}
-                    />
+                    <Suspense fallback={<div className="terrain-stage terrain-placeholder" role="status">A abrir o mapa 3D…</div>}>
+                      <Terrain3D
+                        trail={trail}
+                        current={current}
+                        ghost={ghost}
+                        progress={progress}
+                        sector={sector}
+                        playing={playing}
+                        onProgress={inspectProgress}
+                        fallback={
+                          <TrailMap
+                            trail={trail}
+                            current={current}
+                            ghost={ghost}
+                            progress={progress}
+                            sector={sector}
+                            onProgress={inspectProgress}
+                          />
+                        }
+                      />
+                    </Suspense>
                     <div className="telemetry-stats">
                       <div>
                         <span>Distância</span>

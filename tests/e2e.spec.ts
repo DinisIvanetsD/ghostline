@@ -619,7 +619,7 @@ test("mobile analysis, replay, empty state and corrupt storage recover without r
   await slider.fill("200");
   await page.getByRole("button", { name: "Repetir run · 4×" }).click();
   await expect.poll(() => slider.inputValue()).not.toBe("200");
-  await page.getByRole("button", { name: "Pausar" }).click();
+  await page.getByRole("button", { name: "Pausar", exact: true }).click();
   const data = await demo(page);
   data.runs = [];
   data.trails = [];
@@ -636,7 +636,7 @@ test("mobile analysis, replay, empty state and corrupt storage recover without r
     localStorage.setItem("ghostline.data.v1.guest", "broken"),
   );
   await page.reload();
-  await expect(page.getByRole("status")).toContainText("possível carregar");
+  await expect(page.getByRole("status").filter({ hasText: "possível carregar" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Análise da run", exact: true }),
   ).toBeVisible();

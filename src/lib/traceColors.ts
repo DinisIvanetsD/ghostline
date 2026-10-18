@@ -8,11 +8,11 @@ export interface TraceSegment {
   color: string;
 }
 
-const SLOW = [201, 120, 42]; // ochre: time lost
-const MID = [190, 200, 225];
-const FAST = [29, 63, 145]; // cobalt
-const GAINED = [29, 63, 145]; // cobalt: time gained
-const NEUTRAL = [140, 158, 204]; // pale cobalt: on the Ghost's pace
+const SLOW = [255, 138, 107]; // coral: time lost
+const MID = [138, 144, 160];
+const FAST = [255, 190, 85]; // amber
+const GAINED = [111, 214, 160]; // mint: time gained
+const NEUTRAL = [138, 144, 160]; // grey: on the Ghost's pace
 
 const mix = (a: number[], b: number[], t: number) =>
   `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
@@ -21,7 +21,7 @@ const percentile = (values: number[], p: number) => {
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(p * (sorted.length - 1))))];
 };
 
-/** Speed colour for t in [0, 1]: slow (ochre) through pale glaze to fast (cobalt). */
+/** Speed colour for t in [0, 1]: slow (coral) through grey to fast (amber). */
 export const speedColor = (t: number) =>
   t < 0.5 ? mix(SLOW, MID, t * 2) : mix(MID, FAST, (t - 0.5) * 2);
 

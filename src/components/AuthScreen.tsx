@@ -6,6 +6,11 @@ import {
   type AuthSession,
 } from "../lib/auth";
 import { cloudRedirectUrl, cloudSession, getSupabaseClient, supabaseConfigured } from "../lib/supabase";
+import { createDemoData } from "../lib/demo";
+import { TrailPoster } from "./TrailPoster";
+
+// The sign-in screen sits over the real aerial photo of Mundial da Santa Marta.
+const AUTH_BACKDROP = createDemoData().trails[0];
 
 type Props = {
   onAuthenticated: (session: AuthSession) => void;
@@ -115,6 +120,7 @@ export function AuthScreen({ onAuthenticated, onGuest }: Props) {
 
   return (
     <main className="auth-shell">
+      <TrailPoster trail={AUTH_BACKDROP} width={1600} height={1000} className="auth-backdrop" decorative />
       <section className="auth-card" aria-labelledby="auth-title">
         <p className="wordmark auth-wordmark" aria-hidden="true">
           <svg viewBox="0 0 30 30">

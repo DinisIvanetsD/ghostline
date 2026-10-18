@@ -17,12 +17,12 @@ export interface ResultCardInput {
 
 const W = 1080;
 const H = 1350; // 4:5, the portrait size Instagram and WhatsApp keep uncropped.
-const BG = "#f6f7f9";
-const TEXT = "#1b1e24";
-const MUTED = "#5d6577";
-const ACCENT = "#1d3f91";
-const LOST = "#9a5410";
-const GAINED = "#1d3f91";
+const BG = "#0b0e13";
+const TEXT = "#e6e6e8";
+const MUTED = "#a4a9b3";
+const ACCENT = "#ffbe55";
+const LOST = "#ff8a6b";
+const GAINED = "#6fd6a0";
 
 /** Draw a shareable result card for a run and return it as a PNG. */
 export async function renderResultCard(input: ResultCardInput): Promise<Blob> {

@@ -25,6 +25,7 @@ import { loadStravaStreams, streamsToPoints, type StravaActivity } from "../lib/
 import { StravaPicker } from "./StravaPicker";
 import { RunRecorder } from "./RunRecorder";
 import { SectorPicker } from "./SectorPicker";
+import { TrailPoster } from "./TrailPoster";
 import { addGate, removeGate } from "../lib/sectorEdit";
 import { clearRecording } from "../lib/recorder";
 import { CONDITION_LABELS, CONDITIONS, DIFFICULTIES, difficultyLabel } from "../lib/labels";
@@ -801,6 +802,7 @@ export function TrailManager({
       <div className="trail-list">
         {data.trails.map((t) => (
           <div className="trail-row" key={t.id}>
+            {t.points.length > 1 && <TrailPoster trail={t} width={640} height={360} className="trail-row-poster" />}
             <div>
               <strong>{t.name}</strong>
               <span className="muted">

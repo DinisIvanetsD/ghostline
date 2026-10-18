@@ -8,20 +8,20 @@ related_targets: ["src/styles.css"]
 # GHOSTLINE app shell (Operate)
 
 Scope: the whole rider app (analysis, history, video, trails, garage, import, auth). Visitor mode: Operate.
-Audience: downhill riders in Braga, mostly on a phone on the hill between runs, in daylight, often with gloves.
-Job: read the run time, the gap to the Ghost and the worst sector at a glance; then import, compare, edit sectors.
-Constraints: everything may change visually (user confirmed); standard web controls; Portuguese copy, neutral and technical.
+Audience: downhill riders in Braga; phone on the hill and desktop at home.
+Job: read the run time, the gap to the Ghost and the worst sector; relive the run in 3D; browse trails and runs.
+Constraints: user rejected the flat azulejo look ("parece matemática") and asked for 3D and motion; Portuguese copy, neutral and technical; standard web controls.
 
 ## Direction contract
 
-THESIS: GHOSTLINE painted like the azulejo panels of Bom Jesus and Sameiro: cobalt fields on white glaze, sector data laid as tiles. It refuses the near-black dashboard with one neon accent.
+THESIS: GHOSTLINE as a streaming catalog of your own descents: real aerial photos of each trail are the posters, the focused poster grows while the wall dims, and opening a run plays it as a 3D flight over the real relief. It refuses flat diagrams and the dark dashboard with a neon accent.
 
-OWN-WORLD: glaze white ground (#f6f7f9), cobalt (#1d3f91) as the committed shell colour (rail, mobile header, active state, primary action), pale cobalt rules (#dfe5f2), ochre for time lost, cobalt for time gained, ink (#1b1e24). Flat colour only: no gradients, no shadows, square tile corners (0–2px), 2px cobalt frames on data. Public Sans for everything, tabular figures for times.
+OWN-WORLD: blue-black ground #0b0e13, surfaces #151922 and #1f2430, text #e6e6e8 / #a4a9b3, one warm accent #ffbe55 reserved for focus, the current run and primary actions; coral #ff8a6b for time lost, mint #6fd6a0 for time gained. Colour otherwise comes only from imagery (DGT 2018 orthophotos, open data). Big Shoulders Display for titles in caps, Public Sans for everything else, tabular figures. 6px corners, hairline seams, no glow.
 
-STORY: on the hill, in sun, the rider sees time, gap and worst sector without zooming; taps a sector tile to find it on the map; at home compares runs drawn at one scale.
+STORY: the rider lands on a hero of the trail photo with the time; scrolls into the 3D flight with the ghost; browses trails and runs as poster rails.
 
-FIRST VIEWPORT: phone: cobalt header with wordmark and nav row; trail select; run and reference selects; map framed in cobalt with the trace coloured cobalt (gain) and ochre (loss); time panel with large cobalt time and delta; sector tiles grid. Desktop: cobalt left rail, map left, time and tiles right.
+FIRST VIEWPORT: shell rail (desktop) or top bar with nav (phone); hero band: trail photo dimmed, trail title in large condensed caps, run time and gap; below it the 3D terrain stage with the coloured trace, rider and ghost; sector tiles beside (desktop) or under (phone).
 
-FORM: Azulejo de Braga, candidate 7 of 7 on the ordered list, seed 51e2165b. Signature move: sector tiles, each sector a square tile filled cobalt when gained and banded ochre when lost, matching the map trace.
+FORM: Streaming catalog wall (challenger pop-culture-shelf-streaming-title-card-wall), chosen on the bolder re-roll, seed 51e2165b. Signature moves: poster rails with focus growth and dimming; 3D flight over real relief.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

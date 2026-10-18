@@ -81,7 +81,7 @@ export function TrailMap({
       { color: "#8a93a6", weight: 6, opacity: 0.7, dashArray: "5 9" },
     ).addTo(group);
     if (mode === "plain")
-      L.polyline(coords, { color: "#1d3f91", weight: 4, opacity: 1 }).addTo(
+      L.polyline(coords, { color: "#ffbe55", weight: 4, opacity: 1 }).addTo(
         group,
       );
     else {
@@ -103,7 +103,7 @@ export function TrailMap({
         current.samples
           .filter((p) => p.fraction >= start && p.fraction <= end)
           .map((p) => [p.lat, p.lon] as L.LatLngTuple),
-        { color: "#1d3f91", weight: 12, opacity: 0.25 },
+        { color: "#ffbe55", weight: 12, opacity: 0.25 },
       ).addTo(group);
     }
     boundaries.forEach((f, i) => {
@@ -133,7 +133,7 @@ export function TrailMap({
       radius: 7,
       color: "#ffffff",
       weight: 3,
-      fillColor: "#1d3f91",
+      fillColor: "#ffbe55",
       fillOpacity: 1,
     }).addTo(group);
   }, [trail, current, ghost, sector, mode]);
