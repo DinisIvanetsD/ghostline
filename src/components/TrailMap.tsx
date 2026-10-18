@@ -2,6 +2,7 @@ import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { LocateFixed, Mountain, Layers } from "lucide-react";
 import type { Trail, Telemetry } from "../types";
+import { DGT_WMS, IMAGERY_ATTRIBUTION } from "../lib/imagery";
 import { routePositionAt } from "../lib/analysis";
 import { traceSegments, type TraceMode } from "../lib/traceColors";
 import "leaflet/dist/leaflet.css";
@@ -66,8 +67,13 @@ export function TrailMap({
     tiles.on("tileerror", () => setTileError(true));
     tiles.addTo(map.current);
     tiles.bringToBack();
+    // The real ground: DGT 2018 orthophotos over the street map (mainland Portugal only).
+    const photo = L.tileLayer
+      .wms(DGT_WMS, { layers: "Ortos2018-RGB", format: "image/png", maxZoom: 19, attribution: IMAGERY_ATTRIBUTION })
+      .addTo(map.current);
     return () => {
       tiles.remove();
+      photo.remove();
     };
   }, [terrain]);
   useEffect(() => {

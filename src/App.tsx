@@ -133,6 +133,8 @@ export default function App() {
     [historyQuery, setHistoryQuery] = useState(""),
     [historyConditions, setHistoryConditions] = useState<RunConditions | "">("");
   const [playing, setPlaying] = useState(false);
+  // 2D first: the sector gates read at a glance; 3D is the rider's choice.
+  const [mapView, setMapView] = useState<"2d" | "3d">("2d");
   const [sharedToken, setSharedToken] = useState(readSharedRunToken);
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -573,6 +575,7 @@ export default function App() {
                       className="button primary"
                       onClick={() => {
                         if (progress >= 1) setProgress(0);
+                        setMapView("3d");
                         setPlaying(!playing || progress >= 1);
                       }}
                     >
@@ -657,6 +660,24 @@ export default function App() {
                       ))}
                     </select>
                   </label>
+                  <div className="segmented map-view-switch" role="group" aria-label="Vista do mapa">
+                    {(
+                      [
+                        ["2d", "Mapa 2D"],
+                        ["3d", "Relevo 3D"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={mapView === value ? "active" : ""}
+                        aria-pressed={mapView === value}
+                        onClick={() => setMapView(value)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <span className="session-date">
                     {new Date(run.date).toLocaleDateString("pt-PT", {
                       day: "numeric",
@@ -667,27 +688,38 @@ export default function App() {
                 </div>
                 <div className="analysis-grid">
                   <div className="map-column">
-                    <Suspense fallback={<div className="terrain-stage terrain-placeholder" role="status">A abrir o mapa 3D…</div>}>
-                      <Terrain3D
+                    {mapView === "2d" ? (
+                      <TrailMap
                         trail={trail}
                         current={current}
                         ghost={ghost}
                         progress={progress}
                         sector={sector}
-                        playing={playing}
                         onProgress={inspectProgress}
-                        fallback={
-                          <TrailMap
-                            trail={trail}
-                            current={current}
-                            ghost={ghost}
-                            progress={progress}
-                            sector={sector}
-                            onProgress={inspectProgress}
-                          />
-                        }
                       />
-                    </Suspense>
+                    ) : (
+                      <Suspense fallback={<div className="terrain-stage terrain-placeholder" role="status">A abrir o mapa 3D…</div>}>
+                        <Terrain3D
+                          trail={trail}
+                          current={current}
+                          ghost={ghost}
+                          progress={progress}
+                          sector={sector}
+                          playing={playing}
+                          onProgress={inspectProgress}
+                          fallback={
+                            <TrailMap
+                              trail={trail}
+                              current={current}
+                              ghost={ghost}
+                              progress={progress}
+                              sector={sector}
+                              onProgress={inspectProgress}
+                            />
+                          }
+                        />
+                      </Suspense>
+                    )}
                     <div className="telemetry-stats">
                       <div>
                         <span>Distância</span>

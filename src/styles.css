@@ -4174,7 +4174,7 @@ h2, h3 { text-transform: uppercase; }
 
 .panel, .theory-panel, .timing-panel, .telemetry, .progression, .history-panel, .best-sectors, .progression-snapshot, .leaderboard-panel, .auth-card, .map-panel { background: #151922; border: 1px solid #1f2430; border-radius: 8px; }
 
-.trail-hero { position: relative; isolation: isolate; overflow: hidden; min-height: 300px; align-items: flex-end; margin: 18px 0 8px; padding: 28px; border-radius: 10px; background: #151922; }
+.trail-hero { flex-wrap: wrap; gap: 16px; position: relative; isolation: isolate; overflow: hidden; min-height: 300px; align-items: flex-end; margin: 18px 0 8px; padding: 28px; border-radius: 10px; background: #151922; }
 .trail-hero-photo { position: absolute; inset: 0; z-index: -2; }
 .trail-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, #0b0e13 2%, rgba(11,14,19,.55) 45%, rgba(11,14,19,.15) 100%), linear-gradient(90deg, rgba(11,14,19,.75) 0%, rgba(11,14,19,0) 60%); }
 .trail-hero .trail-select select { font-size: 64px; line-height: 1; height: auto; max-width: min(760px, 70vw); text-transform: uppercase; color: #fff; }
@@ -4249,4 +4249,18 @@ h2, h3 { text-transform: uppercase; }
 .trail-poster.auth-backdrop {
   position: absolute;
   inset: 0;
+}
+
+/* The map and its stats read as one card; the view switch sits with the run pickers. */
+.map-view-switch { align-self: flex-end; margin-left: auto; }
+.map-view-switch + .session-date { margin-left: 0; }
+.map-column > .map-panel, .map-column > .terrain-stage { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.map-column > .telemetry-stats { border: 1px solid #1f2430; border-top-color: #2a3040; border-radius: 0 0 8px 8px; background: #151922; }
+@media (min-width: 701px) { .sector-row { aspect-ratio: auto; min-height: 96px; } }
+.field textarea, textarea { padding: 10px 12px; }
+@media (max-width: 700px) {
+  .map-view-switch { align-self: stretch; margin-left: 0; }
+  .map-view-switch button { flex: 1; }
+  .map-panel { min-height: 320px; }
+  .map-panel .trail-map { height: 320px; }
 }

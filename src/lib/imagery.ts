@@ -1,7 +1,7 @@
 import type { Point } from "../types";
 
 // DGT 2018 orthophotos for mainland Portugal (open data, WMS with CORS).
-const DGT_WMS = "https://cartografia.dgterritorio.gov.pt/ortos2018/service";
+export const DGT_WMS = "https://cartografia.dgterritorio.gov.pt/ortos2018/service";
 export const IMAGERY_ATTRIBUTION = "Ortofotos 2018 © DGT";
 // Mapzen/AWS terrain tiles, terrarium-encoded elevation (public dataset).
 export const TERRAIN_TILES = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";

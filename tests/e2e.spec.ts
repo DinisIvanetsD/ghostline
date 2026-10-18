@@ -15,7 +15,7 @@ async function demo(page: Page) {
 }
 async function blockTiles(page: Page) {
   await page.route(
-    "**/{tile.openstreetmap.org,basemaps.cartocdn.com}/**",
+    "**/{tile.openstreetmap.org,basemaps.cartocdn.com,cartografia.dgterritorio.gov.pt}/**",
     (route) => route.abort(),
   );
 }
