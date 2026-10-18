@@ -38,10 +38,10 @@ export async function createPrivateRunShare(
   ghost: Run | null,
 ): Promise<string> {
   const client = await getSupabaseClient();
-  if (!client) throw new Error("Private run links need a configured cloud account.");
+  if (!client) throw new Error("Os links privados precisam de uma conta na nuvem configurada.");
   const { data: auth, error: authError } = await client.auth.getSession();
   if (authError) throw authError;
-  if (!auth.session) throw new Error("Sign in again before sharing a run.");
+  if (!auth.session) throw new Error("Entra outra vez antes de partilhar uma run.");
   const token = createShareToken();
   const expiresAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
   const snapshot: SharedRunSnapshot = {

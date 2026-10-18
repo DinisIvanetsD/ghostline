@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing:border-box; margin:0; }
+  body { width:390px; height:844px; overflow:hidden; background:#f2f2f4; color:#1c1c1e; font-family:-apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background:#fff; padding:52px 16px 14px; border-bottom:1px solid #e4e4e8; }
+  header b { font-size:13px; letter-spacing:.06em; color:#fc5200; }
+  header h1 { font-size:22px; margin-top:8px; }
+  header p { font-size:13px; color:#6b6b72; margin-top:2px; }
+  .card { background:#fff; margin:12px; border-radius:12px; padding:14px; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); }
+  .stats span { font-size:11px; color:#6b6b72; display:block; }
+  .stats b { font-size:22px; }
+  .up { color:#d63c2f; font-size:14px; }
+  .map { height:200px; border-radius:12px; background:#e7ece6; position:relative; overflow:hidden; }
+  .map svg { position:absolute; inset:0; }
+  .row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; font-size:14px; }
+  .row:last-child { border-bottom:0; }
+  .lost { color:#d63c2f; } .won { color:#1f8a4c; }
+  nav { position:absolute; bottom:0; left:0; right:0; height:76px; background:#fff; border-top:1px solid #e4e4e8; display:flex; justify-content:space-around; align-items:center; font-size:11px; color:#6b6b72; }
+  nav .on { color:#fc5200; font-weight:600; }
+</style>
+</head>
+<body>
+  <header><b>GHOSTLINE</b><h1>Mundial da Santa Marta</h1><p>Run 07 · A fundo · 13 set 2026</p></header>
+  <div class="card stats"><div><span>Tempo</span><b>3:05.00</b></div><div><span>vs Ghost</span><b class="up">+4.00 s</b></div><div><span>Vel. média</span><b>22,1</b></div></div>
+  <div class="card"><div class="map"><svg viewBox="0 0 342 200"><path d="M150 185 L160 160 L175 148 L190 128 L215 112 L235 94 L232 76 L210 64 L190 56 L170 48 L160 32 L175 16" fill="none" stroke="#fc5200" stroke-width="4" stroke-linecap="round"/></svg></div></div>
+  <div class="card">
+    <div class="row"><span>S1 Arranque</span><span>0:41.19 <b class="lost">+0.99</b></span></div>
+    <div class="row"><span>S2 Zona íngreme</span><span>1:13.80 <b class="won">−0.98</b></span></div>
+    <div class="row"><span>S3 Plano a pedalar</span><span>0:31.61 <b class="lost">+1.96</b></span></div>
+  </div>
+  <nav><span class="on">Análise</span><span>Histórico</span><span>Vídeo</span><span>Pistas</span><span>Garagem</span></nav>
+</body>
+</html>

@@ -1,15 +1,24 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowRight, Ghost, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
 import {
   loginAccount,
   registerAccount,
   type AuthSession,
 } from "../lib/auth";
 import { cloudRedirectUrl, cloudSession, getSupabaseClient, supabaseConfigured } from "../lib/supabase";
+import { createDemoData } from "../lib/demo";
+import { TrailPoster } from "./TrailPoster";
 
-type Props = { onAuthenticated: (session: AuthSession) => void };
+// The sign-in screen sits over the real aerial photo of Mundial da Santa Marta.
+const AUTH_BACKDROP = createDemoData().trails[0];
 
-export function AuthScreen({ onAuthenticated }: Props) {
+type Props = {
+  onAuthenticated: (session: AuthSession) => void;
+  /** Browse the demo workspace without an account. */
+  onGuest?: () => void;
+};
+
+export function AuthScreen({ onAuthenticated, onGuest }: Props) {
   const [mode, setMode] = useState<"login" | "register" | "reset-request" | "reset-password">(() =>
     typeof window !== "undefined" && /(?:type=recovery|recovery_token)/i.test(`${window.location.hash}${window.location.search}`)
       ? "reset-password"
@@ -22,6 +31,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const cloudAuth = supabaseConfigured;
 
   useEffect(() => {
@@ -45,7 +55,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
       });
       unsubscribe = () => subscription.unsubscribe();
     }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : "Cloud account could not be opened.");
+      if (active) setError(reason instanceof Error ? reason.message : "Não foi possível abrir a conta na nuvem.");
     });
     return () => {
       active = false;
@@ -58,24 +68,24 @@ export function AuthScreen({ onAuthenticated }: Props) {
     setError("");
     setNotice("");
     if ((mode === "register" || mode === "reset-password") && password !== confirm) {
-      setError("Passwords do not match.");
+      setError("As palavras-passe não coincidem.");
       return;
     }
     setBusy(true);
     try {
       if (cloudAuth) {
         const client = await getSupabaseClient();
-        if (!client) throw new Error("Cloud account is not configured.");
+        if (!client) throw new Error("A conta na nuvem não está configurada.");
         if (mode === "reset-request") {
           const { error: resetError } = await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: cloudRedirectUrl() });
           if (resetError) throw resetError;
-          setNotice("Check your email for a secure password reset link.");
+          setNotice("Vê o teu email: enviámos um link seguro para repor a palavra-passe.");
           return;
         }
         if (mode === "reset-password") {
           const { error: updateError } = await client.auth.updateUser({ password });
           if (updateError) throw updateError;
-          setNotice("Password updated. Opening your rider workspace…");
+          setNotice("Palavra-passe atualizada. A abrir o teu espaço…");
           const { data } = await client.auth.getSession();
           if (data.session) onAuthenticated(cloudSession(data.session));
           return;
@@ -88,7 +98,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
           });
           if (signupError) throw signupError;
           if (data.session) onAuthenticated(cloudSession(data.session));
-          else setNotice("Check your email to confirm your account, then sign in here.");
+          else setNotice("Confirma a conta no link que enviámos por email e depois entra aqui.");
           return;
         }
         const { data, error: loginError } = await client.auth.signInWithPassword({ email: email.trim(), password });
@@ -102,7 +112,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
           : await loginAccount({ email, password });
       onAuthenticated(session);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not sign in.");
+      setError(reason instanceof Error ? reason.message : "Não foi possível entrar.");
     } finally {
       setBusy(false);
     }
@@ -110,18 +120,19 @@ export function AuthScreen({ onAuthenticated }: Props) {
 
   return (
     <main className="auth-shell">
+      <TrailPoster trail={AUTH_BACKDROP} width={1600} height={1000} className="auth-backdrop" decorative />
       <section className="auth-card" aria-labelledby="auth-title">
-        <div className="auth-mark" aria-hidden="true">
-          <Ghost size={27} />
-        </div>
-        <p className="auth-kicker">GHOSTLINE.</p>
-        <h1 id="auth-title">
-          {mode === "register" ? "Create your rider account." : mode === "login" ? "Welcome back, rider." : mode === "reset-request" ? "Recover your account." : "Set a new password."}
-        </h1>
-        <p className="auth-intro">
-          Your runs, Ghost and bike setup in one private workspace.
+        <p className="wordmark auth-wordmark" aria-hidden="true">
+          <svg viewBox="0 0 30 30">
+            <path d="M5 24V11L15 4l10 7v13l-5-4-5 4-5-4z" />
+            <path d="M11 12v4m8-4v4" />
+          </svg>
+          GHOSTLINE
         </p>
-        {mode === "login" || mode === "register" ? <div className="auth-tabs" role="tablist" aria-label="Account access">
+        <h1 id="auth-title">
+          {mode === "register" ? "Criar conta" : mode === "login" ? "Entrar" : mode === "reset-request" ? "Recuperar conta" : "Nova palavra-passe"}
+        </h1>
+        {mode === "login" || mode === "register" ? <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
           <button
             className={mode === "register" ? "active" : ""}
             role="tab"
@@ -131,7 +142,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
               setError(""); setNotice("");
             }}
           >
-            Create account
+            Criar conta
           </button>
           <button
             className={mode === "login" ? "active" : ""}
@@ -142,20 +153,20 @@ export function AuthScreen({ onAuthenticated }: Props) {
               setError(""); setNotice("");
             }}
           >
-            Sign in
+            Entrar
           </button>
-        </div> : <button className="text-button auth-back" type="button" onClick={() => { setMode("login"); setError(""); setNotice(""); }}><ArrowLeft size={14} /> Back to sign in</button>}
+        </div> : <button className="text-button auth-back" type="button" onClick={() => { setMode("login"); setError(""); setNotice(""); }}><ArrowLeft size={14} /> Voltar a entrar</button>}
         <form className="auth-form" onSubmit={submit}>
           {mode === "register" && (
             <label className="field">
-              <span>Name</span>
+              <span>Nome</span>
               <div className="auth-input">
                 <UserRound size={16} />
                 <input
                   autoComplete="name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="Dinis Ivanets"
+                  placeholder="O teu nome"
                   required
                 />
               </div>
@@ -176,30 +187,40 @@ export function AuthScreen({ onAuthenticated }: Props) {
             </div>
           </label>}
           {mode !== "reset-request" && <label className="field">
-            <span>Password</span>
+            <span>Palavra-passe</span>
             <div className="auth-input">
               <LockKeyhole size={16} />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete={mode === "register" || mode === "reset-password" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="8 characters minimum"
+                placeholder="Mínimo 8 caracteres"
+                minLength={mode === "register" || mode === "reset-password" ? 8 : undefined}
                 required
               />
+              <button
+                type="button"
+                className="auth-reveal"
+                aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </label>}
           {(mode === "register" || mode === "reset-password") && (
             <label className="field">
-              <span>Confirm password</span>
+              <span>Confirmar palavra-passe</span>
               <div className="auth-input">
                 <LockKeyhole size={16} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(event) => setConfirm(event.target.value)}
-                  placeholder="Repeat your password"
+                  placeholder="Repete a palavra-passe"
                   required
                 />
               </div>
@@ -207,14 +228,19 @@ export function AuthScreen({ onAuthenticated }: Props) {
           )}
           {error && <p className="auth-error" role="alert">{error}</p>}
           {notice && <p className="auth-notice" role="status">{notice}</p>}
-          {mode === "login" && cloudAuth && <button className="text-button auth-forgot" type="button" onClick={() => { setMode("reset-request"); setError(""); setNotice(""); }}>Forgot password?</button>}
+          {mode === "login" && cloudAuth && <button className="text-button auth-forgot" type="button" onClick={() => { setMode("reset-request"); setError(""); setNotice(""); }}>Esqueceste a palavra-passe?</button>}
           <button className="button primary auth-submit" disabled={busy} type="submit">
-            {busy ? "Opening workspace…" : mode === "register" ? "Create account" : mode === "login" ? "Sign in" : mode === "reset-request" ? "Send reset link" : "Update password"}
+            {busy ? "A abrir…" : mode === "register" ? "Criar conta" : mode === "login" ? "Entrar" : mode === "reset-request" ? "Enviar link" : "Atualizar palavra-passe"}
             <ArrowRight size={16} />
           </button>
         </form>
+        {onGuest && (mode === "login" || mode === "register") && (
+          <button className="text-button auth-guest" type="button" onClick={onGuest}>
+            Ver a demonstração sem conta <ArrowRight size={14} />
+          </button>
+        )}
         <p className="auth-footnote">
-          {cloudAuth ? "Secure account, password recovery and multi-device workspace powered by Supabase." : "This preview stores accounts and rides on this device. Configure Supabase to enable real accounts, password recovery and cloud sync."}
+          {cloudAuth ? "Conta sincronizada entre dispositivos." : "Conta e runs guardadas só neste dispositivo."}
         </p>
       </section>
     </main>

@@ -33,7 +33,7 @@ describe("storage validation", () => {
     localStorage.setItem("ghostline.data.v1", JSON.stringify({ version: 2 }));
     const loaded = loadData();
     expect(loaded.demo).toBe(true);
-    expect(readStorageWarning()).toMatch(/could not be loaded/);
+    expect(readStorageWarning()).toMatch(/possível carregar/);
     expect(localStorage.getItem("ghostline.data.v1")).toContain("version");
   });
   it("upgrades the original Sintra demo to the Braga demo", () => {
@@ -125,9 +125,66 @@ describe("storage validation", () => {
 
     const loaded = loadData();
     const loadedTrail = loaded.trails.find((trail) => trail.id === "secret-spot")!;
-    expect(loadedTrail.points).toHaveLength(271);
+    expect(loadedTrail.points).toEqual(createDemoData().trails.find((t) => t.id === "secret-spot")!.points);
     expect(loadedTrail.points.at(-1)).toMatchObject(SECRET_SPOT_FINISH);
     expect(loadedTrail.points.at(-1)!.lat).toBe(41.5628056);
+  });
+  it("moves synthetic demo trails onto the real routes and keeps imported ones", () => {
+    const previous = createDemoData();
+    const straight = (from: { lat: number; lon: number }, to: { lat: number; lon: number }) =>
+      Array.from({ length: 50 }, (_, i) => ({
+        lat: from.lat + ((to.lat - from.lat) * i) / 49,
+        lon: from.lon + ((to.lon - from.lon) * i) / 49,
+        ele: 500 - i,
+        time: Date.parse("2026-09-01T09:00:00Z") + i * 1000,
+      }));
+    const secret = previous.trails.find((trail) => trail.id === "secret-spot")!;
+    secret.points = straight(SECRET_SPOT_STARTS[0], SECRET_SPOT_FINISH);
+    secret.boundaries = [0.25, 0.5, 0.75];
+    secret.sectorNames = ["Top Woods", "Technical", "Flow", "Finish"];
+    const mundial = previous.trails.find((trail) => trail.id === "mundial")!;
+    mundial.points = straight({ lat: 41.51818, lon: -8.39571 }, { lat: 41.50718, lon: -8.38071 });
+    delete mundial.finishPoint;
+    secret.difficulty = "Black";
+    const freeRide = previous.trails.find((trail) => trail.id === "free-ride")!;
+    const importedRoute = straight({ lat: 41.5152, lon: -8.39599 }, { lat: 41.52397, lon: -8.40652 });
+    freeRide.points = importedRoute;
+    previous.runs = previous.runs.map((run) =>
+      run.trailId === "free-ride" ? { ...run, points: importedRoute, synthetic: false } : run,
+    );
+    previous.demo = false;
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+
+    const fresh = createDemoData();
+    const loaded = loadData();
+    const loadedSecret = loaded.trails.find((trail) => trail.id === "secret-spot")!;
+    expect(loadedSecret.points).toEqual(fresh.trails.find((t) => t.id === "secret-spot")!.points);
+    expect(loadedSecret.sectorNames).toEqual(["Secret Spot 1", "Secret Spot 2", "Secret Spot 3"]);
+    expect(loadedSecret.difficulty).toBe("Blue");
+    expect(loadedSecret.leadInName).toBe("Bonus Spot");
+    const loadedMundial = loaded.trails.find((trail) => trail.id === "mundial")!;
+    expect(loadedMundial.finishPoint).toEqual(fresh.trails[0].finishPoint);
+    expect(loaded.trails.find((trail) => trail.id === "free-ride")!.points).toEqual(importedRoute);
+  });
+  it("keeps Secret Spot sectors the rider renamed on an old synthetic route", () => {
+    const previous = createDemoData();
+    const secret = previous.trails.find((trail) => trail.id === "secret-spot")!;
+    secret.points = secret.points.slice(0, 40);
+    secret.boundaries = [0.4];
+    secret.sectorNames = ["Topo", "Fundo"];
+    previous.demo = false;
+    localStorage.setItem("ghostline.data.v1", JSON.stringify(previous));
+    const loaded = loadData().trails.find((trail) => trail.id === "secret-spot")!;
+    expect(loaded.sectorNames).toEqual(["Topo", "Fundo"]);
+    expect(loaded.boundaries).toEqual([0.4]);
+  });
+  it("keeps known run surfaces and drops unknown ones", () => {
+    const data = createDemoData();
+    data.runs[0].conditions = "wet";
+    (data.runs[1] as unknown as { conditions: string }).conditions = "snow";
+    const parsed = parseBackup(JSON.stringify(data));
+    expect(parsed.runs[0].conditions).toBe("wet");
+    expect(parsed.runs[1].conditions).toBeUndefined();
   });
   it("validates backups and rejects duplicate IDs", () => {
     const data = createDemoData();

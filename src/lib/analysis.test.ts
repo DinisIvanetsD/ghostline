@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { Point, Run, Trail } from "../types";
 import {
   analyze,
+  courseDuration,
+  ghostGap,
+  splitLeadIn,
   formatDelta,
   formatTime,
   personalBest,
@@ -73,7 +76,7 @@ describe("analysis", () => {
         { ...points[0], time: 0 },
         { ...points[0], time: 1 },
       ]),
-    ).toThrow(/distance/);
+    ).toThrow(/distância/);
   });
   it("handles large point arrays without spread argument limits", () => {
     const many = Array.from({ length: 30_000 }, (_, i) => ({
@@ -154,10 +157,10 @@ describe("analysis", () => {
   });
 });
 
-it("demo has eleven dense realistic runs across Braga trails and a theoretical best assembled from different runs", async () => {
+it("demo has twelve dense realistic runs across Braga trails and a theoretical best assembled from different runs", async () => {
   const { createDemoData } = await import("./demo");
   const data = createDemoData();
-  expect(data.runs).toHaveLength(11);
+  expect(data.runs).toHaveLength(12);
   const same = data.runs.filter((r) => r.trailId === data.trails[0].id);
   expect(same).toHaveLength(7);
   for (const run of data.runs) {
@@ -177,4 +180,31 @@ it("demo has eleven dense realistic runs across Braga trails and a theoretical b
     expect(
       sectorTimes(run, data.trails[0]).reduce((a, b) => a + b, 0),
     ).toBeCloseTo(analyze(run.points).duration, 8);
+});
+
+it("times a Bonus Spot drop-in as sector 0 and keeps the course time comparable", async () => {
+  const { createDemoData } = await import("./demo");
+  const data = createDemoData();
+  const secret = data.trails.find((t) => t.id === "secret-spot")!;
+  const bonusRun = data.runs.find((r) => r.id === "run-12")!;
+  const { leadIn, course } = splitLeadIn(bonusRun, secret);
+  expect(leadIn).toBeGreaterThan(50);
+  expect(leadIn).toBeLessThan(62);
+  expect(courseDuration(bonusRun, secret)).toBeCloseTo(analyze(course.points).duration, 6);
+  const splits = sectorTimes(bonusRun, secret);
+  expect(splits).toHaveLength(3);
+  expect(splits.reduce((a, b) => a + b, 0)).toBeCloseTo(courseDuration(bonusRun, secret), 6);
+  // A run from the main gate has no lead-in.
+  expect(splitLeadIn(data.runs.find((r) => r.id === "run-10")!, secret).leadIn).toBeNull();
+});
+
+it("ghost gap matches timeAt at every sample", async () => {
+  const { createDemoData } = await import("./demo");
+  const data = createDemoData();
+  const current = analyze(data.runs[0].points);
+  const ghost = analyze(data.runs[4].points);
+  const gaps = ghostGap(current, ghost);
+  expect(gaps).toHaveLength(current.samples.length);
+  current.samples.forEach((s, i) => expect(gaps[i]).toBeCloseTo(s.time - timeAt(ghost, s.fraction), 6));
+  expect(gaps.at(-1)).toBeCloseTo(current.duration - ghost.duration, 6);
 });

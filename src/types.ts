@@ -50,9 +50,12 @@ export interface Trail {
   sectorNames: string[];
   /** Optional alternate start gates for trails with more than one access point. */
   startPoints?: Array<Pick<Point, "lat" | "lon">>;
+  /** Name of the optional section ridden from an alternate start, timed as sector 0. */
+  leadInName?: string;
   /** Optional physical finish gate used to trim GPS captures after the run. */
   finishPoint?: Pick<Point, "lat" | "lon">;
 }
+export type RunConditions = "dry" | "damp" | "wet" | "mud";
 export interface Run {
   id: string;
   trailId: string;
@@ -63,6 +66,8 @@ export interface Run {
   notes: string;
   /** Bike settings captured at import time so historical comparisons stay honest. */
   bikeSetupSnapshot?: BikeSetupSnapshot;
+  /** Trail surface on the day, so dry and wet runs are compared fairly. */
+  conditions?: RunConditions;
   synthetic?: boolean;
 }
 export interface AppData {

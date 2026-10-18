@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Check,
-  Clapperboard,
   Download,
   Film,
   Gauge,
@@ -10,12 +9,10 @@ import {
   Pause,
   Play,
   Scissors,
-  SlidersHorizontal,
   Sparkles,
   Target,
   Timer,
   Upload,
-  Zap,
 } from "lucide-react";
 import type { AppData } from "../types";
 import {
@@ -24,9 +21,11 @@ import {
   formatTime,
   personalBest,
   sectorTimes,
+  splitLeadIn,
   theoreticalBest,
   timeAt,
 } from "../lib/analysis";
+import { pickHighlights } from "../lib/highlights";
 import {
   detectStops,
   runTimeForVideo,
@@ -107,24 +106,24 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 function rideWindowLabel(window: RideWindow | null): string {
-  if (!window) return "No ride window scanned";
+  if (!window) return "Janela da run ainda por analisar";
   return `${clock(window.startTime)} → ${clock(window.endTime)}`;
 }
 
 const eventLabels: Record<RidingEventType, string> = {
-  braking: "Braking",
-  acceleration: "Acceleration",
-  jump: "Jump / drop",
-  pause: "Pause",
-  corner: "Corner signal",
+  braking: "Travagem",
+  acceleration: "Aceleração",
+  jump: "Salto / drop",
+  pause: "Pausa",
+  corner: "Curva",
 };
 
 function eventDetail(event: RidingEvent): string {
-  if (event.type === "braking") return `${Math.abs(event.speedChange).toFixed(0)} km/h drop`;
-  if (event.type === "acceleration") return `${Math.abs(event.speedChange).toFixed(0)} km/h gain`;
-  if (event.type === "jump") return `${Math.abs(event.elevationChange).toFixed(1)} m drop`;
-  if (event.type === "corner") return `${Math.round(event.turnAngle ?? 0)}° GPS direction change`;
-  return `${(event.endTime - event.startTime).toFixed(1)}s stopped`;
+  if (event.type === "braking") return `−${Math.abs(event.speedChange).toFixed(0)} km/h`;
+  if (event.type === "acceleration") return `+${Math.abs(event.speedChange).toFixed(0)} km/h`;
+  if (event.type === "jump") return `${Math.abs(event.elevationChange).toFixed(1)} m de queda`;
+  if (event.type === "corner") return `${Math.round(event.turnAngle ?? 0)}° de mudança de direção no GPS`;
+  return `${(event.endTime - event.startTime).toFixed(1)}s parado`;
 }
 
 export function VideoLab({ data, userId, cloudUserId }: Props) {
@@ -179,7 +178,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     return suggestion;
   }, [run, videoCaptureDate, videoDuration, current]);
   const pb = useMemo(
-    () => personalBest(data.runs, trail?.id ?? ""),
+    () => personalBest(data.runs, trail?.id ?? "", trail),
     [data.runs, trail],
   );
   const ghost = useMemo(() => (pb ? analyze(pb.points) : current), [pb, current]);
@@ -212,6 +211,19 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     [ridingEvents],
   );
   const runProgressTime = current ? timeAt(current, progress) : 0;
+  const reelCuts = useMemo(
+    () =>
+      videoDuration
+        ? pickHighlights(
+            windows,
+            splits,
+            ghostSplits,
+            windows.map((_, index) => theory?.sectors[index]?.runId === run?.id),
+            { videoDuration },
+          )
+        : [],
+    [windows, splits, ghostSplits, theory, run, videoDuration],
+  );
 
   useEffect(() => {
     return () => {
@@ -266,8 +278,8 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     if (!cloudUserId || !cloudPath) return;
     const timeout = window.setTimeout(() => {
       void saveCloudVideoProject(cloudUserId, run.id, project, cloudPath)
-        .then(() => setCloudVideoStatus("Video and sync markers are saved to your private account."))
-        .catch((error: unknown) => setCloudVideoStatus(error instanceof Error ? `Cloud project save failed: ${error.message}` : "Cloud project save failed."));
+        .then(() => setCloudVideoStatus("O vídeo e os marcadores estão guardados na tua conta privada."))
+        .catch((error: unknown) => setCloudVideoStatus(error instanceof Error ? `Falhou a gravação na nuvem: ${error.message}` : "Falhou a gravação na nuvem."));
     }, 650);
     return () => window.clearTimeout(timeout);
   }, [run?.id, projectReady, userId, cloudUserId, videoName, offsetSeconds, previewRate, skipStops, stopAnalysis, trim, anchors, cloudPath]);
@@ -277,7 +289,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     hydratedProjectRun.current = run.id;
     setProjectReady(false);
     setCloudPath("");
-    setCloudVideoStatus(cloudUserId ? "Checking private video library…" : "Original clips stay on this device.");
+    setCloudVideoStatus(cloudUserId ? "A verificar a biblioteca privada de vídeos…" : "Os vídeos originais ficam neste dispositivo.");
     const localProject = loadVideoProject(run.id, userId);
     let active = true;
     const restore = async () => {
@@ -291,7 +303,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
             remotePath = remote.storagePath;
           }
         } catch (error) {
-          if (active) setCloudVideoStatus(error instanceof Error ? `Cloud video library unavailable: ${error.message}` : "Cloud video library unavailable.");
+          if (active) setCloudVideoStatus(error instanceof Error ? `Biblioteca de vídeos indisponível: ${error.message}` : "Biblioteca de vídeos indisponível.");
         }
       }
       if (!active) return;
@@ -310,12 +322,12 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           const url = await signedRideVideoUrl(cloudUserId, remotePath);
           if (!active) return;
           setVideoUrl(url);
-          setCloudVideoStatus("Private cloud video ready on this device.");
+          setCloudVideoStatus("Vídeo privado pronto neste dispositivo.");
         } catch (error) {
-          if (active) setCloudVideoStatus(error instanceof Error ? `Could not open cloud video: ${error.message}` : "Could not open cloud video.");
+          if (active) setCloudVideoStatus(error instanceof Error ? `Não foi possível abrir o vídeo: ${error.message}` : "Não foi possível abrir o vídeo.");
         }
       } else if (cloudUserId) {
-        setCloudVideoStatus("Choose a clip to save it to your private account.");
+        setCloudVideoStatus("Escolhe um vídeo para o guardares na tua conta privada.");
       }
       setProjectReady(true);
     };
@@ -346,7 +358,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
   const reportVideoError = () => {
     setVideoPlaying(false);
     setVideoDuration(0);
-    setVideoError("This clip could not be decoded in this browser. Try MP4 (H.264), MOV or WebM.");
+    setVideoError("Este browser não consegue ler este vídeo. Experimenta MP4 (H.264), MOV ou WebM.");
   };
 
   const selectVideo = async (file: File | undefined) => {
@@ -372,7 +384,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     setVideoError("");
     setTrim(null);
     setCloudPath("");
-    setCloudVideoStatus(cloudUserId ? "Uploading private video…" : "Original clip stays on this device.");
+    setCloudVideoStatus(cloudUserId ? "A enviar vídeo privado…" : "O vídeo original fica neste dispositivo.");
     setCloudUploadProgress(0);
     // Object URLs cannot survive a refresh, but the sync plan can. Keep the
     // calibration when the rider re-attaches the same DJI Mimo export and
@@ -385,16 +397,16 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
       try {
         const path = await uploadRideVideo(cloudUserId, run.id, file, (fraction) => {
           setCloudUploadProgress(fraction);
-          setCloudVideoStatus(`Uploading private video · ${Math.round(fraction * 100)}%`);
+          setCloudVideoStatus(`A enviar vídeo privado · ${Math.round(fraction * 100)}%`);
         });
         setCloudPath(path);
         setCloudUploadProgress(1);
-        setCloudVideoStatus("Video uploaded securely. Saving its sync markers…");
+        setCloudVideoStatus("Vídeo enviado em segurança. A guardar os marcadores…");
       } catch (error) {
-        setCloudVideoStatus(error instanceof Error ? `Video stays on this device: ${error.message}` : "Video stays on this device; upload failed.");
+        setCloudVideoStatus(error instanceof Error ? `O vídeo fica neste dispositivo: ${error.message}` : "O vídeo fica neste dispositivo; o envio falhou.");
       }
     } else if (cloudUserId) {
-      setCloudVideoStatus("Select a run before uploading its video to your account.");
+      setCloudVideoStatus("Escolhe uma run antes de enviar o vídeo para a tua conta.");
     }
   };
 
@@ -489,8 +501,10 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     if (videoUrl && videoDuration) seekVideo(videoTimeForRun(event.startTime, settings));
   };
 
-  const exportOverlay = async () => {
+  const exportOverlay = async (reel = false) => {
     if (!videoRef.current || !videoDuration || !current || !ghost || !run || !trail) return;
+    const highlights = reel ? reelCuts : [];
+    if (reel && !highlights.length) return;
     const controller = new AbortController();
     renderAbort.current = controller;
     setRenderState("rendering");
@@ -498,11 +512,16 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
     setRenderError("");
     const start = trim?.start ?? 0;
     const end = trim?.end ?? videoDuration;
+    // Ghost position follows course time, so a Bonus Spot lead-in on either
+    // run does not push the Ghost ahead or behind.
+    const runLeadIn = splitLeadIn(run, trail).leadIn ?? 0;
+    const ghostLeadIn = pb ? (splitLeadIn(pb, trail).leadIn ?? 0) : 0;
     try {
       const blob = await renderOverlayWebM({
         video: videoRef.current,
         startTime: start,
         endTime: end,
+        segments: reel ? highlights : undefined,
         signal: controller.signal,
         onProgress: setRenderProgress,
         drawOverlay: (context, frame) => {
@@ -513,22 +532,22 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           );
           const sectorIndex = windows.findIndex((window) => runSeconds >= window.runStartTime && runSeconds <= window.runEndTime);
           const delta = sectorIndex >= 0 ? splits[sectorIndex] - (ghostSplits[sectorIndex] ?? splits[sectorIndex]) : 0;
-          const sectorLabel = sectorIndex >= 0 ? `S${sectorIndex + 1} · ${windows[sectorIndex].name}` : "RUN REVIEW";
+          const sectorLabel = sectorIndex >= 0 ? `S${sectorIndex + 1} · ${windows[sectorIndex].name}` : "REVISÃO DA RUN";
           const panelHeight = Math.max(62, Math.round(frame.height * 0.12));
           context.fillStyle = "rgba(10, 14, 10, 0.78)";
           context.fillRect(0, 0, frame.width, panelHeight);
-          context.fillStyle = "#d5f55a";
-          context.font = `600 ${Math.max(16, Math.round(frame.width / 62))}px Barlow, sans-serif`;
+          context.fillStyle = "#ffffff";
+          context.font = `700 ${Math.max(16, Math.round(frame.width / 62))}px "Public Sans", sans-serif`;
           context.fillText("GHOSTLINE", Math.round(frame.width * 0.025), Math.round(panelHeight * 0.38));
           context.fillStyle = "#f0f2e9";
-          context.font = `${Math.max(12, Math.round(frame.width / 84))}px Barlow, sans-serif`;
+          context.font = `${Math.max(12, Math.round(frame.width / 84))}px "Public Sans", sans-serif`;
           context.fillText(`${trail.name}  ·  ${sectorLabel}`, Math.round(frame.width * 0.025), Math.round(panelHeight * 0.68));
           context.textAlign = "right";
           context.fillStyle = "#f0f2e9";
-          context.font = `500 ${Math.max(14, Math.round(frame.width / 70))}px "IBM Plex Mono", monospace`;
+          context.font = `700 ${Math.max(14, Math.round(frame.width / 70))}px "Public Sans", sans-serif`;
           context.fillText(`${clock(runSeconds)}  ${sample.speed.toFixed(1)} km/h`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.42));
-          context.fillStyle = delta > 0.005 ? "#f19784" : "#9edfc0";
-          context.font = `${Math.max(11, Math.round(frame.width / 92))}px "IBM Plex Mono", monospace`;
+          context.fillStyle = delta > 0.005 ? "#e9a25a" : "#9fb8f2";
+          context.font = `${Math.max(11, Math.round(frame.width / 92))}px "Public Sans", sans-serif`;
           context.fillText(`${formatDelta(delta)} vs Ghost`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.72));
           context.textAlign = "left";
 
@@ -564,7 +583,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           });
           context.stroke();
           context.setLineDash([]);
-          context.strokeStyle = "#d5f55a";
+          context.strokeStyle = "#9fb8f2";
           context.beginPath();
           trace.forEach((point, index) => {
             const position = project(point);
@@ -572,14 +591,47 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
             else context.lineTo(position.x, position.y);
           });
           context.stroke();
+          const ghostElapsed = runSeconds - runLeadIn + ghostLeadIn;
+          const ghostSample = ghost.samples.reduce((closest, next) =>
+            Math.abs(next.time - ghostElapsed) < Math.abs(closest.time - ghostElapsed) ? next : closest,
+          );
+          const ghostMarker = project(ghostSample);
+          context.strokeStyle = "#ffffff";
+          context.fillStyle = "#8a93a6";
+          context.lineWidth = Math.max(1.5, mapWidth * 0.012);
+          context.beginPath();
+          context.arc(ghostMarker.x, ghostMarker.y, Math.max(3, mapWidth * 0.025), 0, Math.PI * 2);
+          context.fill();
+          context.stroke();
           const mapMarker = project(sample);
-          context.fillStyle = "#d5f55a";
+          context.fillStyle = "#9fb8f2";
           context.beginPath();
           context.arc(mapMarker.x, mapMarker.y, Math.max(3, mapWidth * 0.025), 0, Math.PI * 2);
           context.fill();
+          // Highlight reels open each cut with a short sector title card.
+          const cut = highlights[frame.segmentIndex];
+          if (cut && frame.segmentTime < 1.8) {
+            const alpha = Math.min(1, (1.8 - frame.segmentTime) / 0.4);
+            const cardHeight = Math.round(frame.height * 0.16);
+            const cardY = Math.round(frame.height * 0.62);
+            context.globalAlpha = alpha;
+            context.fillStyle = "rgba(10, 14, 10, 0.86)";
+            context.fillRect(0, cardY, frame.width, cardHeight);
+            context.fillStyle = "#ffffff";
+            context.font = `700 ${Math.max(20, Math.round(frame.width / 30))}px "Public Sans", sans-serif`;
+            context.fillText(`S${cut.index + 1} · ${cut.name}`, Math.round(frame.width * 0.04), cardY + Math.round(cardHeight * 0.5));
+            context.fillStyle = cut.delta > 0.005 ? "#e9a25a" : "#9fb8f2";
+            context.font = `700 ${Math.max(13, Math.round(frame.width / 64))}px "Public Sans", sans-serif`;
+            context.fillText(
+              `${formatDelta(cut.delta)} vs Ghost${cut.best ? "  ·  MELHOR SETOR" : ""}`,
+              Math.round(frame.width * 0.04),
+              cardY + Math.round(cardHeight * 0.8),
+            );
+            context.globalAlpha = 1;
+          }
         },
       });
-      downloadBlob(blob, `${run.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "run"}-ghostline.webm`);
+      downloadBlob(blob, `${run.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "run"}-${reel ? "highlights" : "ghostline"}.webm`);
       setRenderState("done");
       setRenderProgress(1);
     } catch (error) {
@@ -588,7 +640,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
         setRenderProgress(0);
       } else {
         setRenderState("error");
-        setRenderError(error instanceof Error ? error.message : "The overlay video could not be exported.");
+        setRenderError(error instanceof Error ? error.message : "Não foi possível exportar o vídeo.");
       }
     } finally {
       renderAbort.current = null;
@@ -620,29 +672,19 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
 
   return (
     <>
-      <div className="page-heading video-heading">
-        <div>
-          <h1>Line up the ride.</h1>
-          <p>Sync DJI Mimo footage to your Ghost and see where the seconds moved.</p>
-        </div>
-        <span className="demo-label">
-          <Clapperboard size={13} />
-          VIDEO LAB <i />
-        </span>
-      </div>
+      <h1 className="visually-hidden">Vídeo</h1>
 
       <section className="video-setup panel">
         <div className="video-setup-head">
           <div>
-            <span className="eyebrow"><Sparkles size={13} /> {cloudUserId ? "PRIVATE CLOUD WORKFLOW" : "LOCAL WORKFLOW"}</span>
-            <h2>Choose a ride to sync</h2>
-            <p>{cloudUserId ? "Upload private clips and their sync markers to your account, then open them on another device." : "Choose a clip from Photos or Files. Your original and sync plan stay on this device."}</p>
+            <h2>Vídeo e run</h2>
+            <p>{cloudUserId ? "O vídeo e os marcadores ficam na tua conta." : "O vídeo e a sincronização ficam neste dispositivo."}</p>
           </div>
           <label className="button secondary video-file-button">
             <Upload size={16} />
-            {videoUrl ? "Replace video" : "Choose video"}
+            {videoUrl ? "Trocar vídeo" : "Escolher vídeo"}
             <input
-              aria-label="Choose video file"
+              aria-label="Escolher ficheiro de vídeo"
               type="file"
               accept="video/mp4,video/quicktime,video/webm,video/*"
               onChange={(event) => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }}
@@ -651,25 +693,25 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
         </div>
         <div className="video-select-grid">
           <label className="field">
-            Trail
-            <select aria-label="Video trail" value={trail?.id ?? ""} onChange={(event) => setTrailId(event.target.value)}>
+            Pista
+            <select aria-label="Pista do vídeo" value={trail?.id ?? ""} onChange={(event) => setTrailId(event.target.value)}>
               {data.trails.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
           <label className="field">
-            Run to follow
-            <select aria-label="Video run" value={run?.id ?? ""} onChange={(event) => setRunId(event.target.value)}>
+            Run a seguir
+            <select aria-label="Run do vídeo" value={run?.id ?? ""} onChange={(event) => setRunId(event.target.value)}>
               {runs.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
           <div className="video-run-facts">
             <span><Timer size={14} /> {current ? formatTime(current.duration) : "—"}</span>
-            <span><MapPin size={14} /> {trail?.location ?? "No trail"}</span>
+            <span><MapPin size={14} /> {trail?.location ?? "Sem pista"}</span>
           </div>
         </div>
         <p className={`video-cloud-status ${cloudPath ? "saved" : ""}`} role="status">{cloudVideoStatus}</p>
         {cloudUserId && cloudUploadProgress > 0 && cloudUploadProgress < 1 && (
-          <progress className="video-cloud-progress" max="1" value={cloudUploadProgress} aria-label="Video upload progress" />
+          <progress className="video-cloud-progress" max="1" value={cloudUploadProgress} aria-label="Progresso do envio" />
         )}
       </section>
 
@@ -677,12 +719,12 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
         <section className="video-empty panel">
           <div className="video-empty-icon"><Film size={29} /></div>
           <div>
-            <h2>{videoName ? "Pick up your synced run." : "Drop in your ride footage."}</h2>
-            <p>{videoName ? cloudPath ? `Your private ${videoName} is ready to open on this device.` : `Your ${videoName} sync settings are saved on this device. Re-select the original file to continue.` : "MP4, MOV or WebM works in the browser. Import your DJI Mimo export, then set the GPS start point once."}</p>
+            <h2>{videoName ? `Sincronização guardada: ${videoName}` : "Sem vídeo"}</h2>
+            <p>{videoName ? cloudPath ? "Pronto a abrir a partir da tua conta." : "Escolhe outra vez o ficheiro original para continuar." : "MP4, MOV ou WebM. Depois marca a partida do GPS no vídeo."}</p>
           </div>
           <label className="button primary video-file-button">
-            <Camera size={16} /> Choose video
-            <input aria-label="Choose video file" type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={(event) => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+            <Camera size={16} /> Escolher vídeo
+            <input aria-label="Escolher ficheiro de vídeo" type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={(event) => { void selectVideo(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
           </label>
         </section>
       ) : (
@@ -713,11 +755,11 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
               </div>
               {videoError && <p className="error-line video-error"><Camera size={14} /> {videoError}</p>}
               <div className="video-controls">
-                <button className="icon-button" disabled={!videoDuration} aria-label={videoPlaying ? "Pause video" : "Play video"} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play().catch(reportVideoError); else videoRef.current.pause(); }}>
+                <button className="icon-button" disabled={!videoDuration} aria-label={videoPlaying ? "Pausar vídeo" : "Reproduzir vídeo"} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play().catch(reportVideoError); else videoRef.current.pause(); }}>
                   {videoPlaying ? <Pause size={16} /> : <Play size={16} />}
                 </button>
                 <span className="mono">{clock(videoTime)}</span>
-                <input aria-label="Video timeline" disabled={!videoDuration} type="range" min="0" max={videoDuration || 0} step="0.01" value={Math.min(videoDuration || 0, videoTime)} onChange={(event) => seekVideo(Number(event.target.value))} />
+                <input aria-label="Linha do tempo do vídeo" disabled={!videoDuration} type="range" min="0" max={videoDuration || 0} step="0.01" value={Math.min(videoDuration || 0, videoTime)} onChange={(event) => seekVideo(Number(event.target.value))} />
                 <span className="mono">{clock(videoDuration)}</span>
               </div>
               <div className="video-progress-line"><i style={{ width: `${progress * 100}%` }} /></div>
@@ -725,80 +767,87 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
                 <span><Gauge size={14} /> {(() => {
                   const sample = current?.samples.find((item) => Math.abs(item.fraction - progress) < 0.02);
                   if (!sample) return "—";
-                  return sample.speed > MAX_BELIEVABLE_SPEED_KMH ? "GPS review" : `${sample.speed.toFixed(1)} km/h`;
+                  return sample.speed > MAX_BELIEVABLE_SPEED_KMH ? "Rever GPS" : `${sample.speed.toFixed(1)} km/h`;
                 })()}</span>
                 <span className="mono">GPS {formatTime(runProgressTime)}</span>
                 <span>{trail?.name}</span>
               </div>
             </div>
             <div className="video-map-panel">
-              {trail && current && ghost ? <TrailMap trail={trail} current={current} ghost={ghost} progress={progress} sector={selectedSector} onProgress={(value) => { setProgress(value); const next = videoTimeForRun(timeAt(current, value), settings); if (videoUrl) seekVideo(next); }} /> : <div className="panel video-map-empty">Select a run to show its GPS trace.</div>}
+              {trail && current && ghost ? <TrailMap trail={trail} current={current} ghost={ghost} progress={progress} sector={selectedSector} onProgress={(value) => { setProgress(value); const next = videoTimeForRun(timeAt(current, value), settings); if (videoUrl) seekVideo(next); }} /> : <div className="panel video-map-empty">Escolhe uma run para ver o traçado GPS.</div>}
             </div>
           </section>
 
           <section className="sync-controls panel">
             <div className="section-heading">
-              <div><span className="eyebrow"><SlidersHorizontal size={13} /> ALIGNMENT</span><h2>Make the clocks agree</h2></div>
-              <span className="sync-status"><Check size={13} /> Local sync</span>
+              <div><h2>Sincronização</h2></div>
+              <span className="sync-status"><Check size={13} /> Sincronização local</span>
             </div>
             <div className="sync-grid">
-              <label className="field"><span>GPS start in video (s)</span><input aria-label="GPS start offset" type="number" step="0.1" value={offsetSeconds} onChange={(event) => changeOffset(Number(event.target.value))} /></label>
-              <label className="field"><span>Preview speed</span><select aria-label="Video playback rate" value={previewRate} onChange={(event) => setPreviewRate(Number(event.target.value))}><option value="1">1× real time</option><option value="0.5">0.5× slow motion</option><option value="2">2× analysis</option></select></label>
-              <button className="button secondary sync-action" onClick={setRunStartAtPlayhead}><Target size={15} /> Set run start at playhead</button>
+              <label className="field"><span>Partida do GPS no vídeo (s)</span><input aria-label="Desfasamento da partida do GPS" type="number" step="0.1" value={offsetSeconds} onChange={(event) => changeOffset(Number(event.target.value))} /></label>
+              <label className="field"><span>Velocidade de pré-visualização</span><select aria-label="Velocidade do vídeo" value={previewRate} onChange={(event) => setPreviewRate(Number(event.target.value))}><option value="1">1× tempo real</option><option value="0.5">0.5× câmara lenta</option><option value="2">2× análise</option></select></label>
+              <button className="button secondary sync-action" onClick={setRunStartAtPlayhead}><Target size={15} /> Marcar partida aqui</button>
             </div>
-            {videoMetadataState === "checking" && <p className="sync-metadata-note" role="status">Checking the clip for its recording timestamp…</p>}
-            {videoMetadataState === "missing" && videoUrl && <p className="sync-metadata-note" role="status">No recording timestamp found in this clip. You can still line it up with the start and finish markers below.</p>}
+            {videoMetadataState === "checking" && <p className="sync-metadata-note" role="status">A procurar a hora de gravação no vídeo…</p>}
+            {videoMetadataState === "missing" && videoUrl && <p className="sync-metadata-note" role="status">Este vídeo não tem hora de gravação. Podes alinhá-lo com os marcadores de partida e chegada abaixo.</p>}
             {videoCaptureDate && <div className="sync-suggestion" role="status">
-              <div><strong><Sparkles size={14} /> Recording timestamp found</strong><span>{videoCaptureDate.toLocaleString()} · compare it with the GPS start before applying.</span><small>Camera clock or time-zone differences can affect this estimate.</small></div>
-              {timestampOffsetSuggestion !== null ? <button className="button secondary" onClick={applyTimestampSuggestion}>Use {timestampOffsetSuggestion > 0 ? "+" : ""}{timestampOffsetSuggestion.toFixed(1)}s suggestion</button> : <span className="muted">No close timestamp match for this GPS run; align manually.</span>}
+              <div><strong><Sparkles size={14} /> Hora de gravação encontrada</strong><span>{videoCaptureDate.toLocaleString("pt-PT")} · compara com a partida do GPS antes de aplicar.</span><small>Diferenças no relógio da câmara ou no fuso horário podem afetar esta estimativa.</small></div>
+              {timestampOffsetSuggestion !== null ? <button className="button secondary" onClick={applyTimestampSuggestion}>Usar sugestão de {timestampOffsetSuggestion > 0 ? "+" : ""}{timestampOffsetSuggestion.toFixed(1)}s</button> : <span className="muted">A hora não bate com esta run; alinha à mão.</span>}
             </div>}
             <div className="sync-anchors">
-              <div><strong>Two point sync</strong><span className="muted">{anchors.length ? `${anchors.length} anchor${anchors.length === 1 ? "" : "s"} · ${anchors.map((anchor) => `${anchor.runTime === 0 ? "start" : "finish"} ${clock(anchor.videoTime)}`).join(" · ")}` : "Optional: lock both ends of the run to the video."}</span></div>
-              <div className="sync-anchor-actions"><button className="button secondary" onClick={setRunStartAtPlayhead}><Target size={14} /> Mark start</button><button className="button secondary" disabled={!videoDuration} onClick={setRunFinishAtPlayhead}><Target size={14} /> Mark finish</button><button className="text-button" disabled={!anchors.length} onClick={resetAnchors}>Reset anchors</button></div>
+              <div><strong>Sincronização em dois pontos</strong><span className="muted">{anchors.length ? `${anchors.length} ${anchors.length === 1 ? "marcador" : "marcadores"} · ${anchors.map((anchor) => `${anchor.runTime === 0 ? "partida" : "chegada"} ${clock(anchor.videoTime)}`).join(" · ")}` : "Opcional: prende as duas pontas da run ao vídeo."}</span></div>
+              <div className="sync-anchor-actions"><button className="button secondary" onClick={setRunStartAtPlayhead}><Target size={14} /> Marcar partida</button><button className="button secondary" disabled={!videoDuration} onClick={setRunFinishAtPlayhead}><Target size={14} /> Marcar chegada</button><button className="text-button" disabled={!anchors.length} onClick={resetAnchors}>Limpar marcadores</button></div>
             </div>
-            <p className="sync-help">Scrub to the moment the bike leaves the start, then set it as the GPS start. With two anchors active, changing the offset shifts both markers together.</p>
+            <p className="sync-help">Põe o vídeo no instante da partida e marca-o. Com dois marcadores, o desfasamento move os dois.</p>
           </section>
 
           <div className="video-tools-grid">
             <section className="panel trim-panel">
-              <div className="section-heading"><div><span className="eyebrow"><Scissors size={13} /> CLEAN THE TAKE</span><h2>Trim the stops</h2></div><span className="muted">GPS assisted</span></div>
-              <p>Find pauses in the FIT/GPX signal, keep the descent window and carry every cut into the edit plan.</p>
-              <div className="trim-actions"><button className="button secondary" onClick={scanStops}><Gauge size={15} /> Scan GPS stops</button><button className="button secondary" disabled={!stopAnalysis} onClick={() => setSkipStops(!skipStops)}><Scissors size={15} /> {skipStops ? "Stops skipped in preview" : "Play stops in preview"}</button><button className="button primary" disabled={!stopAnalysis || !videoDuration} onClick={applyRideWindow}>Apply ride window</button></div>
-              <div className="trim-readout"><span>Ride window</span><strong className="mono">{rideWindowLabel(stopAnalysis?.rideWindow ?? null)}</strong></div>
-              {stopAnalysis && <div className="stop-list">{stopAnalysis.stops.length ? stopAnalysis.stops.map((stop) => <div key={`${stop.startTime}-${stop.endTime}`}><span className="mono">{clock(stop.startTime)}–{clock(stop.endTime)}</span><strong>{stop.duration.toFixed(1)}s stop</strong></div>) : <span className="muted">No pauses over 3 seconds found.</span>}</div>}
-              {trim && <div className="trim-applied"><Check size={14} /> Output window {clock(trim.start)} → {clock(trim.end)}</div>}
+              <div className="section-heading"><div><h2>Paragens</h2></div><span className="muted">Detetadas no GPS</span></div>
+              <p>Pausas no sinal FIT/GPX; os cortes passam para o plano de edição.</p>
+              <div className="trim-actions"><button className="button secondary" onClick={scanStops}><Gauge size={15} /> Procurar paragens no GPS</button><button className="button secondary" disabled={!stopAnalysis} onClick={() => setSkipStops(!skipStops)}><Scissors size={15} /> {skipStops ? "Paragens saltadas na pré-visualização" : "Mostrar paragens na pré-visualização"}</button><button className="button primary" disabled={!stopAnalysis || !videoDuration} onClick={applyRideWindow}>Aplicar janela da run</button></div>
+              <div className="trim-readout"><span>Janela da run</span><strong className="mono">{rideWindowLabel(stopAnalysis?.rideWindow ?? null)}</strong></div>
+              {stopAnalysis && <div className="stop-list">{stopAnalysis.stops.length ? stopAnalysis.stops.map((stop) => <div key={`${stop.startTime}-${stop.endTime}`}><span className="mono">{clock(stop.startTime)}–{clock(stop.endTime)}</span><strong>{stop.duration.toFixed(1)}s parado</strong></div>) : <span className="muted">Não há pausas com mais de 3 segundos.</span>}</div>}
+              {trim && <div className="trim-applied"><Check size={14} /> Janela final {clock(trim.start)} → {clock(trim.end)}</div>}
             </section>
             <section className="panel export-panel">
-              <div className="section-heading"><div><span className="eyebrow"><Download size={13} /> TAKE IT FURTHER</span><h2>Export an edit plan</h2></div></div>
-              <p>Render a shareable overlay locally, or send the precise cuts and sector windows to your desktop editor.</p>
+              <div className="section-heading"><div><h2>Exportar</h2></div></div>
+              <p>Destaques: setores onde bateste o Ghost ou fizeste o melhor tempo. Tudo é gerado neste dispositivo.</p>
+              {reelCuts.length > 0 && (
+                <p className="muted reel-summary">
+                  Destaques: {reelCuts.map((cut) => `S${cut.index + 1} ${formatDelta(cut.delta)}`).join(" · ")} ·{" "}
+                  {Math.round(reelCuts.reduce((sum, cut) => sum + cut.end - cut.start, 0))}s
+                </p>
+              )}
               <div className="export-actions">
-                <button className="button primary" disabled={!videoDuration || !overlayExportSupported || renderState === "rendering"} onClick={() => void exportOverlay()}><Film size={15} /> {renderState === "rendering" ? `Rendering ${Math.round(renderProgress * 100)}%` : "Export overlay WebM"}</button>
-                <button className="button secondary" disabled={!videoDuration || renderState === "rendering"} onClick={exportPlan}><Download size={15} /> Download edit plan</button>
+                <button className="button primary" disabled={!videoDuration || !overlayExportSupported || renderState === "rendering" || !reelCuts.length} onClick={() => void exportOverlay(true)}><Sparkles size={15} /> {renderState === "rendering" ? `A criar ${Math.round(renderProgress * 100)}%` : "Vídeo de destaques"}</button>
+                <button className="button secondary" disabled={!videoDuration || !overlayExportSupported || renderState === "rendering"} onClick={() => void exportOverlay()}><Film size={15} /> Run completa (WebM)</button>
+                <button className="button secondary" disabled={!videoDuration || renderState === "rendering"} onClick={exportPlan}><Download size={15} /> Descarregar plano de edição</button>
               </div>
-              {renderState === "rendering" && <div className="render-progress"><progress max="1" value={renderProgress} /><button className="text-button" onClick={() => renderAbort.current?.abort()}>Cancel render</button></div>}
-              {renderState === "done" && <span className="render-success"><Check size={14} /> Overlay clip downloaded</span>}
+              {renderState === "rendering" && <div className="render-progress"><progress max="1" value={renderProgress} /><button className="text-button" onClick={() => renderAbort.current?.abort()}>Cancelar</button></div>}
+              {renderState === "done" && <span className="render-success"><Check size={14} /> Vídeo descarregado</span>}
               {renderError && <p className="error-line render-error"><Camera size={14} /> {renderError}</p>}
-              <span className="muted export-note">{overlayExportSupported ? "WebM overlay keeps the source local; MP4 rendering can use the same frame plan later." : "This device cannot render WebM in-browser. Download the edit plan and render it in a desktop editor."}</span>
+              <span className="muted export-note">{overlayExportSupported ? "O vídeo é criado neste dispositivo; o original nunca sai daqui." : "Este dispositivo não consegue criar WebM no browser. Descarrega o plano de edição e usa um editor no computador."}</span>
             </section>
           </div>
 
           <section className="panel sector-video-panel">
-            <div className="section-heading"><div><span className="eyebrow"><MapPin size={13} /> TELEMETRY CUTS</span><h2>Jump to the seconds that matter</h2></div><span className="muted">{windows.length} sectors · Ghost aligned</span></div>
+            <div className="section-heading"><div><h2>Setores no vídeo</h2></div><span className="muted">{windows.length} setores</span></div>
             <div className="sector-video-grid">
               {windows.map((window, index) => {
                 const delta = splits[index] - (ghostSplits[index] ?? splits[index]);
                 const best = theory?.sectors[index]?.runId === run?.id;
-                return <button key={window.index} className={`sector-video-row ${selectedSector === index ? "selected" : ""}`} onClick={() => inspectSector(index)}><span className="sector-video-index">S{index + 1}</span><span className="sector-video-name">{window.name}<small>{clock(window.videoStartTime)} → {clock(window.videoEndTime)}</small></span><span className="sector-video-time mono">{formatTime(window.duration)}</span><strong className={delta > 0.005 ? "lost" : "gained"}>{formatDelta(delta)}</strong>{best && <span className="sector-video-best">BEST</span>}</button>;
+                return <button key={window.index} className={`sector-video-row ${selectedSector === index ? "selected" : ""}`} onClick={() => inspectSector(index)}><span className="sector-video-index">S{index + 1}</span><span className="sector-video-name">{window.name}<small>{clock(window.videoStartTime)} → {clock(window.videoEndTime)}</small></span><span className="sector-video-time mono">{formatTime(window.duration)}</span><strong className={delta > 0.005 ? "lost" : "gained"}>{formatDelta(delta)}</strong>{best && <span className="sector-video-best">MELHOR</span>}</button>;
               })}
             </div>
           </section>
 
           <section className="panel riding-events-panel">
             <div className="section-heading">
-              <div><span className="eyebrow"><Zap size={13} /> RIDE INTELLIGENCE</span><h2>Signals worth reviewing</h2></div>
-              <span className="muted">GPS assisted · {ridingEvents.length} found</span>
+              <div><h2>Eventos no GPS</h2></div>
+              <span className="muted">Com ajuda do GPS · {ridingEvents.length} encontrados</span>
             </div>
-            <p className="riding-events-help">Local telemetry highlights braking, acceleration, pauses and drop-like elevation changes. Jump to a signal to review it against the Ghost.</p>
+            <p className="riding-events-help">Travagens, acelerações, pausas e quedas de altitude detetadas no GPS.</p>
             {highlightedEvents.length ? (
               <div className="riding-events-list">
                 {highlightedEvents.map((event) => (
@@ -810,23 +859,18 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
                   >
                     <span className="riding-event-time mono">{clock(event.startTime)}</span>
                     <span className="riding-event-kind"><strong>{eventLabels[event.type]}</strong><small>{eventDetail(event)}</small></span>
-                    <span className="riding-event-confidence">{Math.round(event.confidence * 100)}% <small>confidence</small></span>
-                    <span className="riding-event-action">{videoUrl && videoDuration ? "Review" : "Upload video"}</span>
+                    <span className="riding-event-confidence">{Math.round(event.confidence * 100)}% <small>confiança</small></span>
+                    <span className="riding-event-action">{videoUrl && videoDuration ? "Rever" : "Juntar vídeo"}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="riding-events-empty">No strong riding signals found in this run. GPS data stays untouched and private.</div>
+              <div className="riding-events-empty">Sem eventos fortes nesta run.</div>
             )}
           </section>
         </>
       )}
 
-      <section className="video-ai-note panel">
-        <div className="video-ai-icon"><Sparkles size={18} /></div>
-        <div><h2>AI-ready by design.</h2><p>The sync layer is deterministic and private today. It leaves clean frame timestamps for the next step: a browser or server model can label jumps, braking and line choices without changing the rider workflow.</p></div>
-        <span className="muted"><Check size={13} /> FIT + GPX aligned</span>
-      </section>
     </>
   );
 }

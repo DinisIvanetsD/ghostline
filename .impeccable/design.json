@@ -1,200 +1,153 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-14T10:14:16+01:00",
+  "generatedAt": "2026-10-18T18:00:00+01:00",
   "title": "Design System: Ghostline",
   "extensions": {
     "colorMeta": {
-      "background": {
+      "night": {
         "role": "neutral",
-        "displayName": "Matte Canvas",
-        "canonical": "#101311",
-        "tonalRamp": [
-          "#101311",
-          "#151a16",
-          "#1b211b",
-          "#222a21",
-          "#303a2e",
-          "#4b5848",
-          "#74806f",
-          "#c6cec2"
-        ]
+        "displayName": "Night",
+        "canonical": "#0b0e13"
       },
       "panel": {
         "role": "neutral",
-        "displayName": "Panel Green-Black",
-        "canonical": "#181c19",
-        "tonalRamp": [
-          "#181c19",
-          "#1d221e",
-          "#232923",
-          "#2b322a",
-          "#3c4639",
-          "#5b6758",
-          "#879385",
-          "#d0d6cd"
-        ]
+        "displayName": "Panel",
+        "canonical": "#151922"
       },
       "raised": {
         "role": "neutral",
-        "displayName": "Raised Green-Black",
-        "canonical": "#212622",
-        "tonalRamp": [
-          "#212622",
-          "#272d28",
-          "#2e352f",
-          "#384139",
-          "#4b574b",
-          "#6a7668",
-          "#929d91",
-          "#d7ddd4"
-        ]
+        "displayName": "Raised",
+        "canonical": "#1f2430"
       },
       "border": {
         "role": "neutral",
-        "displayName": "Fine Border",
-        "canonical": "#313830",
-        "tonalRamp": [
-          "#161a17",
-          "#202620",
-          "#313830",
-          "#424b40",
-          "#596458",
-          "#727d72",
-          "#9ba59a",
-          "#d3d8d1"
-        ]
+        "displayName": "Border",
+        "canonical": "#2a3040"
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Border",
+        "canonical": "#3a4254"
       },
       "text": {
         "role": "neutral",
-        "displayName": "Warm Off-White",
-        "canonical": "#f0f2e9",
-        "tonalRamp": [
-          "#20231f",
-          "#353934",
-          "#4c514a",
-          "#686e65",
-          "#878d84",
-          "#aab0a7",
-          "#d0d4cc",
-          "#f0f2e9"
-        ]
+        "displayName": "Text",
+        "canonical": "#e6e6e8"
       },
       "muted": {
         "role": "neutral",
-        "displayName": "Cool Muted",
-        "canonical": "#9ca698",
-        "tonalRamp": [
-          "#20251f",
-          "#30382f",
-          "#424d41",
-          "#596558",
-          "#707c6f",
-          "#879284",
-          "#9ca698",
-          "#d1d6cf"
-        ]
+        "displayName": "Muted",
+        "canonical": "#a4a9b3"
       },
-      "accent": {
+      "amber": {
         "role": "primary",
-        "displayName": "Acid Yellow Current Run",
-        "canonical": "#d5f55a",
-        "tonalRamp": [
-          "#293010",
-          "#47551b",
-          "#667d26",
-          "#87a72f",
-          "#a9ce3a",
-          "#c1e64b",
-          "#d5f55a",
-          "#f1ffc1"
-        ]
+        "displayName": "Floodlight Amber",
+        "canonical": "#ffbe55"
       },
-      "lost": {
-        "role": "tertiary",
-        "displayName": "Coral Time Lost",
-        "canonical": "#f19784",
-        "tonalRamp": [
-          "#3c1e1b",
-          "#68352d",
-          "#914a40",
-          "#b95f52",
-          "#d27061",
-          "#e48473",
-          "#f19784",
-          "#ffd0c8"
-        ]
+      "amber-hover": {
+        "role": "primary",
+        "displayName": "Lit Amber",
+        "canonical": "#ffcd7a"
       },
-      "gained": {
-        "role": "tertiary",
-        "displayName": "Mint Time Gained",
-        "canonical": "#9edfc0",
-        "tonalRamp": [
-          "#193328",
-          "#2a5a46",
-          "#3f8064",
-          "#589b7a",
-          "#71b590",
-          "#87caa8",
-          "#9edfc0",
-          "#d0f5e1"
-        ]
+      "coral": {
+        "role": "secondary",
+        "displayName": "Coral (time lost)",
+        "canonical": "#ff8a6b"
       },
-      "ghost": {
+      "mint": {
+        "role": "secondary",
+        "displayName": "Mint (time gained)",
+        "canonical": "#6fd6a0"
+      },
+      "trace-neutral": {
         "role": "neutral",
-        "displayName": "Cool Pale Ghost",
-        "canonical": "#bec8bf",
-        "tonalRamp": [
-          "#252b26",
-          "#414a42",
-          "#5d685e",
-          "#78837a",
-          "#929e94",
-          "#a9b4ab",
-          "#bec8bf",
-          "#e4e9e4"
-        ]
+        "displayName": "Trace Grey",
+        "canonical": "#8a90a0"
       }
     },
     "typographyMeta": {
       "display": {
-        "displayName": "Condensed Race Heading",
-        "purpose": "Page and empty-state headings."
+        "displayName": "Display",
+        "purpose": "Trail name in the hero poster, uppercase Big Shoulders 800; 28px on phone."
+      },
+      "run-time": {
+        "displayName": "Run time",
+        "purpose": "The time in the timing panel; 54px on phone."
       },
       "title": {
-        "displayName": "Condensed Panel Heading",
-        "purpose": "Panel and section headings."
+        "displayName": "Title",
+        "purpose": "Uppercase panel headings and poster card names."
       },
       "body": {
-        "displayName": "Barlow UI Copy",
-        "purpose": "Interface labels, controls, and explanatory text."
-      },
-      "measurement": {
-        "displayName": "Plex Mono Measurement",
-        "purpose": "Timings, deltas, sectors, and trace metadata."
+        "displayName": "Body",
+        "purpose": "Controls, tables, copy in Public Sans with tabular figures."
       },
       "label": {
-        "displayName": "Instrument Label",
-        "purpose": "Compact tracked annotations and captions."
+        "displayName": "Label",
+        "purpose": "Sentence-case labels in Muted; 12px floor."
       }
     },
     "shadows": [],
-    "motion": [
+    "gradients": [
       {
-        "name": "state-transition",
-        "value": "background 0.15s",
-        "purpose": "Button and compact control state changes."
+        "name": "trace-ramp-speed",
+        "value": "linear-gradient(90deg, #ff8a6b, #8a90a0, #ffbe55)",
+        "purpose": "Speed legend: slow coral to fast amber."
       },
       {
-        "name": "reduced-motion",
-        "value": "transition: none; animation: none",
-        "purpose": "Honour prefers-reduced-motion."
+        "name": "trace-ramp-ghost",
+        "value": "linear-gradient(90deg, #ff8a6b, #8a90a0, #6fd6a0)",
+        "purpose": "Ghost legend: losing coral through on-pace grey to gaining mint."
+      },
+      {
+        "name": "hero-scrim",
+        "value": "linear-gradient(0deg, #0b0e13 2%, rgba(11,14,19,.55) 45%, rgba(11,14,19,.15) 100%), linear-gradient(90deg, rgba(11,14,19,.75) 0%, rgba(11,14,19,0) 60%)",
+        "purpose": "Keeps the hero title readable over the aerial photo."
+      }
+    ],
+    "motion": [
+      {
+        "name": "poster-drift",
+        "value": "24s ease-in-out infinite alternate",
+        "purpose": "Ken Burns drift on hero and sign-in photos."
+      },
+      {
+        "name": "card-lift",
+        "value": "transform .35s cubic-bezier(.2,.7,.2,1)",
+        "purpose": "Poster cards lift and tilt; siblings dim."
+      },
+      {
+        "name": "tile-tilt",
+        "value": "transform .3s cubic-bezier(.2,.7,.2,1)",
+        "purpose": "Sector tiles tilt on hover; selected scales 1.05."
+      },
+      {
+        "name": "camera",
+        "value": "easeTo 450ms / fitBounds 1600ms",
+        "purpose": "3D chase and overview camera; 0ms under reduced motion."
       }
     ],
     "breakpoints": [
-      { "name": "wide", "value": "1550px" },
-      { "name": "rail-compact", "value": "1200px" },
-      { "name": "stack", "value": "1000px" },
-      { "name": "mobile", "value": "700px" }
+      {
+        "name": "phone-narrow",
+        "value": "480px"
+      },
+      {
+        "name": "phone",
+        "value": "700px"
+      },
+      {
+        "name": "tablet",
+        "value": "1000px"
+      },
+      {
+        "name": "laptop",
+        "value": "1200px"
+      },
+      {
+        "name": "wide",
+        "value": "1550px"
+      }
     ]
   },
   "components": [
@@ -202,86 +155,52 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Primary telemetry action.",
-      "html": "<button class=\"ds-btn-primary\">IMPORT RUN</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid transparent; border-radius: 4px; background: var(--accent); color: var(--bg); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #e2ff81; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+      "description": "Amber committing action: Importar run, Ver em 3D.",
+      "html": "<button class=\"ds-btn-primary\">Ver em 3D</button>",
+      "css": ".ds-btn-primary { min-height: 40px; padding: 10px 16px; border: 1px solid #ffbe55; border-radius: 6px; background: #ffbe55; color: #0b0e13; font: 800 13px 'Public Sans', sans-serif; cursor: pointer; } .ds-btn-primary:hover { background: #ffcd7a; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Quiet outlined action beside a primary control.",
-      "html": "<button class=\"ds-btn-secondary\">VIEW DETAILS</button>",
-      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid #424b3e; border-radius: 4px; background: transparent; color: var(--text); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-secondary:hover { background: var(--raised); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+      "description": "Outlined quiet action that turns amber on hover.",
+      "html": "<button class=\"ds-btn-secondary\">Gerir setores</button>",
+      "css": ".ds-btn-secondary { min-height: 40px; padding: 10px 16px; border: 1px solid #3a4254; border-radius: 6px; background: transparent; color: #e6e6e8; font: 600 13px 'Public Sans', sans-serif; cursor: pointer; } .ds-btn-secondary:hover { border-color: #ffbe55; color: #ffbe55; }"
     },
     {
-      "name": "Telemetry Panel",
+      "name": "Trail Poster Card",
       "kind": "card",
-      "refersTo": "panel",
-      "description": "Contained instrument surface for analysis.",
-      "html": "<section class=\"ds-panel\"><h2>TELEMETRY</h2><p>Current run / ghost comparison</p></section>",
-      "css": ".ds-panel { padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); } .ds-panel h2 { margin: 0; font: 600 24px/1.2 'Barlow Condensed', sans-serif; } .ds-panel p { margin: 8px 0 0; color: var(--muted); font: 400 14px/1.5 Barlow, sans-serif; }"
+      "refersTo": "trail-poster",
+      "description": "Real aerial photo with the route in amber; lifts on hover while siblings dim.",
+      "html": "<article class=\"ds-poster\"><div class=\"ds-poster-art\"></div><strong>Free Ride</strong><small>Santa Marta das Cortiças, Braga · Vermelha</small></article>",
+      "css": ".ds-poster { width: 260px; padding-bottom: 14px; overflow: hidden; border: 1px solid #1f2430; border-radius: 8px; background: #151922; color: #e6e6e8; transition: transform .35s cubic-bezier(.2,.7,.2,1); } .ds-poster:hover { border-color: #ffbe55; transform: translateY(-4px) rotateX(3deg) scale(1.03); } .ds-poster-art { aspect-ratio: 16/9; background: #1f2430; } .ds-poster strong { display: block; padding: 12px 14px 0; font: 800 24px 'Big Shoulders Display', sans-serif; text-transform: uppercase; } .ds-poster small { padding: 0 14px; color: #a4a9b3; }"
     },
     {
-      "name": "Telemetry Input",
-      "kind": "input",
-      "refersTo": "input",
-      "description": "Dark field for run search.",
-      "html": "<label class=\"ds-field\">RUN SEARCH<input class=\"ds-input\" placeholder=\"Search runs\" /></label>",
-      "css": ".ds-field { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font: 600 10px/1.2 Barlow, sans-serif; letter-spacing: 0.12em; } .ds-input { min-height: 43px; padding: 10px 12px; border: 1px solid #414d39; border-radius: 4px; background: var(--bg); color: var(--text); font: 400 14px/1.5 Barlow, sans-serif; outline-offset: 4px; } .ds-input::placeholder { color: #9aa88e; } .ds-input:focus-visible { outline: 2px solid var(--accent); }"
-    },
-    {
-      "name": "Navigation Item",
-      "kind": "nav",
-      "refersTo": "nav-item",
-      "description": "Rail or mobile navigation entry.",
-      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#analysis\">ANALYSIS</a>",
-      "css": ".ds-nav-item { display: flex; align-items: center; min-height: 40px; padding: 13px 12px; border-radius: 5px; color: #a5afa1; font: 500 14px/1.2 Barlow, sans-serif; text-decoration: none; } .ds-nav-item:hover { background: #232922; } .ds-nav-item-active { background: #d5f55a12; color: var(--accent); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
-    },
-    {
-      "name": "Current Ghost Trace",
+      "name": "Sector Tiles",
       "kind": "custom",
-      "refersTo": "telemetry-trace",
-      "description": "Signature current and ghost comparison cue.",
-      "html": "<div class=\"ds-trace\"><span class=\"ds-trace-current\"></span><span class=\"ds-trace-ghost\"></span><b>+00:12.4</b></div>",
-      "css": ".ds-trace { display: flex; align-items: center; gap: 8px; min-height: 24px; color: var(--accent); font: 400 11px/1.3 'IBM Plex Mono', monospace; } .ds-trace-current, .ds-trace-ghost { display: block; width: 48px; height: 2px; background: var(--accent); } .ds-trace-ghost { border-top: 2px dashed var(--ghost); background: none; } .ds-trace b { font-weight: 400; }"
+      "refersTo": "sector-tile-gained",
+      "description": "Mint-tinted when gained, coral-tinted when lost; selected grows, siblings dim.",
+      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile ds-lost\"><b>S1</b><strong>+0.99s</strong></button><button class=\"ds-tile ds-gain ds-selected\"><b>S2</b><strong>-0.98s</strong></button></div>",
+      "css": ".ds-tiles { display: flex; gap: 6px; } .ds-tile { display: flex; justify-content: space-between; width: 150px; padding: 12px; border-radius: 8px; color: #e6e6e8; font: 800 15px 'Public Sans', sans-serif; } .ds-gain { background: rgba(111,214,160,.1); border: 1px solid rgba(111,214,160,.45); } .ds-gain strong { color: #6fd6a0; } .ds-lost { background: rgba(255,138,107,.08); border: 1px solid rgba(255,138,107,.4); opacity: .5; } .ds-lost strong { color: #ff8a6b; } .ds-selected { border-color: #ffbe55; transform: scale(1.05); }"
+    },
+    {
+      "name": "3D Gate Marker",
+      "kind": "custom",
+      "refersTo": "gate-marker",
+      "description": "S/1/2/3/F gate on the 3D terrain; jumps the replay there.",
+      "html": "<button class=\"ds-gate\">2</button>",
+      "css": ".ds-gate { width: 28px; height: 28px; border: 1px solid #e6e6e8; border-radius: 4px; background: #0b0e13; color: #fff; font: 800 15px 'Big Shoulders Display', sans-serif; } .ds-gate:hover { border-color: #ffbe55; color: #ffbe55; }"
     }
   ],
   "narrative": {
-    "northStar": "The Race Engineer Workstation",
-    "overview": "Ghostline is a compact downhill MTB telemetry workstation: matte green-black surfaces, fine instrument borders, condensed race-board headings, and measured data typography. Color is telemetry: acid yellow marks current state, pale green marks the ghost, and coral and mint report time lost and gained.",
+    "northStar": "Catálogo de pistas",
+    "overview": "Ghostline looks like a streaming catalogue where every title is a trail: a Night ground, each trail shown as a poster of its real aerial photo with the route in amber, and the run replayed as a 3D flight over the real relief. Amber is brand and action, mint is gain, coral is loss. Depth comes from photos, scrims and motion: the focused item grows while its siblings dim. It replaces the earlier Azulejo de Braga world.",
     "keyCharacteristics": [
-      "Matte dark green-black canvas",
-      "Condensed headings with mono measurements",
-      "Sparse semantic state color",
-      "Fine borders and compact controls"
-    ],
-    "rules": [
-      {
-        "name": "The Telemetry Color Rule",
-        "body": "Use semantic state colors sparingly and consistently.",
-        "section": "colors"
-      },
-      {
-        "name": "The Measurement Rule",
-        "body": "Compared numbers use IBM Plex Mono; prose stays in Barlow.",
-        "section": "typography"
-      },
-      {
-        "name": "The Flat-by-Default Rule",
-        "body": "Use tonal surfaces or fine borders; do not add routine shadows.",
-        "section": "elevation"
-      }
-    ],
-    "dos": [
-      "Do preserve the race-engineer workstation metaphor.",
-      "Do keep the 4 / 8 / 12 / 16 / 24 / 32 / 48px rhythm.",
-      "Do maintain visible focus and 40px targets."
-    ],
-    "donts": [
-      "Don't introduce decorative gradients or routine shadows.",
-      "Don't use coral or mint as general brand accents.",
-      "Don't replace the condensed heading and mono measurement pairing."
+      "Dark world with hairline borders and 6-10px corners.",
+      "Real imagery on every trail: DGT orthophoto posters, Sentinel-2 3D drape.",
+      "Big Shoulders Display titles, Public Sans data, tabular figures.",
+      "Amber action, mint gain, coral loss on tiles, figures and the 3D trace.",
+      "Focus-grows, siblings-dim motion, all disabled under reduced motion."
     ]
   }
 }

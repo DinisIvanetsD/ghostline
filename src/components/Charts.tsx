@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Telemetry, Trail, Run } from "../types";
-import { analyze, formatTime } from "../lib/analysis";
+import { courseDuration, formatDelta, formatTime, ghostGap } from "../lib/analysis";
 import { MAX_BELIEVABLE_SPEED_KMH } from "../lib/gpsQuality";
 function useChartWidth() {
   const [element, ref] = useState<SVGSVGElement | null>(null);
@@ -29,21 +29,35 @@ export function TelemetryChart({
   progress,
   onProgress,
 }: Props) {
-  const [metric, setMetric] = useState<"speed" | "elevation">("speed");
+  const [metric, setMetric] = useState<"speed" | "elevation" | "delta">("speed");
   const { ref, width } = useChartWidth();
   const left = 32,
     right = width - 12,
     span = right - left;
-  const values = current.samples.concat(ghost.samples);
+  const isDelta = metric === "delta";
+  const gaps = useMemo(() => ghostGap(current, ghost), [current, ghost]);
+  // Samples carry their own gap so one plotting path serves every metric.
+  const gapAt = useMemo(
+    () => new globalThis.Map(current.samples.map((s, i) => [s, gaps[i]])),
+    [current, gaps],
+  );
+  const values = isDelta ? current.samples : current.samples.concat(ghost.samples);
   const plottedValue = (sample: (typeof values)[number]) =>
     metric === "speed"
       ? Math.min(MAX_BELIEVABLE_SPEED_KMH, Math.max(0, sample.speed))
-      : sample.elevation;
-  const max = values.reduce((v, s) => Math.max(v, plottedValue(s)), -Infinity) * 1.08;
+      : metric === "elevation"
+        ? sample.elevation
+        : (gapAt.get(sample) ?? 0);
+  const gapExtent = Math.max(0.5, ...gaps.map(Math.abs)) * 1.15;
+  const max = isDelta
+    ? gapExtent
+    : values.reduce((v, s) => Math.max(v, plottedValue(s)), -Infinity) * 1.08;
   const min =
     metric === "elevation"
       ? values.reduce((v, s) => Math.min(v, s.elevation), Infinity) - 10
-      : 0;
+      : isDelta
+        ? -gapExtent
+        : 0;
   const y = (v: number) => 150 - ((v - min) / Math.max(1, max - min)) * 130;
   const x = (f: number) => left + f * span;
   const line = (t: Telemetry) =>
@@ -66,34 +80,42 @@ export function TelemetryChart({
   return (
     <section className="panel telemetry">
       <div className="section-heading">
-        <h2>Read the run.</h2>
+        <h2>Telemetria</h2>
         <div className="segmented">
           <button
             className={metric === "speed" ? "active" : ""}
             onClick={() => setMetric("speed")}
           >
-            Speed
+            Velocidade
           </button>
           <button
             className={metric === "elevation" ? "active" : ""}
             onClick={() => setMetric("elevation")}
           >
-            Elevation
+            Altitude
+          </button>
+          <button
+            className={metric === "delta" ? "active" : ""}
+            onClick={() => setMetric("delta")}
+          >
+            Δ Ghost
           </button>
         </div>
       </div>
       <div className="trace-meta">
         <span>
           <i className="dot current" />
-          Current{" "}
-          <b>
-            {metric === "speed" && sample.speed > MAX_BELIEVABLE_SPEED_KMH
-              ? "GPS review"
-              : `${sampleValue.toFixed(1)} ${metric === "speed" ? "km/h" : "m"}`}
+          Atual{" "}
+          <b className={isDelta ? (sampleValue > 0.005 ? "lost" : "gained") : undefined}>
+            {isDelta
+              ? `${formatDelta(sampleValue)} ${sampleValue > 0.005 ? "atrás" : "à frente"}`
+              : metric === "speed" && sample.speed > MAX_BELIEVABLE_SPEED_KMH
+                ? "Rever GPS"
+                : `${sampleValue.toFixed(1)} ${metric === "speed" ? "km/h" : "m"}`}
           </b>
         </span>
         <span className="muted">
-          {(sample.distance / 1000).toFixed(2)} km into run ·{" "}
+          {(sample.distance / 1000).toFixed(2)} km de run ·{" "}
           {formatTime(sample.time)}
         </span>
       </div>
@@ -102,7 +124,7 @@ export function TelemetryChart({
         className="telemetry-svg"
         viewBox={`0 0 ${width} 185`}
         role="img"
-        aria-label={`${metric} over distance. Use the trail progress slider to inspect telemetry.`}
+        aria-label={`${metric === "speed" ? "Velocidade" : metric === "elevation" ? "Altitude" : "Diferença para o Ghost"} ao longo da distância. Usa o cursor de progresso para inspecionar a telemetria.`}
         onPointerMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           onProgress(
@@ -120,7 +142,9 @@ export function TelemetryChart({
               className="chart-grid"
             />
             <text x="0" y={y(min + (max - min) * f) + 4}>
-              {Math.round(min + (max - min) * f)}
+              {isDelta
+                ? `${min + (max - min) * f > 0 ? "+" : ""}${(min + (max - min) * f).toFixed(1)}`
+                : Math.round(min + (max - min) * f)}
             </text>
           </g>
         ))}
@@ -147,7 +171,12 @@ export function TelemetryChart({
             )}
           </g>
         ))}
-        <path d={line(ghost)} className="ghost-trace" />
+        {isDelta ? (
+          // The Ghost is the zero line: above it you are behind, below ahead.
+          <line x1={left} x2={right} y1={y(0)} y2={y(0)} className="ghost-trace" />
+        ) : (
+          <path d={line(ghost)} className="ghost-trace" />
+        )}
         <path d={line(current)} className="current-trace" />
         <line
           x1={x(progress)}
@@ -156,10 +185,10 @@ export function TelemetryChart({
           y2="150"
           className="cursor-line"
         />
-        <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#d5f55a" />
+        <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#ffbe55" />
       </svg>
       <label className="scrubber">
-        <span>Trail progress</span>
+        <span>Progresso na pista</span>
         <input
           type="range"
           min="0"
@@ -174,19 +203,21 @@ export function TelemetryChart({
 }
 export function Progression({
   runs,
+  trail,
   onSelect,
 }: {
   runs: Run[];
+  trail?: Trail;
   onSelect: (run: Run) => void;
 }) {
   const { ref, width } = useChartWidth();
   const sorted = [...runs].sort((a, b) => a.date.localeCompare(b.date));
-  const values = sorted.map((r) => analyze(r.points).duration);
+  const values = sorted.map((r) => courseDuration(r, trail));
   const min = Math.min(...values) - 3,
     max = Math.max(...values) + 3;
   if (!runs.length)
     return (
-      <div className="empty-state">Import a run to start your progression.</div>
+      <div className="empty-state">Importa uma run para começares a tua progressão.</div>
     );
   const x = (i: number) =>
     40 + (i * (width - 80)) / Math.max(1, values.length - 1);
@@ -194,19 +225,19 @@ export function Progression({
   return (
     <section className="panel progression">
       <div className="section-heading">
-        <h2>Every run counts.</h2>
-        <span className="muted">Run time · lower is faster</span>
+        <h2>Progressão</h2>
+        <span className="muted">Tempo da run · menos é mais rápido</span>
       </div>
       <svg
         ref={ref}
         viewBox={`0 0 ${width} 170`}
         role="group"
-        aria-label="Run time progression"
+        aria-label="Progressão do tempo das runs"
       >
         <path
           d={values.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")}
           fill="none"
-          stroke="#d5f55a"
+          stroke="#ffbe55"
           strokeWidth="2"
         />
         {sorted.map((r, i) => (
@@ -215,7 +246,7 @@ export function Progression({
             className="progress-point"
             role="button"
             tabIndex={0}
-            aria-label={`Analyze ${r.name}`}
+            aria-label={`Analisar ${r.name}`}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -227,14 +258,14 @@ export function Progression({
             <title>
               {r.name}: {formatTime(values[i])}
             </title>
-            <circle cx={x(i)} cy={y(values[i])} r="5" fill="#d5f55a" />
+            <circle cx={x(i)} cy={y(values[i])} r="5" fill="#ffbe55" />
             {(width > 600 || i % 2 === 0) && (
               <>
                 <text x={x(i)} y={y(values[i]) - 15} textAnchor="middle">
                   {formatTime(values[i])}
                 </text>
                 <text x={x(i)} y="158" textAnchor="middle">
-                  {new Date(r.date).toLocaleDateString("en-GB", {
+                  {new Date(r.date).toLocaleDateString("pt-PT", {
                     day: "numeric",
                     month: "short",
                   })}

@@ -2,7 +2,9 @@ import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { LocateFixed, Mountain, Layers } from "lucide-react";
 import type { Trail, Telemetry } from "../types";
+import { DGT_WMS, IMAGERY_ATTRIBUTION } from "../lib/imagery";
 import { routePositionAt } from "../lib/analysis";
+import { traceSegments, type TraceMode } from "../lib/traceColors";
 import "leaflet/dist/leaflet.css";
 
 interface Props {
@@ -28,7 +30,8 @@ export function TrailMap({
     ghostMarker = useRef<L.CircleMarker | null>(null),
     onProgressRef = useRef(onProgress);
   const [terrain, setTerrain] = useState(true),
-    [tileError, setTileError] = useState(false);
+    [tileError, setTileError] = useState(false),
+    [mode, setMode] = useState<TraceMode>("ghost");
   useEffect(() => {
     onProgressRef.current = onProgress;
   }, [onProgress]);
@@ -64,8 +67,13 @@ export function TrailMap({
     tiles.on("tileerror", () => setTileError(true));
     tiles.addTo(map.current);
     tiles.bringToBack();
+    // The real ground: DGT 2018 orthophotos over the street map (mainland Portugal only).
+    const photo = L.tileLayer
+      .wms(DGT_WMS, { layers: "Ortos2018-RGB", format: "image/png", maxZoom: 19, attribution: IMAGERY_ATTRIBUTION })
+      .addTo(map.current);
     return () => {
       tiles.remove();
+      photo.remove();
     };
   }, [terrain]);
   useEffect(() => {
@@ -76,11 +84,24 @@ export function TrailMap({
     const coords = current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple);
     L.polyline(
       ghost.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple),
-      { color: "#bec8bf", weight: 7, opacity: 0.48, dashArray: "5 9" },
+      { color: "#8a93a6", weight: 6, opacity: 0.7, dashArray: "5 9" },
     ).addTo(group);
-    L.polyline(coords, { color: "#d5f55a", weight: 3.5, opacity: 1 }).addTo(
-      group,
-    );
+    if (mode === "plain")
+      L.polyline(coords, { color: "#ffbe55", weight: 4, opacity: 1 }).addTo(
+        group,
+      );
+    else {
+      // SVG on purpose: Leaflet's canvas renderer can redraw after the map is
+      // torn down. traceSegments caps the segment count for long recordings.
+      traceSegments(current, ghost, mode).forEach((segment) =>
+        L.polyline([segment.from, segment.to], {
+          color: segment.color,
+          weight: 4.5,
+          opacity: 1,
+          interactive: false,
+        }).addTo(group),
+      );
+    }
     if (sector !== null) {
       const start = boundaries[sector],
         end = boundaries[sector + 1];
@@ -88,7 +109,7 @@ export function TrailMap({
         current.samples
           .filter((p) => p.fraction >= start && p.fraction <= end)
           .map((p) => [p.lat, p.lon] as L.LatLngTuple),
-        { color: "#f19784", weight: 7 },
+        { color: "#ffbe55", weight: 12, opacity: 0.25 },
       ).addTo(group);
     }
     boundaries.forEach((f, i) => {
@@ -109,19 +130,19 @@ export function TrailMap({
     });
     ghostMarker.current = L.circleMarker(coords[0], {
       radius: 7,
-      color: "#e2e8dd",
+      color: "#ffffff",
       weight: 2,
-      fillColor: "#5b6851",
+      fillColor: "#8a93a6",
       fillOpacity: 1,
     }).addTo(group);
     marker.current = L.circleMarker(coords[0], {
       radius: 7,
-      color: "#101311",
+      color: "#ffffff",
       weight: 3,
-      fillColor: "#d5f55a",
+      fillColor: "#ffbe55",
       fillOpacity: 1,
     }).addTo(group);
-  }, [trail, current, ghost, sector]);
+  }, [trail, current, ghost, sector, mode]);
   useEffect(() => {
     if (!map.current) return;
     const coords = current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple);
@@ -159,14 +180,14 @@ export function TrailMap({
       <div
         ref={el}
         className="trail-map"
-        aria-label={`Interactive GPS map of ${trail.name}`}
+        aria-label={`Mapa GPS interativo de ${trail.name}`}
       />
       <div className="map-top">
         <span className="map-tag">
           <Mountain size={14} />
           {trail.location}
         </span>
-        <span className="map-tag">GPS TRACE</span>
+        <span className="map-tag">Traçado GPS</span>
       </div>
       <div className="map-bottom">
         <button
@@ -177,11 +198,11 @@ export function TrailMap({
           }}
         >
           <Layers size={14} />
-          {terrain ? "Hide basemap" : "Show basemap"}
+          {terrain ? "Esconder mapa" : "Mostrar mapa"}
         </button>
         <button
           className="icon-button"
-          aria-label="Fit trail to map"
+          aria-label="Ajustar pista ao mapa"
           onClick={() =>
             map.current?.fitBounds(
               L.latLngBounds(
@@ -195,18 +216,44 @@ export function TrailMap({
         </button>
       </div>
       <div className="map-legend">
-        <span>
-          <i className="dot current" />
-          Current run
-        </span>
+        {mode === "plain" ? (
+          <span>
+            <i className="dot current" />
+            Run atual
+          </span>
+        ) : (
+          <span className="trace-scale">
+            <i className={`trace-ramp ${mode}`} />
+            {mode === "speed" ? "Lento → rápido" : "A perder → a ganhar tempo"}
+          </span>
+        )}
         <span>
           <i className="dot ghost" />
           Ghost
         </span>
       </div>
+      <div className="trace-modes" role="group" aria-label="Cor do traçado">
+        {(
+          [
+            ["ghost", "Δ Ghost"],
+            ["speed", "Velocidade"],
+            ["plain", "Simples"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={mode === value ? "active" : ""}
+            aria-pressed={mode === value}
+            onClick={() => setMode(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {tileError && terrain && (
         <span className="map-error">
-          Basemap unavailable. GPS trace is still interactive.
+          Mapa base indisponível. O traçado GPS continua interativo.
         </span>
       )}
     </div>

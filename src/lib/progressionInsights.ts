@@ -1,4 +1,4 @@
-import { analyze, sectorTimes } from "./analysis";
+import { courseDuration, sectorTimes } from "./analysis";
 import type { Run, Trail } from "../types";
 
 export interface SectorTrend {
@@ -69,7 +69,7 @@ export function progressionInsights(
 
   const timed = runs.map((run, order) => ({
     run,
-    duration: analyze(run.points).duration,
+    duration: courseDuration(run, options.trail),
     order,
   }));
   timed.sort((a, b) => {

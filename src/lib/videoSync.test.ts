@@ -3,7 +3,7 @@ import type { Point, Run, Trail } from "../types";
 import { clipToRideWindow, detectStops, runTimeForVideo, sectorVideoWindows, videoTimeForRun } from "./videoSync";
 
 const point = (time: number, lat: number, lon = -8.4): Point => ({ time, lat, lon, ele: 100 });
-const trail: Trail = { id: "t", name: "Trail", location: "Braga", difficulty: "Black", points: [point(0, 41), point(10, 41.001)], boundaries: [0.5], sectorNames: ["Top", "Bottom"] };
+const trail: Trail = { id: "t", name: "Trail", location: "Braga", difficulty: "Black", points: [point(0, 41), point(30, 41.003)], boundaries: [0.5], sectorNames: ["Top", "Bottom"] };
 const run: Run = { id: "r", trailId: "t", bikeId: "b", name: "Run", date: "2026-01-01", notes: "", points: [point(0, 41), point(10, 41.001), point(20, 41.002), point(30, 41.003)] };
 
 describe("video synchronization", () => {

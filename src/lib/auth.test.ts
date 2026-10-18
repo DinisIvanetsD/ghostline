@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  changePassword,
   getSession,
   loginAccount,
   registerAccount,
@@ -43,10 +44,10 @@ describe("local rider accounts", () => {
         email: "RIDER@example.com",
         password: "downhill-456",
       }),
-    ).rejects.toThrow(/already exists/);
+    ).rejects.toThrow(/Já existe/);
     await expect(
       loginAccount({ email: registered.email, password: "wrong-pass" }),
-    ).rejects.toThrow(/incorrect/);
+    ).rejects.toThrow(/incorretos/);
 
     await expect(
       loginAccount({ email: "RIDER@example.com", password: "downhill-123" }),
@@ -56,9 +57,32 @@ describe("local rider accounts", () => {
   it("enforces useful registration fields", async () => {
     await expect(
       registerAccount({ name: "Rider", email: "rider@example.com", password: "short" }),
-    ).rejects.toThrow(/8 characters/);
+    ).rejects.toThrow(/8 caracteres/);
     await expect(
       registerAccount({ name: "Rider", email: "bad", password: "long-enough" }),
-    ).rejects.toThrow(/valid email/);
+    ).rejects.toThrow(/email válido/);
+  });
+
+  it("stores salted hashes and upgrades old unsalted accounts on sign-in", async () => {
+    const a = await registerAccount({ name: "Rider A", email: "a@example.com", password: "same-pass-123" });
+    await registerAccount({ name: "Rider B", email: "b@example.com", password: "same-pass-123" });
+    const stored = JSON.parse(localStorage.getItem("ghostline.auth.v1")!);
+    expect(stored.users[0].passwordHash).toMatch(/^pbkdf2\$/);
+    expect(stored.users[0].passwordHash).not.toBe(stored.users[1].passwordHash);
+
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("same-pass-123"));
+    stored.users[0].passwordHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+    localStorage.setItem("ghostline.auth.v1", JSON.stringify(stored));
+    await expect(loginAccount({ email: "a@example.com", password: "same-pass-123" })).resolves.toEqual(a);
+    expect(JSON.parse(localStorage.getItem("ghostline.auth.v1")!).users[0].passwordHash).toMatch(/^pbkdf2\$/);
+  });
+
+  it("changes the password only with the current one", async () => {
+    const rider = await registerAccount({ name: "Rider", email: "r@example.com", password: "first-pass-1" });
+    await expect(changePassword({ userId: rider.userId, current: "wrong-pass", next: "second-pass-2" })).rejects.toThrow(/atual/);
+    await changePassword({ userId: rider.userId, current: "first-pass-1", next: "second-pass-2" });
+    signOut();
+    await expect(loginAccount({ email: "r@example.com", password: "first-pass-1" })).rejects.toThrow(/incorretos/);
+    await expect(loginAccount({ email: "r@example.com", password: "second-pass-2" })).resolves.toEqual(rider);
   });
 });
