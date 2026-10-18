@@ -135,6 +135,27 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   // 2D first: the sector gates read at a glance; 3D is the rider's choice.
   const [mapView, setMapView] = useState<"2d" | "3d">("2d");
+  // Rendered twice: beside the run pickers on wide screens, right above the map on phone.
+  const mapSwitch = (placement: "wide" | "phone") => (
+    <div className={`segmented map-view-switch ${placement}`} role="group" aria-label="Vista do mapa">
+      {(
+        [
+          ["2d", "Mapa 2D"],
+          ["3d", "Relevo 3D"],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          className={mapView === value ? "active" : ""}
+          aria-pressed={mapView === value}
+          onClick={() => setMapView(value)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
   const [sharedToken, setSharedToken] = useState(readSharedRunToken);
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -660,24 +681,7 @@ export default function App() {
                       ))}
                     </select>
                   </label>
-                  <div className="segmented map-view-switch" role="group" aria-label="Vista do mapa">
-                    {(
-                      [
-                        ["2d", "Mapa 2D"],
-                        ["3d", "Relevo 3D"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className={mapView === value ? "active" : ""}
-                        aria-pressed={mapView === value}
-                        onClick={() => setMapView(value)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  {mapSwitch("wide")}
                   <span className="session-date">
                     {new Date(run.date).toLocaleDateString("pt-PT", {
                       day: "numeric",
@@ -688,6 +692,7 @@ export default function App() {
                 </div>
                 <div className="analysis-grid">
                   <div className="map-column">
+                    {mapSwitch("phone")}
                     {mapView === "2d" ? (
                       <TrailMap
                         trail={trail}

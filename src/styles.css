@@ -4258,9 +4258,22 @@ h2, h3 { text-transform: uppercase; }
 .map-column > .telemetry-stats { border: 1px solid #1f2430; border-top-color: #2a3040; border-radius: 0 0 8px 8px; background: #151922; }
 @media (min-width: 701px) { .sector-row { aspect-ratio: auto; min-height: 96px; } }
 .field textarea, textarea { padding: 10px 12px; }
+@media (min-width: 701px) { .map-view-switch.phone { display: none; } }
 @media (max-width: 700px) {
-  .map-view-switch { align-self: stretch; margin-left: 0; }
+  .map-view-switch.wide { display: none; }
+  .map-view-switch.phone { width: 100%; margin: 0 0 8px; }
   .map-view-switch button { flex: 1; }
+  .history-panel tbody td:has(> .conditions-select) { gap: 10px; }
+  .history-panel tbody td:has(> .conditions-select)::before { content: "Piso"; color: var(--muted); font-size: 9px; letter-spacing: 0.08em; }
+  .history-panel tbody td > .conditions-select { flex: 1; min-height: 36px; }
   .map-panel { min-height: 320px; }
   .map-panel .trail-map { height: 320px; }
 }
+
+/* Final pass: one heading voice, no stray rules, list cards boxed like posters. */
+h1 { text-transform: uppercase; }
+.trail-hero { border: 0; }
+.bike-card { padding: 18px; border: 1px solid #2a3040; border-radius: 8px; background: #11151c; }
+.bike-card:hover { border-color: var(--accent); }
+.bike-grid { gap: 16px; }
+.run-recorder-head > strong { font: 800 20px "Big Shoulders Display", "Public Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text); }

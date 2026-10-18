@@ -559,7 +559,7 @@ export function ProfileSettings({ data, onChange, onSignOut, cloudSyncEnabled, l
           />
         </label>
         <label className="field">
-          Email <span className="muted">opcional</span>
+          <span>Email <span className="muted">· opcional</span></span>
           <input
             type="email"
             value={profile.email}
@@ -1177,7 +1177,7 @@ export function ImportRun({
   }, [points]);
   const telemetry = telemetryResult.value;
   return (
-    <Section title="Importar run">
+    <Section title="Ficheiro GPX ou FIT">
       <p className="muted">
         GPX ou FIT com tempos, até 10 MB. A rota é comparada com a pista antes de guardar.
       </p>

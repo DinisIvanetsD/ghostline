@@ -111,6 +111,8 @@ export function Terrain3D({ trail, current, ghost, progress, sector, playing = f
       instance.addLayer({ id: "sector", type: "line", source: "sector", paint: { "line-color": "#ffbe55", "line-width": 14, "line-opacity": 0.35, "line-blur": 2 } });
       instance.addLayer({ id: "trace", type: "line", source: "trace", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "color"], "line-width": 5 } });
       instance.addLayer({ id: "riders", type: "circle", source: "riders", paint: { "circle-radius": ["case", ["==", ["get", "who"], "run"], 8, 7], "circle-color": ["case", ["==", ["get", "who"], "run"], "#ffbe55", "#a4a9b3"], "circle-stroke-color": "#0b0e13", "circle-stroke-width": 3, "circle-pitch-alignment": "map" } });
+      // Credits start folded behind the (i) button so they never cover the run.
+      instance.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
       // The constructor fits the bounds flat; refit with the tilt so the run fills the stage.
       instance.fitBounds(overview.bounds, { padding: 40, pitch: 55, bearing: overview.bearing, duration: 0 });
       setReady(true);
