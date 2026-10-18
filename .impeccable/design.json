@@ -1,200 +1,45 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-14T10:14:16+01:00",
+  "generatedAt": "2026-10-18T12:00:00+01:00",
   "title": "Design System: Ghostline",
   "extensions": {
     "colorMeta": {
-      "background": {
-        "role": "neutral",
-        "displayName": "Matte Canvas",
-        "canonical": "#101311",
-        "tonalRamp": [
-          "#101311",
-          "#151a16",
-          "#1b211b",
-          "#222a21",
-          "#303a2e",
-          "#4b5848",
-          "#74806f",
-          "#c6cec2"
-        ]
-      },
-      "panel": {
-        "role": "neutral",
-        "displayName": "Panel Green-Black",
-        "canonical": "#181c19",
-        "tonalRamp": [
-          "#181c19",
-          "#1d221e",
-          "#232923",
-          "#2b322a",
-          "#3c4639",
-          "#5b6758",
-          "#879385",
-          "#d0d6cd"
-        ]
-      },
-      "raised": {
-        "role": "neutral",
-        "displayName": "Raised Green-Black",
-        "canonical": "#212622",
-        "tonalRamp": [
-          "#212622",
-          "#272d28",
-          "#2e352f",
-          "#384139",
-          "#4b574b",
-          "#6a7668",
-          "#929d91",
-          "#d7ddd4"
-        ]
-      },
-      "border": {
-        "role": "neutral",
-        "displayName": "Fine Border",
-        "canonical": "#313830",
-        "tonalRamp": [
-          "#161a17",
-          "#202620",
-          "#313830",
-          "#424b40",
-          "#596458",
-          "#727d72",
-          "#9ba59a",
-          "#d3d8d1"
-        ]
-      },
-      "text": {
-        "role": "neutral",
-        "displayName": "Warm Off-White",
-        "canonical": "#f0f2e9",
-        "tonalRamp": [
-          "#20231f",
-          "#353934",
-          "#4c514a",
-          "#686e65",
-          "#878d84",
-          "#aab0a7",
-          "#d0d4cc",
-          "#f0f2e9"
-        ]
-      },
-      "muted": {
-        "role": "neutral",
-        "displayName": "Cool Muted",
-        "canonical": "#9ca698",
-        "tonalRamp": [
-          "#20251f",
-          "#30382f",
-          "#424d41",
-          "#596558",
-          "#707c6f",
-          "#879284",
-          "#9ca698",
-          "#d1d6cf"
-        ]
-      },
-      "accent": {
-        "role": "primary",
-        "displayName": "Acid Yellow Current Run",
-        "canonical": "#d5f55a",
-        "tonalRamp": [
-          "#293010",
-          "#47551b",
-          "#667d26",
-          "#87a72f",
-          "#a9ce3a",
-          "#c1e64b",
-          "#d5f55a",
-          "#f1ffc1"
-        ]
-      },
-      "lost": {
-        "role": "tertiary",
-        "displayName": "Coral Time Lost",
-        "canonical": "#f19784",
-        "tonalRamp": [
-          "#3c1e1b",
-          "#68352d",
-          "#914a40",
-          "#b95f52",
-          "#d27061",
-          "#e48473",
-          "#f19784",
-          "#ffd0c8"
-        ]
-      },
-      "gained": {
-        "role": "tertiary",
-        "displayName": "Mint Time Gained",
-        "canonical": "#9edfc0",
-        "tonalRamp": [
-          "#193328",
-          "#2a5a46",
-          "#3f8064",
-          "#589b7a",
-          "#71b590",
-          "#87caa8",
-          "#9edfc0",
-          "#d0f5e1"
-        ]
-      },
-      "ghost": {
-        "role": "neutral",
-        "displayName": "Cool Pale Ghost",
-        "canonical": "#bec8bf",
-        "tonalRamp": [
-          "#252b26",
-          "#414a42",
-          "#5d685e",
-          "#78837a",
-          "#929e94",
-          "#a9b4ab",
-          "#bec8bf",
-          "#e4e9e4"
-        ]
-      }
+      "cobalt": { "role": "primary", "displayName": "Bom Jesus Cobalt", "canonical": "#1d3f91", "tonalRamp": ["#0c1a3d", "#142a63", "#1d3f91", "#2c58c4", "#5a7fd6", "#8ea7e3", "#c3d1f0", "#eaf0fb"] },
+      "cobalt-hover": { "role": "primary", "displayName": "Lit Cobalt", "canonical": "#2c58c4", "tonalRamp": ["#122453", "#1b3a85", "#2c58c4", "#4b74d4", "#7395df", "#9db5ea", "#c8d6f3", "#edf2fc"] },
+      "cobalt-mist": { "role": "primary", "displayName": "Cobalt Mist", "canonical": "#d6def3", "tonalRamp": ["#1d3f91", "#3e5ba6", "#6079b9", "#8498cb", "#a8b8dd", "#c4cfea", "#d6def3", "#f0f3fb"] },
+      "cobalt-rule": { "role": "neutral", "displayName": "Pale Cobalt Rule", "canonical": "#dfe5f2", "tonalRamp": ["#2a3550", "#4a577a", "#6d7aa0", "#929ec0", "#b6c0db", "#cfd7ea", "#dfe5f2", "#f3f6fb"] },
+      "ochre-band": { "role": "secondary", "displayName": "Sameiro Ochre", "canonical": "#c9782a", "tonalRamp": ["#3f2208", "#6b3a0f", "#9a5410", "#c9782a", "#dc9a57", "#e8bb8b", "#f3dabd", "#fbf1e6"] },
+      "ochre-text": { "role": "secondary", "displayName": "Burnt Ochre", "canonical": "#9a5410", "tonalRamp": ["#3f2208", "#6b3a0f", "#9a5410", "#c9782a", "#dc9a57", "#e8bb8b", "#f3dabd", "#fbf1e6"] },
+      "glaze": { "role": "neutral", "displayName": "Glaze White", "canonical": "#f6f7f9", "tonalRamp": ["#1b1e24", "#3a3f4a", "#5d6577", "#8a91a1", "#b4bac7", "#d5dce9", "#eef1f7", "#f6f7f9"] },
+      "panel": { "role": "neutral", "displayName": "Panel White", "canonical": "#ffffff", "tonalRamp": ["#1b1e24", "#3a3f4a", "#5d6577", "#8a91a1", "#b4bac7", "#d5dce9", "#f6f7f9", "#ffffff"] },
+      "raised": { "role": "neutral", "displayName": "Raised Glaze", "canonical": "#eef1f7", "tonalRamp": ["#1b1e24", "#3a3f4a", "#5d6577", "#8a91a1", "#b4bac7", "#d5dce9", "#eef1f7", "#f6f7f9"] },
+      "border": { "role": "neutral", "displayName": "Panel Border", "canonical": "#d5dce9", "tonalRamp": ["#1b1e24", "#3a3f4a", "#5d6577", "#8a91a1", "#b4bdd4", "#d5dce9", "#eef1f7", "#f6f7f9"] },
+      "field-border": { "role": "neutral", "displayName": "Field Border", "canonical": "#b4bdd4", "tonalRamp": ["#1b1e24", "#3a3f4a", "#5d6577", "#8a91a1", "#b4bdd4", "#d5dce9", "#eef1f7", "#f6f7f9"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1b1e24", "tonalRamp": ["#1b1e24", "#2e333d", "#434956", "#5d6577", "#8a91a1", "#b4bac7", "#d5dce9", "#f6f7f9"] },
+      "muted": { "role": "neutral", "displayName": "Slate", "canonical": "#5d6577", "tonalRamp": ["#1b1e24", "#2e333d", "#434956", "#5d6577", "#8a91a1", "#b4bac7", "#d5dce9", "#f6f7f9"] }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Condensed Race Heading",
-        "purpose": "Page and empty-state headings."
-      },
-      "title": {
-        "displayName": "Condensed Panel Heading",
-        "purpose": "Panel and section headings."
-      },
-      "body": {
-        "displayName": "Barlow UI Copy",
-        "purpose": "Interface labels, controls, and explanatory text."
-      },
-      "measurement": {
-        "displayName": "Plex Mono Measurement",
-        "purpose": "Timings, deltas, sectors, and trace metadata."
-      },
-      "label": {
-        "displayName": "Instrument Label",
-        "purpose": "Compact tracked annotations and captions."
-      }
+      "display": { "displayName": "Display", "purpose": "The run time in the timing panel, in cobalt; 49px at 1550px and wider." },
+      "headline": { "displayName": "Headline", "purpose": "The trail name in the trail select; 21px on phone." },
+      "title": { "displayName": "Title", "purpose": "Panel headings such as Tempo and Tempos por setor." },
+      "body": { "displayName": "Body", "purpose": "Controls, table cells, run pickers, paragraph copy." },
+      "label": { "displayName": "Label", "purpose": "Sentence-case field and stat labels in Slate; 12px floor." },
+      "tile-figure": { "displayName": "Tile figure", "purpose": "The delta inside a sector tile; 13px on phone." }
     },
     "shadows": [],
+    "gradients": [
+      { "name": "trace-ramp-speed", "value": "linear-gradient(90deg, #c9782a, #bec8e1, #1d3f91)", "purpose": "Map legend for speed mode: slow ochre to fast cobalt. Legend only." },
+      { "name": "trace-ramp-ghost", "value": "linear-gradient(90deg, #c9782a, #8c9ecc, #1d3f91)", "purpose": "Map legend for Ghost mode: losing ochre through on-pace pale cobalt to gaining cobalt. Legend only." }
+    ],
     "motion": [
-      {
-        "name": "state-transition",
-        "value": "background 0.15s",
-        "purpose": "Button and compact control state changes."
-      },
-      {
-        "name": "reduced-motion",
-        "value": "transition: none; animation: none",
-        "purpose": "Honour prefers-reduced-motion."
-      }
+      { "name": "background-fade", "value": "background 0.15s", "purpose": "Button hover fill change. Disabled under prefers-reduced-motion." }
     ],
     "breakpoints": [
-      { "name": "wide", "value": "1550px" },
-      { "name": "rail-compact", "value": "1200px" },
-      { "name": "stack", "value": "1000px" },
-      { "name": "mobile", "value": "700px" }
+      { "name": "phone-narrow", "value": "480px" },
+      { "name": "phone", "value": "700px" },
+      { "name": "tablet", "value": "1000px" },
+      { "name": "laptop", "value": "1200px" },
+      { "name": "wide", "value": "1550px" }
     ]
   },
   "components": [
@@ -202,86 +47,100 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Primary telemetry action.",
-      "html": "<button class=\"ds-btn-primary\">IMPORT RUN</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid transparent; border-radius: 4px; background: var(--accent); color: var(--bg); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #e2ff81; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+      "description": "Solid cobalt committing action, such as Importar run.",
+      "html": "<button class=\"ds-btn-primary\">Importar run</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: 1px solid transparent; border-radius: 2px; background: #1d3f91; color: #e1e5ee; font: 600 13px 'Public Sans', sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #2c58c4; } .ds-btn-primary:focus-visible { outline: 2px solid #1d3f91; outline-offset: 4px; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Quiet outlined action beside a primary control.",
-      "html": "<button class=\"ds-btn-secondary\">VIEW DETAILS</button>",
-      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border: 1px solid #424b3e; border-radius: 4px; background: transparent; color: var(--text); font: 600 13px/1.2 Barlow, sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-secondary:hover { background: var(--raised); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+      "description": "Outlined quiet action, such as Entrar, Gerir setores or Partilhar resultado.",
+      "html": "<button class=\"ds-btn-secondary\">Gerir setores</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: 1px solid #afb6c6; border-radius: 2px; background: transparent; color: #1b1e24; font: 600 13px 'Public Sans', sans-serif; cursor: pointer; transition: background 0.15s; } .ds-btn-secondary:hover { background: #eef1f7; } .ds-btn-secondary:focus-visible { outline: 2px solid #1d3f91; outline-offset: 4px; }"
     },
     {
-      "name": "Telemetry Panel",
-      "kind": "card",
-      "refersTo": "panel",
-      "description": "Contained instrument surface for analysis.",
-      "html": "<section class=\"ds-panel\"><h2>TELEMETRY</h2><p>Current run / ghost comparison</p></section>",
-      "css": ".ds-panel { padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); } .ds-panel h2 { margin: 0; font: 600 24px/1.2 'Barlow Condensed', sans-serif; } .ds-panel p { margin: 8px 0 0; color: var(--muted); font: 400 14px/1.5 Barlow, sans-serif; }"
-    },
-    {
-      "name": "Telemetry Input",
+      "name": "Select Field",
       "kind": "input",
-      "refersTo": "input",
-      "description": "Dark field for run search.",
-      "html": "<label class=\"ds-field\">RUN SEARCH<input class=\"ds-input\" placeholder=\"Search runs\" /></label>",
-      "css": ".ds-field { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font: 600 10px/1.2 Barlow, sans-serif; letter-spacing: 0.12em; } .ds-input { min-height: 43px; padding: 10px 12px; border: 1px solid #414d39; border-radius: 4px; background: var(--bg); color: var(--text); font: 400 14px/1.5 Barlow, sans-serif; outline-offset: 4px; } .ds-input::placeholder { color: #9aa88e; } .ds-input:focus-visible { outline: 2px solid var(--accent); }"
+      "refersTo": "input-field",
+      "description": "White field with a cobalt-grey stroke, used for filters, search and forms.",
+      "html": "<input class=\"ds-input\" placeholder=\"Procurar runs\" />",
+      "css": ".ds-input { min-height: 40px; padding: 8px 10px; background: #ffffff; color: #1b1e24; border: 1px solid #b4bdd4; border-radius: 2px; font: 400 13px 'Public Sans', sans-serif; caret-color: #1d3f91; } .ds-input:focus-visible { outline: 2px solid #1d3f91; outline-offset: 4px; }"
     },
     {
-      "name": "Navigation Item",
+      "name": "Cobalt Rail Navigation",
       "kind": "nav",
       "refersTo": "nav-item",
-      "description": "Rail or mobile navigation entry.",
-      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#analysis\">ANALYSIS</a>",
-      "css": ".ds-nav-item { display: flex; align-items: center; min-height: 40px; padding: 13px 12px; border-radius: 5px; color: #a5afa1; font: 500 14px/1.2 Barlow, sans-serif; text-decoration: none; } .ds-nav-item:hover { background: #232922; } .ds-nav-item-active { background: #d5f55a12; color: var(--accent); } .ds-nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+      "description": "Committed cobalt shell; the active item is a white block with cobalt text.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-nav-item ds-active\" href=\"#\">Análise</a><a class=\"ds-nav-item\" href=\"#\">Histórico</a><a class=\"ds-nav-item\" href=\"#\">Garagem</a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; width: 224px; padding: 20px; background: #1d3f91; } .ds-nav-item { display: block; margin: 5px 0; padding: 13px 12px; border-radius: 2px; color: #d6def3; font: 700 14px 'Public Sans', sans-serif; text-decoration: none; } .ds-nav-item:hover { background: #2c58c4; color: #ffffff; } .ds-nav-item.ds-active { background: #ffffff; color: #1d3f91; } .ds-nav-item:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; }"
     },
     {
-      "name": "Current Ghost Trace",
+      "name": "Data Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "White panel framed in 2px cobalt, the container for timing, map and history data.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Tempo</h2><div class=\"ds-run-time\">3:05.00</div><p class=\"ds-delta\"><span>+4.00s</span> para o melhor tempo</p></section>",
+      "css": ".ds-panel { padding: 18px 20px; background: #ffffff; border: 2px solid #1d3f91; border-radius: 2px; font-family: 'Public Sans', sans-serif; font-variant-numeric: tabular-nums; color: #1b1e24; } .ds-panel-title { margin: 0; font-size: 21px; font-weight: 600; } .ds-run-time { margin-top: 7px; font-size: 44px; line-height: 1.3; letter-spacing: -0.03em; color: #1d3f91; } .ds-delta { margin: 0; font-size: 12px; color: #5d6577; } .ds-delta span { color: #9a5410; font-size: 13px; }"
+    },
+    {
+      "name": "Sector Tiles",
       "kind": "custom",
-      "refersTo": "telemetry-trace",
-      "description": "Signature current and ghost comparison cue.",
-      "html": "<div class=\"ds-trace\"><span class=\"ds-trace-current\"></span><span class=\"ds-trace-ghost\"></span><b>+00:12.4</b></div>",
-      "css": ".ds-trace { display: flex; align-items: center; gap: 8px; min-height: 24px; color: var(--accent); font: 400 11px/1.3 'IBM Plex Mono', monospace; } .ds-trace-current, .ds-trace-ghost { display: block; width: 48px; height: 2px; background: var(--accent); } .ds-trace-ghost { border-top: 2px dashed var(--ghost); background: none; } .ds-trace b { font-weight: 400; }"
+      "refersTo": "sector-tile-gained",
+      "description": "Signature: square tiles per sector, cobalt fill when gained, white with an ochre foot band when lost.",
+      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile ds-lost\"><b>S1</b><strong>+0.99s</strong><span>Arranque</span><small>0:41.19</small></button><button class=\"ds-tile ds-gain\"><b>S2</b><strong>-0.98s</strong><span>Zona íngreme</span><small>1:13.80</small></button><button class=\"ds-tile ds-lost ds-selected\"><b>S3</b><strong>+1.96s</strong><span>Plano a pedalar</span><small>0:31.61</small></button><button class=\"ds-tile ds-lost\"><b>S4</b><strong>+2.02s</strong><span>Descida final</span><small>0:38.40</small></button></div>",
+      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 320px; } .ds-tile { display: grid; grid-template-columns: auto 1fr; grid-template-areas: 'index delta' 'name name' 'time time'; align-content: space-between; gap: 6px 8px; aspect-ratio: 1; padding: 10px 12px; border: 2px solid #1d3f91; border-radius: 0; background: #ffffff; color: #1b1e24; font-family: 'Public Sans', sans-serif; font-variant-numeric: tabular-nums; text-align: left; cursor: pointer; } .ds-tile b { grid-area: index; font-size: 12px; font-weight: 800; } .ds-tile strong { grid-area: delta; justify-self: end; font-size: 15px; font-weight: 800; } .ds-tile span { grid-area: name; font-size: 13px; font-weight: 600; } .ds-tile small { grid-area: time; font-size: 12px; } .ds-tile:hover { background: #eef1f7; } .ds-gain { background: #1d3f91; color: #ffffff; } .ds-gain:hover { background: #2c58c4; } .ds-lost { border-bottom: 10px solid #c9782a; } .ds-lost strong { color: #9a5410; } .ds-selected { outline: 3px solid #1b1e24; outline-offset: 2px; } .ds-tile:focus-visible { outline: 2px solid #1d3f91; outline-offset: 4px; }"
+    },
+    {
+      "name": "Square Map Marker",
+      "kind": "custom",
+      "refersTo": "map-marker",
+      "description": "Sector gate marker on the map: a cobalt square carrying the tile grammar.",
+      "html": "<span class=\"ds-marker\">2</span>",
+      "css": ".ds-marker { display: inline-grid; place-items: center; width: 26px; height: 26px; background: #1d3f91; border: 2px solid #ffffff; border-radius: 0; color: #ffffff; font: 800 11px 'Public Sans', sans-serif; outline: 1px solid #1d3f91; }"
+    },
+    {
+      "name": "Trace Legend",
+      "kind": "custom",
+      "refersTo": "map-legend",
+      "description": "The only gradient in the system: explains the ochre-to-cobalt trace.",
+      "html": "<span class=\"ds-legend\"><i class=\"ds-ramp\"></i> A perder → a ganhar tempo</span>",
+      "css": ".ds-legend { display: inline-flex; align-items: center; gap: 6px; padding: 7px 9px; background: #ffffff; border: 1px solid #d5dce9; border-radius: 2px; color: #1b1e24; font: 400 12px 'Public Sans', sans-serif; } .ds-ramp { display: inline-block; width: 38px; height: 5px; border-radius: 2px; background: linear-gradient(90deg, #c9782a, #8c9ecc, #1d3f91); }"
     }
   ],
   "narrative": {
-    "northStar": "The Race Engineer Workstation",
-    "overview": "Ghostline is a compact downhill MTB telemetry workstation: matte green-black surfaces, fine instrument borders, condensed race-board headings, and measured data typography. Color is telemetry: acid yellow marks current state, pale green marks the ghost, and coral and mint report time lost and gained.",
+    "northStar": "Azulejo de Braga",
+    "overview": "Ghostline is painted like the tiled panels of Bom Jesus and Sameiro: cobalt fields on white glaze, with the run's data laid out as tiles. The cobalt field is the shell. It is the left rail on desktop and the header with its nav row on phone. Everything the rider reads sits on white glaze panels inside it. The world is built for a phone held on the hill in full sun, often with gloves on. Contrast is high, figures are large and tabular, and colour carries meaning before any label is read.\n\nColour is flat and has one meaning per hue. Cobalt means the brand, the active state, the primary action and time gained. Ochre means time lost. Everything else is ink on white with pale cobalt rules. Depth comes from frames and rules, never from shadow: a data panel earns a 2px cobalt frame, and a form groups its parts with thin rules. The reused signature is the sector tile. Each sector is a square that is filled cobalt when the rider gained time and stays white with an ochre band along its foot when time was lost. The map trace uses the same two colours, so a tile and its stretch of trail read as one fact.\n\nThe system replaces Ghostline's earlier near-black dashboard with a single neon accent.",
     "keyCharacteristics": [
-      "Matte dark green-black canvas",
-      "Condensed headings with mono measurements",
-      "Sparse semantic state color",
-      "Fine borders and compact controls"
+      "A committed cobalt shell: rail on desktop, header and nav row on phone.",
+      "White panels on a glaze ground, flat colour, no shadows.",
+      "Square geometry with 2px corners on controls and 0px on tiles and markers.",
+      "Cobalt means time gained, ochre means time lost, on tiles, figures and the map trace alike.",
+      "Public Sans for every role, with tabular figures throughout."
     ],
     "rules": [
-      {
-        "name": "The Telemetry Color Rule",
-        "body": "Use semantic state colors sparingly and consistently.",
-        "section": "colors"
-      },
-      {
-        "name": "The Measurement Rule",
-        "body": "Compared numbers use IBM Plex Mono; prose stays in Barlow.",
-        "section": "typography"
-      },
-      {
-        "name": "The Flat-by-Default Rule",
-        "body": "Use tonal surfaces or fine borders; do not add routine shadows.",
-        "section": "elevation"
-      }
+      { "name": "The One Meaning Rule", "body": "Cobalt is gain and ochre is loss, everywhere: tile, figure, map trace and share card. Never use ochre for decoration, and never use cobalt to show a loss.", "section": "colors" },
+      { "name": "The Flat Glaze Rule", "body": "Colour is applied flat. The only gradients in the system are the two map legend ramps, which explain the trace colours.", "section": "colors" },
+      { "name": "The Ochre Pair Rule", "body": "Sameiro Ochre is a fill and Burnt Ochre is its text. Never set text in Sameiro Ochre on white.", "section": "colors" },
+      { "name": "The Sunlit Label Rule", "body": "Labels are sentence case, untracked and at least 12px. Readability on the hill beats compactness.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Every time, delta and distance uses tabular figures in Public Sans. Do not add a separate monospace face.", "section": "typography" },
+      { "name": "The Framed Not Lifted Rule", "body": "A surface that matters gets a cobalt frame. Nothing casts a shadow.", "section": "elevation" },
+      { "name": "The No Card-in-Card Rule", "body": "Groups inside a card are separated by rules on white, never by grey boxes nested inside it.", "section": "elevation" }
     ],
     "dos": [
-      "Do preserve the race-engineer workstation metaphor.",
-      "Do keep the 4 / 8 / 12 / 16 / 24 / 32 / 48px rhythm.",
-      "Do maintain visible focus and 40px targets."
+      "Do keep the shell cobalt (#1d3f91): rail on desktop, header and nav row on phone, with the active nav item as a white block with cobalt text.",
+      "Do frame data panels with a 2px cobalt border and leave quiet panels and forms at 1px.",
+      "Do show gain in cobalt and loss in ochre, with #c9782a as fill and #9a5410 as text, consistently across tiles, figures, trace and share card.",
+      "Do keep sector tiles square (1:1, 0px corners), in a 2 x 2 grid on desktop and four in a row on phone.",
+      "Do set every time and delta in Public Sans with tabular figures.",
+      "Do keep labels in sentence case, untracked and at least 12px."
     ],
     "donts": [
-      "Don't introduce decorative gradients or routine shadows.",
-      "Don't use coral or mint as general brand accents.",
-      "Don't replace the condensed heading and mono measurement pairing."
+      "Don't add shadows or gradients. The map legend ramps are the only gradients.",
+      "Don't round corners beyond 2px. The avatar is the only circle.",
+      "Don't nest grey boxes inside a card. Divide groups with #dfe5f2 rules on white.",
+      "Don't set text in #c9782a on white. Use #9a5410 for loss text.",
+      "Don't introduce a second typeface, a monospace face or a dark theme."
     ]
   }
 }

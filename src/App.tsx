@@ -599,7 +599,7 @@ export default function App() {
                   <label className="run-picker">
                     <span>
                       <i className="dot current" />
-                      RUN ATUAL
+                      Run atual
                     </span>
                     <select
                       aria-label="Run atual"
@@ -621,7 +621,7 @@ export default function App() {
                   <label className="run-picker">
                     <span>
                       <Ghost size={14} />
-                      RUN DE REFERÊNCIA
+                      Run de referência
                     </span>
                     <select
                       aria-label="Run de referência"
@@ -730,7 +730,7 @@ export default function App() {
                       <div className="reference-time">
                         <span>
                           <Flag size={14} />
-                          {compareId === "pb" ? "MELHOR TEMPO" : "REFERÊNCIA"}
+                          {compareId === "pb" ? "Melhor tempo" : "Referência"}
                         </span>
                         <strong>{formatTime(ghost.duration)}</strong>
                       </div>
@@ -795,7 +795,7 @@ export default function App() {
                         {splits.map((s, i) => (
                           <button
                             key={i}
-                            className={`sector-row ${sector === i ? "selected" : ""}`}
+                            className={`sector-row ${deltas[i] > 0.005 ? "tile-lost" : "tile-gain"} ${sector === i ? "selected" : ""}`}
                             onClick={() => {
                               setSector(sector === i ? null : i);
                               inspectProgress(
@@ -876,7 +876,6 @@ export default function App() {
                   </button>
                 </div>
                 <div className="replay-toolbar">
-                  <span>Repetição com o Ghost</span>
                   <button
                     className="text-button"
                     onClick={() => {

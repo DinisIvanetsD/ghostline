@@ -1,20 +1,21 @@
 :root {
-  font-family: "Barlow", sans-serif;
-  color: #f0f2e9;
-  background: #101311;
+  font-family: "Public Sans", sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #1b1e24;
+  background: #f6f7f9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --bg: #101311;
-  --panel: #181c19;
-  --raised: #212622;
-  --border: #313830;
-  --text: #f0f2e9;
-  --muted: #9ca698;
-  --accent: #d5f55a;
-  --lost: #f19784;
-  --gained: #9edfc0;
-  color-scheme: dark;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --raised: #eef1f7;
+  --border: #d5dce9;
+  --text: #1b1e24;
+  --muted: #5d6577;
+  --accent: #1d3f91;
+  --lost: #9a5410;
+  --gained: #1d3f91;
+  color-scheme: light;
 }
 * {
   box-sizing: border-box;
@@ -26,7 +27,8 @@ body {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 button,
@@ -71,8 +73,8 @@ input {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #414b40;
-  border-radius: 6px;
+  background: #afb5c4;
+  border-radius: 2px;
 }
 h1,
 h2,
@@ -86,14 +88,14 @@ h3 {
   text-wrap: balance;
 }
 h1 {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 42px;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 h2 {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: 0.005em;
@@ -113,7 +115,7 @@ p {
 .theory-panel strong,
 .trace-meta b,
 .scrubber {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "Public Sans", sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .muted {
@@ -141,13 +143,13 @@ p {
   flex-direction: column;
   padding: 31px 20px 18px;
   border-right: 1px solid var(--border);
-  background: #121612;
+  background: #e8eaee;
   z-index: 30;
 }
 .wordmark {
   display: flex;
   align-items: center;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 29px;
   font-weight: 700;
   letter-spacing: 0.025em;
@@ -172,19 +174,19 @@ p {
   border: 0;
   background: none;
   padding: 13px 12px;
-  color: #a5afa1;
+  color: #424a5a;
   font-weight: 500;
   text-align: left;
-  border-radius: 5px;
+  border-radius: 2px;
   margin: 5px 0;
   font-size: 14px;
 }
 .nav-item:hover,
 .profile-link:hover {
-  background: #232922;
+  background: #d3d7e0;
 }
 .nav-item.active {
-  background: #d5f55a12;
+  background: #1d3f9112;
   color: var(--accent);
 }
 .sidebar-bottom {
@@ -204,9 +206,9 @@ p {
 .avatar {
   height: 34px;
   width: 34px;
-  border: 1px solid #485342;
-  background: #2b3426;
-  color: #c6d6b9;
+  border: 1px solid #a7afc2;
+  background: #c8cedc;
+  color: #242c40;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -247,7 +249,7 @@ p {
   font-size: 13px;
 }
 .breadcrumb > span {
-  color: #5b6657;
+  color: #929baf;
 }
 .breadcrumb strong {
   font-weight: 400;
@@ -280,7 +282,7 @@ p {
   justify-content: center;
   gap: 8px;
   min-height: 40px;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
@@ -289,15 +291,15 @@ p {
 }
 .button.primary {
   background: var(--accent);
-  color: #1b240b;
+  color: #e1e5ee;
 }
 .button.primary:hover {
-  background: #e2ff81;
+  background: #2c58c4;
 }
 .button.secondary {
-  border-color: #424b3e;
+  border-color: #afb6c6;
   background: transparent;
-  color: #d4dacf;
+  color: #1f232e;
 }
 .button.secondary:hover {
   background: var(--raised);
@@ -334,10 +336,10 @@ main {
   place-items: center;
   width: 45px;
   height: 45px;
-  background: #222b1d;
-  border: 1px solid #3d4933;
+  background: #d2d7e4;
+  border: 1px solid #b2bbd0;
   color: var(--accent);
-  border-radius: 5px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 .trail-select {
@@ -348,7 +350,7 @@ main {
   width: fit-content;
 }
 .trail-select select {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 25px;
   font-weight: 600;
   background: none;
@@ -363,7 +365,7 @@ main {
   position: absolute;
   right: 0;
   pointer-events: none;
-  color: #b2bda8;
+  color: #373f53;
 }
 .trail-location {
   display: flex;
@@ -373,7 +375,7 @@ main {
   margin-top: 4px;
 }
 .trail-location > span {
-  color: #5b6657;
+  color: #929baf;
 }
 .comparison-toolbar {
   display: flex;
@@ -399,7 +401,7 @@ select {
   cursor: pointer;
 }
 select option {
-  background: #20261e;
+  background: #d7dae3;
   color: var(--text);
 }
 .run-picker select {
@@ -412,9 +414,9 @@ select option {
   height: 25px;
 }
 .versus {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 15px;
-  color: #677361;
+  color: #848ea6;
   padding-top: 13px;
 }
 .session-date {
@@ -435,7 +437,7 @@ select option {
   background: var(--accent);
 }
 .dot.ghost {
-  background: #bdc9bc;
+  background: #2d3340;
 }
 .analysis-grid {
   display: grid;
@@ -451,20 +453,20 @@ select option {
   position: relative;
   isolation: isolate;
   border: 1px solid var(--border);
-  border-radius: 8px 8px 0 0;
+  border-radius: 2px;
   overflow: hidden;
   min-height: 410px;
   flex: 1;
-  background: #1b231a;
+  background: #dadee7;
 }
 .trail-map {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: #1b231a;
+  background: #dadee7;
 }
 .leaflet-tile-pane {
-  filter: grayscale(1) invert(1) brightness(0.75);
+  filter: saturate(0.55);
   opacity: 0.6;
 }
 .map-top {
@@ -480,11 +482,11 @@ select option {
   align-items: center;
   gap: 6px;
   padding: 7px 9px;
-  background: #171e16ef;
-  border: 1px solid #45503d;
-  border-radius: 3px;
+  background: #dfe3ebef;
+  border: 1px solid #aab3c7;
+  border-radius: 2px;
   font-size: 10px;
-  color: #bdc7b5;
+  color: #2f3646;
 }
 .map-top .map-tag:last-child {
   font-size: 8px;
@@ -504,8 +506,8 @@ select option {
   cursor: pointer;
 }
 .map-bottom .icon-button {
-  background: #171e16;
-  border: 1px solid #45503d;
+  background: #dfe3eb;
+  border: 1px solid #aab3c7;
   width: 34px;
   min-height: 34px;
 }
@@ -517,9 +519,9 @@ select option {
   font-size: 9px;
   display: flex;
   gap: 14px;
-  background: #171e16dd;
+  background: #dfe3ebdd;
   padding: 7px 9px;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 .map-legend > span {
   display: flex;
@@ -533,13 +535,13 @@ select option {
   display: inline-block;
   width: 38px;
   height: 5px;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 .trace-ramp.speed {
-  background: linear-gradient(90deg, #f19784, #e8c46a, #d5f55a);
+  background: linear-gradient(90deg, #c9782a, #bec8e1, #1d3f91);
 }
 .trace-ramp.ghost {
-  background: linear-gradient(90deg, #f19784, #9ca698, #9edfc0);
+  background: linear-gradient(90deg, #c9782a, #8c9ecc, #1d3f91);
 }
 .trace-modes {
   position: absolute;
@@ -547,15 +549,15 @@ select option {
   top: 61px;
   z-index: 500;
   display: flex;
-  background: #171e16dd;
-  border-radius: 3px;
+  background: #dfe3ebdd;
+  border-radius: 2px;
   padding: 2px;
 }
 .trace-modes button {
   font: inherit;
   font-size: 10px;
   letter-spacing: 0.04em;
-  color: #c9d3c3;
+  color: #252b39;
   background: none;
   border: 0;
   padding: 6px 9px;
@@ -564,7 +566,7 @@ select option {
   cursor: pointer;
 }
 .trace-modes button.active {
-  background: #2d3529;
+  background: #c7ccd9;
   color: var(--accent);
 }
 .trace-modes button:focus-visible {
@@ -578,8 +580,8 @@ select option {
   right: 16px;
   z-index: 500;
   padding: 7px;
-  background: #171e16;
-  color: #c9d3c3;
+  background: #dfe3eb;
+  color: #252b39;
   font-size: 10px;
 }
 .map-sector span {
@@ -587,39 +589,39 @@ select option {
   place-items: center;
   width: 26px;
   height: 26px;
-  color: #dce7d5;
-  background: #1d291b;
-  border: 1px solid #a6b694;
+  color: #161b27;
+  background: #d4d9e6;
+  border: 1px solid #3d4965;
   border-radius: 50%;
   font:
-    11px "IBM Plex Mono",
-    monospace;
+    11px "Public Sans",
+    sans-serif;
 }
 .leaflet-control-zoom {
-  border: 1px solid #45503d !important;
-  border-radius: 3px !important;
+  border: 1px solid #aab3c7 !important;
+  border-radius: 2px;
   overflow: hidden;
 }
 .leaflet-control-zoom a {
-  background: #171e16 !important;
-  color: #dce7d5 !important;
-  border-color: #45503d !important;
+  background: #dfe3eb !important;
+  color: #161b27 !important;
+  border-color: #aab3c7 !important;
   font-size: 19px !important;
 }
 .leaflet-control-attribution {
-  background: #171e16d9 !important;
-  color: #aab6a1 !important;
+  background: #dfe3ebd9 !important;
+  color: #3d455a !important;
   font-size: 8px !important;
 }
 .leaflet-control-attribution a {
-  color: #becdb2 !important;
+  color: #2a3349 !important;
 }
 .telemetry-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--border);
   border-top: 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 2px;
   background: var(--panel);
   padding: 18px 4px;
 }
@@ -642,7 +644,7 @@ select option {
   white-space: nowrap;
 }
 .telemetry-stats small {
-  font-family: "Barlow", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 10px;
   color: var(--muted);
   margin-left: 5px;
@@ -653,16 +655,16 @@ select option {
   gap: 15px;
 }
 .timing-panel {
-  background: #20271a;
-  border: 1px solid #3c482e;
-  border-radius: 8px;
+  background: #d6dbe7;
+  border: 1px solid #b4bdd4;
+  border-radius: 2px;
   padding: 18px 20px 0;
 }
 .timing-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #c9d8b7;
+  color: #242c40;
 }
 .timing-title h2 {
   font-size: 21px;
@@ -683,20 +685,20 @@ select option {
   align-items: center;
   justify-content: space-between;
   padding: 3px 0 18px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "Public Sans", sans-serif;
   font-size: 13px;
 }
 .time-comparison small {
-  font-family: "Barlow", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-size: 12px;
-  color: #b1bba7;
+  color: #384154;
   margin-left: 2px;
 }
 .reference-time {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #3c482e;
+  border-top: 1px solid #b4bdd4;
   padding: 13px 0;
 }
 .reference-time > span {
@@ -705,7 +707,7 @@ select option {
   align-items: center;
   font-size: 9px;
   letter-spacing: 0.05em;
-  color: #a3b095;
+  color: #424c65;
 }
 .reference-time strong {
   font-size: 15px;
@@ -744,12 +746,12 @@ select option {
 }
 .sector-row:hover,
 .sector-row.selected {
-  background: #252d21;
+  background: #cfd5e1;
 }
 .sector-index {
   font:
-    10px "IBM Plex Mono",
-    monospace;
+    10px "Public Sans",
+    sans-serif;
   color: var(--muted);
   width: 19px;
 }
@@ -761,7 +763,7 @@ select option {
 .delta-track {
   display: block;
   height: 3px;
-  background: #2d3529;
+  background: #c7ccd9;
   margin-top: 7px;
   max-width: 105px;
 }
@@ -770,14 +772,14 @@ select option {
   height: 100%;
 }
 .lost-bar {
-  background: #bc7c69;
+  background: #87623c;
 }
 .gained-bar {
-  background: #8bb49d;
+  background: #3e4d6d;
 }
 .sector-time {
   font-size: 10px;
-  color: #a6afa0;
+  color: #424a5b;
 }
 .sector-row > strong {
   font-size: 11px;
@@ -787,9 +789,9 @@ select option {
 }
 .theory-panel {
   padding: 15px 17px;
-  background: #1a1f17;
+  background: #dee2ea;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
 }
 .theory-panel > div {
   display: flex;
@@ -803,7 +805,7 @@ select option {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #b2bda8;
+  color: #373f53;
 }
 .theory-panel strong {
   font-size: 19px;
@@ -816,7 +818,7 @@ select option {
   margin-top: 8px;
 }
 .theory-panel b {
-  color: #c3d2b4;
+  color: #273045;
   font-weight: 500;
 }
 .insight-strip {
@@ -850,7 +852,7 @@ select option {
   padding: 7px 0;
   min-height: 34px;
   font-size: 12px;
-  color: #c8d5b8;
+  color: #252d41;
   white-space: nowrap;
 }
 .text-button:hover {
@@ -862,7 +864,7 @@ select option {
 .panel {
   border: 1px solid var(--border);
   background: var(--panel);
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 24px;
 }
 .telemetry {
@@ -874,9 +876,9 @@ select option {
 .segmented {
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 3px;
-  background: #111610;
+  background: #e8eaf0;
 }
 .segmented button {
   background: none;
@@ -888,7 +890,7 @@ select option {
   border-radius: 2px;
 }
 .segmented button.active {
-  background: #35402b;
+  background: #bcc4d7;
   color: var(--accent);
 }
 .trace-meta {
@@ -921,21 +923,21 @@ select option {
 .telemetry-svg text,
 .progression svg text {
   font:
-    10px "IBM Plex Mono",
-    monospace;
-  fill: #a6b19d;
+    10px "Public Sans",
+    sans-serif;
+  fill: #41495e;
 }
 .chart-grid {
-  stroke: #30392b;
+  stroke: #c3c9d7;
   stroke-width: 0.7;
 }
 .sector-line {
-  stroke: #394531;
+  stroke: #b6bfd2;
   stroke-dasharray: 3 6;
   stroke-width: 0.7;
 }
 .ghost-trace {
-  stroke: #a1ada0;
+  stroke: #444b5b;
   stroke-width: 1.6;
   stroke-dasharray: 5 5;
   fill: none;
@@ -947,7 +949,7 @@ select option {
   fill: none;
 }
 .cursor-line {
-  stroke: #bcc9b4;
+  stroke: #2d3547;
   stroke-width: 0.8;
   stroke-dasharray: 3 3;
 }
@@ -983,7 +985,7 @@ select option {
   align-items: center;
   gap: 7px;
   font-size: 10px;
-  color: #9ba794;
+  color: #495266;
 }
 .analysis-footer .gps-quality-flag {
   color: var(--accent);
@@ -997,23 +999,23 @@ select option {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #293225;
+  border-top: 1px solid #cad0dd;
   gap: 20px;
-  color: #8e9a85;
+  color: #545e75;
   font-size: 9px;
 }
 .app-footer > span:first-child {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Public Sans", sans-serif;
   font-weight: 600;
   font-size: 14px;
-  color: #a4b199;
+  color: #414b61;
 }
 .app-footer > span:first-child > span:last-child {
   font:
-    10px "Barlow",
+    10px "Public Sans",
     sans-serif;
   margin-left: 8px;
-  color: #8e9a85;
+  color: #545e75;
 }
 .icon-button {
   display: inline-flex;
@@ -1023,8 +1025,8 @@ select option {
   width: 40px;
   background: none;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  color: #b9c4af;
+  border-radius: 2px;
+  color: #31394c;
 }
 .icon-button:hover {
   background: var(--raised);
@@ -1036,9 +1038,9 @@ select option {
   gap: 10px;
   padding: 12px 15px;
   margin-bottom: 20px;
-  background: #273121;
-  border: 1px solid #495c3a;
-  border-radius: 4px;
+  background: #ccd2e0;
+  border: 1px solid #9facc9;
+  border-radius: 2px;
   font-size: 13px;
 }
 .notice button {
@@ -1067,8 +1069,8 @@ select option {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 22px 0 26px;
   border: 1px solid var(--border);
-  background: #141914;
-  border-radius: 6px;
+  background: #e4e7ed;
+  border-radius: 2px;
 }
 .garage-stat {
   display: flex;
@@ -1094,15 +1096,15 @@ select option {
   line-height: 1;
 }
 .garage-stat small {
-  color: #879584;
+  color: #586176;
   font-size: 11px;
 }
 .garage-form {
   margin: 25px 0 29px;
   padding: 18px 19px 2px;
-  border: 1px solid #3c4d35;
-  border-radius: 6px;
-  background: #151b15;
+  border: 1px solid #aeb8ce;
+  border-radius: 2px;
+  background: #e2e5ec;
 }
 .garage-form-heading {
   display: flex;
@@ -1113,7 +1115,7 @@ select option {
 .garage-form-heading h3 {
   margin: 0;
   font:
-    24px "Barlow Condensed",
+    24px "Public Sans",
     sans-serif;
 }
 .garage-form-heading p {
@@ -1124,8 +1126,8 @@ select option {
 .bike-type {
   flex: 0 0 auto;
   padding: 5px 8px;
-  border: 1px solid #4b613d;
-  border-radius: 3px;
+  border: 1px solid #9aa7c6;
+  border-radius: 2px;
   color: var(--accent);
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -1152,7 +1154,7 @@ select option {
 }
 .bike-setup-summary > span:last-child {
   overflow: hidden;
-  color: #bcc7b9;
+  color: #2e3543;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1190,7 +1192,7 @@ select option {
 .bike-service-log summary::-webkit-details-marker { display: none; }
 .bike-service-log summary span {
   color: var(--accent);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "Public Sans", sans-serif;
 }
 .bike-service-log-content {
   display: grid;
@@ -1223,9 +1225,9 @@ select option {
   gap: 12px;
   padding: 8px 9px;
   color: var(--text);
-  background: #111611;
+  background: #e8eaef;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
   font-size: 10px;
 }
 .bike-service-record .mono { color: var(--muted); }
@@ -1242,12 +1244,12 @@ select option {
   gap: 17px;
   padding: 17px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #141914;
+  border-radius: 2px;
+  background: #e4e7ed;
 }
 .bike-card:hover {
-  border-color: #506343;
-  background: #171e17;
+  border-color: #97a4c1;
+  background: #dfe2ea;
 }
 .bike-card-heading {
   display: grid;
@@ -1267,7 +1269,7 @@ select option {
   margin: 0;
   overflow: hidden;
   font:
-    25px "Barlow Condensed",
+    25px "Public Sans",
     sans-serif;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1293,7 +1295,7 @@ select option {
 }
 .bike-specs > div + div {
   padding-left: 10px;
-  border-left: 1px solid #2b342b;
+  border-left: 1px solid #c8ccd7;
 }
 .bike-specs span {
   color: var(--muted);
@@ -1357,7 +1359,7 @@ select option {
 }
 .bike-setup-best > span:last-child {
   overflow: hidden;
-  color: #bcc7b9;
+  color: #2e3543;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1377,16 +1379,16 @@ select option {
 }
 .garage-empty {
   margin-top: 12px;
-  border: 1px dashed #3c4d35;
-  border-radius: 6px;
-  background: #141914;
+  border: 1px dashed #aeb8ce;
+  border-radius: 2px;
+  background: #e4e7ed;
 }
 .field {
   display: flex;
   flex-direction: column;
   gap: 9px;
   font-size: 13px;
-  color: #c6d0bd;
+  color: #272e3f;
 }
 .field .muted {
   font-size: 11px;
@@ -1397,10 +1399,10 @@ input[aria-label="Search runs"] {
   width: 100%;
   min-height: 43px;
   padding: 10px 12px;
-  background: #111710;
+  background: #e7eaf0;
   color: var(--text);
-  border: 1px solid #414d39;
-  border-radius: 4px;
+  border: 1px solid #aeb6ca;
+  border-radius: 2px;
   outline-offset: 2px;
 }
 .field.checkbox-field {
@@ -1411,7 +1413,7 @@ input[aria-label="Search runs"] {
 .field.checkbox-field input {
   width: 18px;
   min-height: 18px;
-  accent-color: var(--accent, #d5f55a);
+  accent-color: var(--accent, #1d3f91);
 }
 .field.checkbox-field small {
   flex-basis: 100%;
@@ -1427,7 +1429,7 @@ input[aria-label="Search runs"] {
 }
 .field input::placeholder,
 input[aria-label="Search runs"]::placeholder {
-  color: #9aa88e;
+  color: #48536c;
 }
 .form-actions {
   display: flex;
@@ -1457,11 +1459,11 @@ th {
   color: var(--muted);
   font-weight: 500;
   padding: 13px 12px;
-  border-bottom: 1px solid #414d39;
+  border-bottom: 1px solid #aeb6ca;
 }
 td {
   padding: 17px 12px;
-  border-bottom: 1px solid #30392b;
+  border-bottom: 1px solid #c3c9d7;
 }
 td:first-child,
 th:first-child {
@@ -1524,7 +1526,7 @@ td small {
 }
 .trail-row strong {
   font:
-    24px "Barlow Condensed",
+    24px "Public Sans",
     sans-serif;
 }
 .trail-row > div:first-child {
@@ -1554,9 +1556,9 @@ td small {
   gap: 8px;
   margin: 16px 0 0;
   padding: 11px 13px;
-  border: 1px solid #4b613d;
-  border-radius: 5px;
-  background: #151b15;
+  border: 1px solid #9aa7c6;
+  border-radius: 2px;
+  background: #e2e5ec;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
@@ -1579,9 +1581,9 @@ td small {
   gap: 7px;
   margin: 14px 0 0;
   padding: 11px 13px;
-  border: 1px solid #4b613d;
-  border-radius: 5px;
-  background: #151b15;
+  border: 1px solid #9aa7c6;
+  border-radius: 2px;
+  background: #e2e5ec;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
@@ -1604,8 +1606,8 @@ td small {
   margin: 14px 0 0;
   padding: 12px 13px;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: #141914;
+  border-radius: 2px;
+  background: #e4e7ed;
   cursor: pointer;
 }
 .import-preview {
@@ -1639,7 +1641,7 @@ td small {
 }
 .import-preview .map-panel {
   min-height: 260px;
-  border-radius: 6px;
+  border-radius: 2px;
 }
 .import-trim-toggle input {
   width: 16px;
@@ -1695,8 +1697,8 @@ td small {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 24px 0 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #141914;
+  border-radius: 2px;
+  background: #e4e7ed;
 }
 .progression-snapshot-item {
   display: flex;
@@ -1721,7 +1723,7 @@ td small {
   line-height: 1;
 }
 .progression-snapshot-item small {
-  color: #879584;
+  color: #586176;
   font-size: 11px;
   line-height: 1.25;
 }
@@ -1740,18 +1742,18 @@ td small {
   align-items: center;
   gap: 4px;
   font:
-    9px "Barlow",
+    9px "Public Sans",
     sans-serif;
   color: var(--accent);
   padding: 4px 6px;
-  border: 1px solid #465633;
-  border-radius: 3px;
+  border: 1px solid #a7b3ce;
+  border-radius: 2px;
   margin-left: 8px;
 }
 .delete-button {
   background: none;
   border: 0;
-  color: #b3bcae;
+  color: #383e4e;
   vertical-align: middle;
   padding: 10px;
   margin-left: 12px;
@@ -1779,8 +1781,8 @@ td small {
 }
 .best-sector-grid strong {
   font:
-    25px "IBM Plex Mono",
-    monospace;
+    25px "Public Sans",
+    sans-serif;
 }
 .best-sector-grid .text-button {
   justify-content: flex-start;
@@ -1974,7 +1976,7 @@ td small {
     width: auto;
     min-width: 0;
     flex: 1;
-    border-radius: 3px 3px 0 0;
+    border-radius: 2px;
     margin: 0;
     min-height: 44px;
   }
@@ -2274,8 +2276,8 @@ td small {
     gap: 13px 10px;
     padding: 14px;
     border: 1px solid var(--border);
-    border-radius: 5px;
-    background: #141914;
+    border-radius: 2px;
+    background: #e4e7ed;
   }
   .history-panel tbody td {
     display: flex;
@@ -2314,13 +2316,13 @@ td small {
     white-space: nowrap;
   }
   .history-panel tbody td:nth-child(2)::before {
-    content: "DATE";
+    content: "Data";
   }
   .history-panel tbody td:nth-child(3)::before {
-    content: "BIKE";
+    content: "Bike";
   }
   .history-panel tbody td:nth-child(4)::before {
-    content: "TIME";
+    content: "Tempo";
   }
   .history-panel tbody td:nth-child(2)::before,
   .history-panel tbody td:nth-child(3)::before,
@@ -2339,8 +2341,8 @@ td small {
   .history-panel tbody td:last-child .text-button {
     min-height: 40px;
     padding: 8px 12px;
-    border: 1px solid #424b3e;
-    border-radius: 4px;
+    border: 1px solid #afb6c6;
+    border-radius: 2px;
     font-size: 11px;
   }
   .history-panel tbody td:last-child .delete-button {
@@ -2404,9 +2406,9 @@ td small {
 .auth-card {
   width: min(100%, 430px);
   padding: 32px;
-  background: #151a15;
+  background: #e3e6ec;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
 }
 .auth-card h1 {
   max-width: 360px;
@@ -2420,23 +2422,23 @@ td small {
   gap: 5px;
   margin-top: 26px;
   padding: 4px;
-  background: #0e120e;
+  background: #eceef2;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: 2px;
 }
 .auth-tabs button {
   min-height: 39px;
   color: var(--muted);
   background: transparent;
   border: 0;
-  border-radius: 3px;
-  font: 600 11px Barlow, sans-serif;
+  border-radius: 2px;
+  font: 600 11px "Public Sans", sans-serif;
   cursor: pointer;
 }
 .auth-tabs button.active {
   color: var(--text);
-  background: #2b3822;
-  box-shadow: inset 0 0 0 1px #50653d;
+  background: #c5cddf;
+  box-shadow: inset 0 0 0 1px #97a5c5;
 }
 .auth-back {
   display: inline-flex;
@@ -2467,13 +2469,13 @@ td small {
   min-height: 45px;
   padding: 0 12px;
   color: var(--muted);
-  background: #101510;
-  border: 1px solid #3b4737;
-  border-radius: 4px;
+  background: #e9ebf0;
+  border: 1px solid #b4bbcc;
+  border-radius: 2px;
 }
 .auth-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px #d5f55a22;
+  box-shadow: 0 0 0 2px #1d3f9122;
 }
 .auth-input input {
   min-width: 0;
@@ -2485,7 +2487,7 @@ td small {
   outline: 0;
   font-size: 14px;
 }
-.auth-input input::placeholder { color: #6f7a6b; }
+.auth-input input::placeholder { color: #7d869c; }
 .auth-reveal {
   display: grid;
   place-items: center;
@@ -2495,7 +2497,7 @@ td small {
   color: var(--muted);
   background: none;
   border: 0;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
 }
 .auth-reveal:hover,
@@ -2518,9 +2520,9 @@ td small {
   margin: -1px 0 0;
   padding: 11px 12px;
   color: var(--lost);
-  background: #271917;
-  border: 1px solid #70453d;
-  border-radius: 4px;
+  background: #e8e0d8;
+  border: 1px solid #c2a88f;
+  border-radius: 2px;
   font-size: 11px;
   line-height: 1.4;
 }
@@ -2528,15 +2530,15 @@ td small {
   margin: -1px 0 0;
   padding: 11px 12px;
   color: var(--gained);
-  background: #172019;
-  border: 1px solid #3e644b;
-  border-radius: 4px;
+  background: #dde1ea;
+  border: 1px solid #97a5c5;
+  border-radius: 2px;
   font-size: 11px;
   line-height: 1.4;
 }
 .auth-footnote {
   margin-top: 21px;
-  color: #82907d;
+  color: #5c667d;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -2633,7 +2635,7 @@ td small {
   align-self: end;
   min-height: 43px;
   gap: 14px;
-  color: #b7c2ae;
+  color: #333b4d;
   font-size: 11px;
 }
 .video-run-facts span {
@@ -2647,8 +2649,8 @@ td small {
   gap: 17px;
   margin-bottom: 20px;
   padding: 22px;
-  border-color: #3c4935;
-  background: #1b2119;
+  border-color: #b2bace;
+  background: #dce0e8;
 }
 .video-empty-icon {
   display: grid;
@@ -2657,9 +2659,9 @@ td small {
   height: 48px;
   flex-shrink: 0;
   color: var(--accent);
-  border: 1px solid #4a5d3c;
-  background: #273220;
-  border-radius: 6px;
+  border: 1px solid #9eaac7;
+  background: #cbd1e1;
+  border-radius: 2px;
 }
 .video-empty h2 {
   font-size: 25px;
@@ -2680,14 +2682,14 @@ td small {
 }
 .video-player-panel {
   padding: 13px;
-  background: #0f130f;
+  background: #ebedf1;
 }
 .video-player-wrap {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: #080a08;
+  border-radius: 2px;
+  background: #f4f5f8;
   aspect-ratio: 16 / 9;
 }
 .video-player-wrap video {
@@ -2695,7 +2697,7 @@ td small {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #080a08;
+  background: #f4f5f8;
 }
 .video-badge {
   position: absolute;
@@ -2709,10 +2711,10 @@ td small {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 6px 8px;
-  border: 1px solid #4a583f;
-  border-radius: 3px;
-  background: #141a12e8;
-  color: #d4ddcc;
+  border: 1px solid #a2adc5;
+  border-radius: 2px;
+  background: #e4e7eee8;
+  color: #1c2230;
   font-size: 10px;
 }
 .video-controls {
@@ -2726,7 +2728,7 @@ td small {
 .video-controls .icon-button {
   width: 32px;
   min-height: 32px;
-  border-color: #43503c;
+  border-color: #aab3c8;
 }
 .video-controls input {
   flex: 1;
@@ -2736,7 +2738,7 @@ td small {
 .video-progress-line {
   height: 3px;
   margin: 2px 2px 10px;
-  background: #2b3427;
+  background: #c8cedb;
 }
 .video-progress-line i {
   display: block;
@@ -2746,7 +2748,7 @@ td small {
 .video-player-meta {
   justify-content: space-between;
   gap: 10px;
-  color: #a9b69f;
+  color: #3d465b;
   font-size: 10px;
 }
 .video-player-meta span {
@@ -2759,7 +2761,7 @@ td small {
 }
 .video-map-panel .map-panel {
   min-height: 100%;
-  border-radius: 8px;
+  border-radius: 2px;
 }
 .video-map-empty {
   min-height: 100%;
@@ -2816,7 +2818,7 @@ td small {
   margin-top: 16px;
   padding: 13px 14px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  border-radius: 10px;
+  border-radius: 2px;
   background: color-mix(in srgb, var(--accent) 5%, var(--panel));
 }
 .sync-suggestion > div {
@@ -2916,7 +2918,7 @@ td small {
   font-size: 11px;
 }
 .trim-readout strong {
-  color: #cfd9c7;
+  color: #202635;
   font-size: 11px;
   font-weight: 400;
 }
@@ -2929,7 +2931,7 @@ td small {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  color: #a8b4a1;
+  color: #3e475a;
   font-size: 10px;
 }
 .stop-list strong {
@@ -3016,11 +3018,11 @@ td small {
 }
 .sector-video-row:hover,
 .sector-video-row.selected {
-  background: #242d21;
+  background: #cfd5e1;
 }
 .sector-video-index {
   color: var(--muted);
-  font: 10px "IBM Plex Mono", monospace;
+  font: 10px "Public Sans", sans-serif;
 }
 .sector-video-name {
   min-width: 0;
@@ -3029,8 +3031,8 @@ td small {
 .sector-video-name small {
   display: block;
   margin-top: 4px;
-  color: #879584;
-  font: 9px "IBM Plex Mono", monospace;
+  color: #586176;
+  font: 9px "Public Sans", sans-serif;
 }
 .sector-video-time,
 .sector-video-row > strong {
@@ -3078,14 +3080,14 @@ td small {
 }
 .riding-event-row:hover:not(:disabled),
 .riding-event-row.selected {
-  background: #242d21;
+  background: #cfd5e1;
 }
 .riding-event-row:disabled {
   cursor: default;
   opacity: 0.68;
 }
 .riding-event-time {
-  color: #a8b4a1;
+  color: #3e475a;
   font-size: 10px;
 }
 .riding-event-kind {
@@ -3107,15 +3109,15 @@ td small {
   font-size: 9px;
 }
 .riding-event-confidence {
-  color: #cdd7c8;
-  font: 10px "IBM Plex Mono", monospace;
+  color: #212734;
+  font: 10px "Public Sans", sans-serif;
   text-align: right;
   white-space: nowrap;
 }
 .riding-event-confidence small {
   display: block;
   margin-top: 3px;
-  font-family: "Barlow", sans-serif;
+  font-family: "Public Sans", sans-serif;
   text-align: right;
 }
 .riding-event-action {
@@ -3183,7 +3185,7 @@ td small {
   align-items: center;
   gap: 7px;
   color: var(--muted);
-  font: 10px "IBM Plex Mono", monospace;
+  font: 10px "Public Sans", sans-serif;
   letter-spacing: 0.08em;
 }
 .shared-run-title {
@@ -3199,19 +3201,19 @@ td small {
 .shared-run-clock {
   min-width: 205px;
   padding: 14px 17px;
-  background: #192017;
-  border: 1px solid #3a4b32;
-  border-radius: 5px;
+  background: #dde1ea;
+  border: 1px solid #b0bad1;
+  border-radius: 2px;
 }
 .shared-run-clock strong {
   display: block;
   margin: 5px 0;
   color: var(--accent);
-  font: 30px "IBM Plex Mono", monospace;
+  font: 30px "Public Sans", sans-serif;
 }
-.shared-run-clock small { color: var(--muted); font: 11px "IBM Plex Mono", monospace; }
+.shared-run-clock small { color: var(--muted); font: 11px "Public Sans", sans-serif; }
 .shared-run-map { padding: 0; overflow: hidden; }
-.shared-run-map .map-panel { min-height: 490px; border: 0; border-radius: 5px 5px 0 0; }
+.shared-run-map .map-panel { min-height: 490px; border: 0; border-radius: 2px; }
 .shared-run-map .trail-map { min-height: 490px; }
 .shared-run-stats {
   display: grid;
@@ -3221,8 +3223,8 @@ td small {
 .shared-run-stats > div { display: grid; gap: 6px; padding: 16px 19px; border-right: 1px solid var(--border); }
 .shared-run-stats > div:last-child { border-right: 0; }
 .shared-run-stats span { color: var(--muted); font-size: 10px; }
-.shared-run-stats strong { font: 23px "IBM Plex Mono", monospace; }
-.shared-run-stats small { color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+.shared-run-stats strong { font: 23px "Public Sans", sans-serif; }
+.shared-run-stats small { color: var(--muted); font: 10px "Public Sans", sans-serif; }
 .shared-run-sectors { margin-top: 17px; }
 .shared-sector-row {
   display: grid;
@@ -3238,9 +3240,9 @@ td small {
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-.shared-sector-row > :first-child { color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
+.shared-sector-row > :first-child { color: var(--muted); font: 10px "Public Sans", sans-serif; }
 .shared-sector-row > :nth-child(3), .shared-sector-row > :nth-child(4) { text-align: right; }
-.shared-sector-row.selected { background: #20291b; }
+.shared-sector-row.selected { background: #d4d9e6; }
 .shared-run-privacy { margin: 14px 0 0; color: var(--muted); font-size: 10px; }
 .shared-run-message {
   display: grid;
@@ -3263,7 +3265,7 @@ td small {
   border-top: 1px solid var(--border);
   font-size: 11px;
 }
-.shared-run-footer a { color: var(--text); font: 600 12px "Barlow Condensed", sans-serif; }
+.shared-run-footer a { color: var(--text); font: 600 12px "Public Sans", sans-serif; }
 @media (max-width: 700px) {
   .shared-run-shell { padding-right: 14px; padding-left: 14px; }
   .shared-run-header .wordmark { font-size: 19px; }
@@ -3458,8 +3460,8 @@ td small {
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
-  background: #151b14;
-  border-radius: 3px;
+  background: #e2e5ed;
+  border-radius: 2px;
   font-size: 13px;
 }
 .leaderboard-list li.mine {
@@ -3477,8 +3479,8 @@ td small {
 .strava-picker {
   margin-top: 16px;
   padding: 14px;
-  border: 1px solid #2d3529;
-  border-radius: 4px;
+  border: 1px solid #c7ccd9;
+  border-radius: 2px;
   display: grid;
   gap: 10px;
 }
@@ -3491,7 +3493,7 @@ td small {
   gap: 10px;
 }
 .strava-picker-head strong {
-  color: #fc6a3d;
+  color: #895928;
   letter-spacing: 0.04em;
 }
 .strava-activities {
@@ -3512,10 +3514,10 @@ td small {
   text-align: left;
   padding: 10px 12px;
   min-height: 44px;
-  background: #151b14;
+  background: #e2e5ed;
   color: var(--text);
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 2px;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -3538,9 +3540,9 @@ td small {
 }
 .sector-picker-map {
   height: 320px;
-  border-radius: 4px;
-  border: 1px solid #414d39;
-  background: #111710;
+  border-radius: 2px;
+  border: 1px solid #aeb6ca;
+  background: #e7eaf0;
   cursor: crosshair;
 }
 .sector-picker-map .map-sector {
@@ -3556,7 +3558,7 @@ td small {
 .password-form {
   margin-top: 22px;
   padding-top: 18px;
-  border-top: 1px solid #2d3529;
+  border-top: 1px solid #c7ccd9;
 }
 .password-form h3 {
   grid-column: 1 / -1;
@@ -3582,8 +3584,8 @@ td small {
   display: grid;
   gap: 2px;
   padding: 10px;
-  background: #151b14;
-  border-radius: 3px;
+  background: #e2e5ed;
+  border-radius: 2px;
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
@@ -3614,10 +3616,10 @@ td small {
 .conditions-select {
   min-height: 40px;
   padding: 8px 10px;
-  background: #111710;
+  background: #e7eaf0;
   color: var(--text);
-  border: 1px solid #414d39;
-  border-radius: 4px;
+  border: 1px solid #aeb6ca;
+  border-radius: 2px;
   font: inherit;
   font-size: 13px;
 }
@@ -3651,4 +3653,503 @@ td small {
 .auth-wordmark svg {
   width: 22px;
   height: 26px;
+}
+
+/* Azulejo shell: the cobalt field carries the brand and navigation. */
+.sidebar {
+  background: var(--accent);
+  color: #ffffff;
+  border-right: 0;
+}
+.sidebar .wordmark svg {
+  stroke: #ffffff;
+}
+.sidebar .brand-period {
+  color: #ffffff;
+}
+.nav-item {
+  color: #d6def3;
+  font-weight: 700;
+}
+.nav-item:hover,
+.sidebar .profile-link:hover {
+  background: #2c58c4;
+  color: #ffffff;
+}
+.nav-item.active {
+  background: #ffffff;
+  color: var(--accent);
+}
+.sidebar .profile-link {
+  border-top-color: #4a68b4;
+  color: #ffffff;
+}
+.sidebar .profile-link small,
+.sidebar .profile-link > svg {
+  color: #d6def3;
+}
+.sidebar .avatar {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--accent);
+  font-weight: 700;
+}
+.sidebar :focus-visible {
+  outline-color: #ffffff;
+}
+@media (max-width: 700px) {
+  .sidebar {
+    border-bottom: 0;
+  }
+  .nav-item.active {
+    background: #ffffff;
+  }
+}
+
+/* Glaze panels: white tiles on the glaze ground, framed rather than shaded. */
+.panel,
+.theory-panel {
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+.timing-panel,
+.map-panel {
+  background: #ffffff;
+  border: 2px solid var(--accent);
+}
+.timing-title,
+.theory-panel span {
+  color: var(--text);
+}
+
+/* Signature: each sector is a square tile, cobalt where time was gained,
+   banded ochre where it was lost, matching the map trace. */
+.sector-rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.sector-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "index delta"
+    "name name"
+    "time time";
+  align-content: space-between;
+  gap: 6px 8px;
+  min-height: 104px;
+  padding: 10px 12px;
+  border: 2px solid var(--accent);
+  background: #ffffff;
+  color: var(--text);
+}
+.sector-row:hover {
+  background: #eef1f7;
+}
+.sector-row .sector-index {
+  grid-area: index;
+  width: auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: inherit;
+}
+.sector-row .sector-name {
+  grid-area: name;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.sector-row .delta-track {
+  display: none;
+}
+.sector-row .sector-time {
+  grid-area: time;
+  font-size: 12px;
+  color: inherit;
+}
+.sector-row > strong {
+  grid-area: delta;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+.sector-row.tile-gain {
+  background: var(--accent);
+  color: #ffffff;
+}
+.sector-row.tile-gain:hover {
+  background: #2c58c4;
+}
+.sector-row.tile-gain > strong {
+  color: #ffffff;
+}
+.sector-row.tile-lost {
+  border-bottom: 10px solid #c9782a;
+}
+.sector-row.selected {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+.sector-row.lead-in-row {
+  grid-column: 1 / -1;
+  min-height: 0;
+  border-style: dashed;
+  background: #ffffff;
+}
+.sector-row.lead-in-row small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* Inputs and the sign-in card sit on white glaze, framed in cobalt-grey. */
+.auth-card {
+  background: #ffffff;
+  border: 2px solid var(--accent);
+}
+.auth-input,
+.field input,
+.field select,
+.field textarea,
+input[aria-label="Procurar runs"],
+.history-filters select,
+.conditions-select {
+  background: #ffffff;
+  border-color: #b4bdd4;
+}
+.auth-tabs {
+  background: #eef1f7;
+}
+.auth-tabs button.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: none;
+}
+.trail-select select {
+  max-width: min(440px, 62vw);
+  text-overflow: ellipsis;
+}
+.sidebar .wordmark {
+  font-size: 24px;
+}
+@media (min-width: 701px) {
+  .trail-select select {
+    field-sizing: content;
+  }
+}
+.progression-snapshot {
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+.leaderboard-panel {
+  margin-top: 20px;
+}
+@media (max-width: 700px) {
+  .run-picker select {
+    font-size: 13px;
+  }
+}
+
+
+/* --- Finish-review fixes --- */
+
+/* Data panels carry the 2px cobalt frame; forms keep a quiet 1px rule. */
+.telemetry,
+.progression,
+.history-panel,
+.best-sectors,
+.progression-snapshot,
+.leaderboard-panel {
+  border: 2px solid var(--accent);
+}
+
+/* Nested boxes become ruled rows on white, never grey cards in cards. */
+.garage-form,
+.import-quality-note,
+.import-trail-note,
+.leaderboard-list li,
+.run-recorder-live span,
+.run-recorder,
+.strava-picker {
+  background: #ffffff;
+}
+.leaderboard-list {
+  gap: 0;
+}
+.leaderboard-list li {
+  border-bottom: 1px solid #dfe5f2;
+}
+.run-recorder-live span {
+  border: 1px solid #dfe5f2;
+}
+
+/* Readable labels in sun: sentence case, at least 12px. */
+.progression-snapshot-item > span,
+.bike-specs span,
+.bike-performance span,
+.garage-form-state,
+.run-picker > span,
+.theory-panel span,
+.reference-time span {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Square markers carry the tile grammar onto the map. */
+.map-sector span {
+  border-radius: 0;
+  background: var(--accent);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+/* History search matches the other controls. */
+input[aria-label="Procurar runs"] {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #b4bdd4;
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+/* Sector tiles are square: 2 x 2 beside the map on wide screens. */
+.sector-row {
+  aspect-ratio: 1;
+  min-height: 0;
+}
+
+@media (max-width: 700px) {
+  /* Phone: time and sector tiles before the map, so the first screen
+     answers "how did the run go" without scrolling. */
+  .analysis-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  .timing-column {
+    order: -1;
+  }
+  .map-panel {
+    min-height: 240px;
+  }
+  .timing-panel {
+    padding: 12px 14px 0;
+  }
+  .run-time {
+    font-size: 44px;
+  }
+  .timing-panel .share-result {
+    margin-top: 10px;
+  }
+  /* Four square tiles in one row, like a strip of azulejos. */
+  .sector-rows {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .sector-row {
+    grid-template-areas:
+      "index"
+      "delta"
+      "name";
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 6px;
+  }
+  .sector-row .sector-time {
+    display: none;
+  }
+  .sector-row .sector-name {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sector-row > strong {
+    font-size: 13px;
+  }
+  .sector-row.tile-lost {
+    border-bottom-width: 7px;
+  }
+  /* Map legend and trace switch move out from over the trace. */
+  .map-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .map-panel .trail-map {
+    position: relative;
+    height: 240px;
+    flex: none;
+  }
+  .map-legend,
+  .trace-modes {
+    position: static;
+    margin: 8px 10px 0;
+    align-self: flex-start;
+  }
+  .trace-modes {
+    margin-bottom: 10px;
+  }
+  /* Run and reference selects stack full width so times are not cut. */
+  .comparison-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .comparison-toolbar .versus {
+    display: none;
+  }
+  .run-picker {
+    min-width: 0;
+  }
+  .run-picker select {
+    font-size: 14px;
+  }
+  /* History cards: Run + gap, then time, date, bike; piso; actions. */
+  .history-panel tbody tr {
+    grid-template-areas:
+      "run run delta"
+      "time date bike"
+      "piso piso piso"
+      "actions actions actions";
+    background: #ffffff;
+  }
+  .history-panel tbody td:nth-child(4) {
+    grid-area: piso;
+  }
+  .history-panel tbody td:nth-child(5) {
+    grid-area: time;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .history-panel tbody td:nth-child(5)::before {
+    content: "Tempo";
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .history-panel tbody td:nth-child(6) {
+    grid-area: delta;
+    justify-content: flex-end;
+    font-size: 12px;
+  }
+  .history-panel tbody td:nth-child(2)::before,
+  .history-panel tbody td:nth-child(3)::before {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .history-panel tbody td:nth-child(4)::before {
+    content: none;
+  }
+  .conditions-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .trail-select select {
+    max-width: 190px;
+  }
+  .run-picker,
+  .run-picker select {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* --- Third round --- */
+
+/* Bike name and type: the index column is gone, so two columns remain. */
+.bike-card-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.bike-type {
+  justify-self: end;
+  width: auto;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Inside a card, groups are divided by rules, never boxed again. */
+.bike-grid {
+  gap: 0 28px;
+}
+.bike-card {
+  padding: 18px 0;
+  border: 0;
+  border-top: 2px solid var(--accent);
+  background: transparent;
+}
+.garage-form,
+.run-recorder,
+.strava-picker {
+  padding-left: 0;
+  padding-right: 0;
+  border: 0;
+  border-top: 1px solid #dfe5f2;
+  border-bottom: 1px solid #dfe5f2;
+  background: transparent;
+}
+
+@media (max-width: 700px) {
+  /* Phone order: time, sector tiles, map, then the theoretical best. */
+  .timing-column {
+    display: contents;
+  }
+  .timing-panel {
+    order: 1;
+  }
+  .sector-panel {
+    order: 2;
+  }
+  .map-column {
+    order: 3;
+  }
+  .theory-panel {
+    order: 4;
+  }
+  /* Map tools sit in rows under the map instead of on each other. */
+  .map-bottom {
+    position: static;
+    order: 4;
+    margin: 8px 10px 10px;
+  }
+  .map-legend {
+    order: 2;
+  }
+  .trace-modes {
+    order: 3;
+    margin-bottom: 0;
+  }
+  /* Sector names wrap to two lines inside the square tile. */
+  .sector-row .sector-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    text-overflow: clip;
+    line-height: 1.15;
+    hyphens: auto;
+  }
+}
+@media (max-width: 700px) {
+  .timing-panel,
+  .sector-panel,
+  .theory-panel {
+    align-self: stretch;
+    width: 100%;
+  }
+}
+.button.primary {
+  color: #ffffff;
+}
+.map-tag,
+.run-recorder-live span {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
 }

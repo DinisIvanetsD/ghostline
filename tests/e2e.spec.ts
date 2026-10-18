@@ -124,7 +124,7 @@ test("demo analysis has seven primary runs, stable PB, sector selection, referen
     /selected/,
   );
   await page.getByLabel("Run de referência").selectOption("run-01");
-  await expect(page.getByText("REFERÊNCIA", { exact: true })).toBeVisible();
+  await expect(page.getByText("Referência", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Altitude" }).click();
   await expect(
     page.getByRole("img", { name: /altitude ao longo da distância/i }),

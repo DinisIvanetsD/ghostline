@@ -78,10 +78,10 @@ export function TrailMap({
     const coords = current.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple);
     L.polyline(
       ghost.samples.map((p) => [p.lat, p.lon] as L.LatLngTuple),
-      { color: "#bec8bf", weight: 7, opacity: 0.48, dashArray: "5 9" },
+      { color: "#8a93a6", weight: 6, opacity: 0.7, dashArray: "5 9" },
     ).addTo(group);
     if (mode === "plain")
-      L.polyline(coords, { color: "#d5f55a", weight: 3.5, opacity: 1 }).addTo(
+      L.polyline(coords, { color: "#1d3f91", weight: 4, opacity: 1 }).addTo(
         group,
       );
     else {
@@ -103,7 +103,7 @@ export function TrailMap({
         current.samples
           .filter((p) => p.fraction >= start && p.fraction <= end)
           .map((p) => [p.lat, p.lon] as L.LatLngTuple),
-        { color: "#f19784", weight: 7 },
+        { color: "#1d3f91", weight: 12, opacity: 0.25 },
       ).addTo(group);
     }
     boundaries.forEach((f, i) => {
@@ -124,16 +124,16 @@ export function TrailMap({
     });
     ghostMarker.current = L.circleMarker(coords[0], {
       radius: 7,
-      color: "#e2e8dd",
+      color: "#ffffff",
       weight: 2,
-      fillColor: "#5b6851",
+      fillColor: "#8a93a6",
       fillOpacity: 1,
     }).addTo(group);
     marker.current = L.circleMarker(coords[0], {
       radius: 7,
-      color: "#101311",
+      color: "#ffffff",
       weight: 3,
-      fillColor: "#d5f55a",
+      fillColor: "#1d3f91",
       fillOpacity: 1,
     }).addTo(group);
   }, [trail, current, ghost, sector, mode]);
@@ -181,7 +181,7 @@ export function TrailMap({
           <Mountain size={14} />
           {trail.location}
         </span>
-        <span className="map-tag">TRAÇADO GPS</span>
+        <span className="map-tag">Traçado GPS</span>
       </div>
       <div className="map-bottom">
         <button

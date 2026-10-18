@@ -20,9 +20,9 @@ describe("trace colours", () => {
     const segments = traceSegments(current, ghost, "ghost");
     expect(segments).toHaveLength(199);
     const red = (c: string) => Number(c.match(/\d+/)![0]);
-    // Early segments gain (cool), late segments lose (coral, high red).
+    // Early segments gain (cobalt), late segments lose (ochre, high red channel).
     expect(red(segments[50].color)).toBeLessThan(red(segments[170].color));
-    expect(segments[170].color).toBe("rgb(241,151,132)");
+    expect(segments[170].color).toBe("rgb(201,120,42)");
   });
 
   it("caps the number of segments for long recordings", () => {
@@ -33,7 +33,7 @@ describe("trace colours", () => {
 
   it("scales speed from slow to fast", () => {
     const segments = traceSegments(current, ghost, "speed");
-    expect(segments[50].color).toBe("rgb(213,245,90)");
-    expect(segments[170].color).toBe("rgb(241,151,132)");
+    expect(segments[50].color).toBe("rgb(29,63,145)");
+    expect(segments[170].color).toBe("rgb(201,120,42)");
   });
 });

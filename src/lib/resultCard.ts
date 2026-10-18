@@ -17,12 +17,12 @@ export interface ResultCardInput {
 
 const W = 1080;
 const H = 1350; // 4:5, the portrait size Instagram and WhatsApp keep uncropped.
-const BG = "#101311";
-const TEXT = "#f0f2e9";
-const MUTED = "#9ca698";
-const ACCENT = "#d5f55a";
-const LOST = "#f19784";
-const GAINED = "#9edfc0";
+const BG = "#f6f7f9";
+const TEXT = "#1b1e24";
+const MUTED = "#5d6577";
+const ACCENT = "#1d3f91";
+const LOST = "#9a5410";
+const GAINED = "#1d3f91";
 
 /** Draw a shareable result card for a run and return it as a PNG. */
 export async function renderResultCard(input: ResultCardInput): Promise<Blob> {
@@ -36,32 +36,32 @@ export async function renderResultCard(input: ResultCardInput): Promise<Blob> {
   ctx.fillRect(0, 0, W, H);
 
   ctx.fillStyle = ACCENT;
-  ctx.font = '700 44px "Barlow Condensed", Barlow, sans-serif';
+  ctx.font = '700 44px "Public Sans", sans-serif';
   ctx.fillText("GHOSTLINE.", 72, 110);
   ctx.fillStyle = MUTED;
-  ctx.font = '400 26px Barlow, sans-serif';
+  ctx.font = '400 26px "Public Sans", sans-serif';
   ctx.textAlign = "right";
   ctx.fillText(input.date, W - 72, 110);
   ctx.textAlign = "left";
 
   ctx.fillStyle = TEXT;
-  ctx.font = '700 76px "Barlow Condensed", Barlow, sans-serif';
+  ctx.font = '700 76px "Public Sans", sans-serif';
   ctx.fillText(input.trailName, 72, 220, W - 144);
   ctx.fillStyle = MUTED;
-  ctx.font = '400 30px Barlow, sans-serif';
+  ctx.font = '400 30px "Public Sans", sans-serif';
   ctx.fillText(`${input.runName} · ${input.location}`, 72, 268, W - 144);
 
   ctx.fillStyle = TEXT;
-  ctx.font = '500 150px "IBM Plex Mono", monospace';
+  ctx.font = '700 150px "Public Sans", sans-serif';
   ctx.fillText(formatTime(input.current.duration), 64, 440);
-  ctx.font = '500 40px "IBM Plex Mono", monospace';
+  ctx.font = '700 40px "Public Sans", sans-serif';
   ctx.fillStyle = input.delta > 0.005 ? LOST : GAINED;
   ctx.fillText(`${formatDelta(input.delta)} vs Ghost`, 72, 504);
   if (input.isPersonalBest) {
     ctx.fillStyle = ACCENT;
     ctx.fillRect(W - 72 - 210, 462, 210, 56);
     ctx.fillStyle = BG;
-    ctx.font = '700 32px "Barlow Condensed", Barlow, sans-serif';
+    ctx.font = '700 32px "Public Sans", sans-serif';
     ctx.textAlign = "center";
     ctx.fillText("NOVO PB", W - 72 - 105, 501);
     ctx.textAlign = "left";
@@ -99,12 +99,12 @@ export async function renderResultCard(input: ResultCardInput): Promise<Blob> {
   input.sectors.slice(0, 6).forEach((sector, index) => {
     const y = rowsTop + index * rowHeight;
     ctx.fillStyle = MUTED;
-    ctx.font = '500 26px "IBM Plex Mono", monospace';
+    ctx.font = '700 26px "Public Sans", sans-serif';
     ctx.fillText(`S${index + 1}`, 72, y);
     ctx.fillStyle = TEXT;
-    ctx.font = '500 30px Barlow, sans-serif';
+    ctx.font = '700 30px "Public Sans", sans-serif';
     ctx.fillText(sector.name, 140, y, 520);
-    ctx.font = '500 28px "IBM Plex Mono", monospace';
+    ctx.font = '700 28px "Public Sans", sans-serif';
     ctx.textAlign = "right";
     ctx.fillText(formatTime(sector.time), 860, y);
     ctx.fillStyle = sector.delta > 0.005 ? LOST : GAINED;
@@ -113,7 +113,7 @@ export async function renderResultCard(input: ResultCardInput): Promise<Blob> {
   });
 
   ctx.fillStyle = MUTED;
-  ctx.font = '400 24px Barlow, sans-serif';
+  ctx.font = '400 24px "Public Sans", sans-serif';
   ctx.fillText("Persegue o teu Ghost · ghostline", 72, H - 56);
 
   return new Promise((resolve, reject) =>

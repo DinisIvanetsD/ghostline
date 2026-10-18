@@ -135,8 +135,6 @@ export function Garage({ data, onChange }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [serviceDrafts, setServiceDrafts] = useState<Record<string, { date: string; description: string }>>({});
-  const linkedRuns = data.runs.filter((run) => data.bikes.some((bike) => bike.id === run.bikeId));
-  const coveredTrails = new Set(linkedRuns.map((run) => run.trailId)).size;
   const save = (e: FormEvent) => {
     e.preventDefault();
     if (!draft.name.trim()) return setError("Dá um nome a esta bike.");
@@ -203,23 +201,6 @@ export function Garage({ data, onChange }: Props) {
           </span>
         }
       >
-        <div className="garage-overview" aria-label="Resumo da garagem">
-          <div className="garage-stat">
-            <span>Máquinas</span>
-            <strong className="mono">{data.bikes.length}</strong>
-            <small>{data.bikes.length === 1 ? "Bike na garagem" : "Bikes na garagem"}</small>
-          </div>
-          <div className="garage-stat">
-            <span>Runs ligadas</span>
-            <strong className="mono">{linkedRuns.length}</strong>
-            <small>Runs prontas a comparar</small>
-          </div>
-          <div className="garage-stat">
-            <span>Pistas feitas</span>
-            <strong className="mono">{coveredTrails}</strong>
-            <small>Em todo o teu espaço</small>
-          </div>
-        </div>
         <form className="garage-form" onSubmit={save}>
           <div className="garage-form-heading">
             <div>
@@ -366,7 +347,7 @@ export function Garage({ data, onChange }: Props) {
           </div>
         ) : (
           <div className="bike-grid">
-            {data.bikes.map((b, index) => {
+            {data.bikes.map((b) => {
               const runs = data.runs.filter((run) => run.bikeId === b.id);
               const trails = new Set(runs.map((run) => run.trailId)).size;
               const latest = runs
@@ -405,7 +386,6 @@ export function Garage({ data, onChange }: Props) {
               return (
                 <article className="bike-card" key={b.id}>
                   <div className="bike-card-heading">
-                    <span className="bike-index mono">B{String(index + 1).padStart(2, "0")}</span>
                     <div className="bike-identity">
                       <h3>{b.name}</h3>
                       <p>{b.brand || "Marca por definir"}</p>

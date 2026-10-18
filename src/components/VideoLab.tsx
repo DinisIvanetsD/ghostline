@@ -536,18 +536,18 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           const panelHeight = Math.max(62, Math.round(frame.height * 0.12));
           context.fillStyle = "rgba(10, 14, 10, 0.78)";
           context.fillRect(0, 0, frame.width, panelHeight);
-          context.fillStyle = "#d5f55a";
-          context.font = `600 ${Math.max(16, Math.round(frame.width / 62))}px Barlow, sans-serif`;
+          context.fillStyle = "#ffffff";
+          context.font = `700 ${Math.max(16, Math.round(frame.width / 62))}px "Public Sans", sans-serif`;
           context.fillText("GHOSTLINE", Math.round(frame.width * 0.025), Math.round(panelHeight * 0.38));
           context.fillStyle = "#f0f2e9";
-          context.font = `${Math.max(12, Math.round(frame.width / 84))}px Barlow, sans-serif`;
+          context.font = `${Math.max(12, Math.round(frame.width / 84))}px "Public Sans", sans-serif`;
           context.fillText(`${trail.name}  ·  ${sectorLabel}`, Math.round(frame.width * 0.025), Math.round(panelHeight * 0.68));
           context.textAlign = "right";
           context.fillStyle = "#f0f2e9";
-          context.font = `500 ${Math.max(14, Math.round(frame.width / 70))}px "IBM Plex Mono", monospace`;
+          context.font = `700 ${Math.max(14, Math.round(frame.width / 70))}px "Public Sans", sans-serif`;
           context.fillText(`${clock(runSeconds)}  ${sample.speed.toFixed(1)} km/h`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.42));
-          context.fillStyle = delta > 0.005 ? "#f19784" : "#9edfc0";
-          context.font = `${Math.max(11, Math.round(frame.width / 92))}px "IBM Plex Mono", monospace`;
+          context.fillStyle = delta > 0.005 ? "#e9a25a" : "#9fb8f2";
+          context.font = `${Math.max(11, Math.round(frame.width / 92))}px "Public Sans", sans-serif`;
           context.fillText(`${formatDelta(delta)} vs Ghost`, frame.width - Math.round(frame.width * 0.025), Math.round(panelHeight * 0.72));
           context.textAlign = "left";
 
@@ -583,7 +583,7 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
           });
           context.stroke();
           context.setLineDash([]);
-          context.strokeStyle = "#d5f55a";
+          context.strokeStyle = "#9fb8f2";
           context.beginPath();
           trace.forEach((point, index) => {
             const position = project(point);
@@ -596,15 +596,15 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
             Math.abs(next.time - ghostElapsed) < Math.abs(closest.time - ghostElapsed) ? next : closest,
           );
           const ghostMarker = project(ghostSample);
-          context.strokeStyle = "#e2e8dd";
-          context.fillStyle = "#5b6851";
+          context.strokeStyle = "#ffffff";
+          context.fillStyle = "#8a93a6";
           context.lineWidth = Math.max(1.5, mapWidth * 0.012);
           context.beginPath();
           context.arc(ghostMarker.x, ghostMarker.y, Math.max(3, mapWidth * 0.025), 0, Math.PI * 2);
           context.fill();
           context.stroke();
           const mapMarker = project(sample);
-          context.fillStyle = "#d5f55a";
+          context.fillStyle = "#9fb8f2";
           context.beginPath();
           context.arc(mapMarker.x, mapMarker.y, Math.max(3, mapWidth * 0.025), 0, Math.PI * 2);
           context.fill();
@@ -617,11 +617,11 @@ export function VideoLab({ data, userId, cloudUserId }: Props) {
             context.globalAlpha = alpha;
             context.fillStyle = "rgba(10, 14, 10, 0.86)";
             context.fillRect(0, cardY, frame.width, cardHeight);
-            context.fillStyle = "#d5f55a";
-            context.font = `700 ${Math.max(20, Math.round(frame.width / 30))}px "Barlow Condensed", Barlow, sans-serif`;
+            context.fillStyle = "#ffffff";
+            context.font = `700 ${Math.max(20, Math.round(frame.width / 30))}px "Public Sans", sans-serif`;
             context.fillText(`S${cut.index + 1} · ${cut.name}`, Math.round(frame.width * 0.04), cardY + Math.round(cardHeight * 0.5));
-            context.fillStyle = cut.delta > 0.005 ? "#f19784" : "#9edfc0";
-            context.font = `500 ${Math.max(13, Math.round(frame.width / 64))}px "IBM Plex Mono", monospace`;
+            context.fillStyle = cut.delta > 0.005 ? "#e9a25a" : "#9fb8f2";
+            context.font = `700 ${Math.max(13, Math.round(frame.width / 64))}px "Public Sans", sans-serif`;
             context.fillText(
               `${formatDelta(cut.delta)} vs Ghost${cut.best ? "  ·  MELHOR SETOR" : ""}`,
               Math.round(frame.width * 0.04),

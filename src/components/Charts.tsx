@@ -80,7 +80,7 @@ export function TelemetryChart({
   return (
     <section className="panel telemetry">
       <div className="section-heading">
-        <h2>Lê a run.</h2>
+        <h2>Telemetria</h2>
         <div className="segmented">
           <button
             className={metric === "speed" ? "active" : ""}
@@ -185,7 +185,7 @@ export function TelemetryChart({
           y2="150"
           className="cursor-line"
         />
-        <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#d5f55a" />
+        <circle cx={x(progress)} cy={y(sampleValue)} r="4" fill="#1d3f91" />
       </svg>
       <label className="scrubber">
         <span>Progresso na pista</span>
@@ -225,7 +225,7 @@ export function Progression({
   return (
     <section className="panel progression">
       <div className="section-heading">
-        <h2>Cada run conta.</h2>
+        <h2>Progressão</h2>
         <span className="muted">Tempo da run · menos é mais rápido</span>
       </div>
       <svg
@@ -237,7 +237,7 @@ export function Progression({
         <path
           d={values.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")}
           fill="none"
-          stroke="#d5f55a"
+          stroke="#1d3f91"
           strokeWidth="2"
         />
         {sorted.map((r, i) => (
@@ -258,7 +258,7 @@ export function Progression({
             <title>
               {r.name}: {formatTime(values[i])}
             </title>
-            <circle cx={x(i)} cy={y(values[i])} r="5" fill="#d5f55a" />
+            <circle cx={x(i)} cy={y(values[i])} r="5" fill="#1d3f91" />
             {(width > 600 || i % 2 === 0) && (
               <>
                 <text x={x(i)} y={y(values[i]) - 15} textAnchor="middle">

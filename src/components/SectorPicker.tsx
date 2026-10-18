@@ -57,7 +57,7 @@ export function SectorPicker({ points, boundaries, onAdd, onRemove }: Props) {
     if (!group) return;
     group.clearLayers();
     L.polyline(points.map((p) => [p.lat, p.lon] as L.LatLngTuple), {
-      color: "#d5f55a",
+      color: "#1d3f91",
       weight: 5,
       interactive: false,
     }).addTo(group);
